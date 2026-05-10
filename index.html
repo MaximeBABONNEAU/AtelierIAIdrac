@@ -4,566 +4,154 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Marketing Academy | IDRAC Business School</title>
+  <meta name="description" content="Atelier IA et Marketing Digital - IDRAC Business School - Master 1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 </head>
 <body>
-
   <canvas id="particles-canvas"></canvas>
 
-  <!-- ===== LOGIN ===== -->
-  <section id="page-login" class="page active">
-    <div class="login-container">
+  <!-- ========== LOGIN ========== -->
+  <div id="page-login" class="login-container">
+    <div class="login-card glass-card">
       <div class="login-logo">
-        <div class="logo-icon">
-          <svg viewBox="0 0 60 60" class="brain-svg">
-            <circle cx="30" cy="30" r="28" fill="none" stroke="url(#grad1)" stroke-width="2"/>
-            <path d="M20 30 Q25 15 30 20 Q35 10 40 25 Q45 15 42 30 Q48 35 40 38 Q45 48 35 42 Q30 50 25 42 Q15 48 20 38 Q12 35 20 30Z" fill="none" stroke="url(#grad2)" stroke-width="1.5"/>
-            <circle cx="30" cy="25" r="2" fill="#00f0ff" class="pulse-dot"/>
-            <circle cx="22" cy="33" r="1.5" fill="#8b5cf6" class="pulse-dot" style="animation-delay:.3s"/>
-            <circle cx="38" cy="33" r="1.5" fill="#f472b6" class="pulse-dot" style="animation-delay:.6s"/>
-            <circle cx="30" cy="40" r="1.5" fill="#00f0ff" class="pulse-dot" style="animation-delay:.9s"/>
-            <defs>
-              <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#00f0ff"/>
-                <stop offset="100%" stop-color="#8b5cf6"/>
-              </linearGradient>
-              <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#8b5cf6"/>
-                <stop offset="100%" stop-color="#f472b6"/>
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <h1 class="login-title">AI Marketing<br><span class="gradient-text">Academy</span></h1>
+        <div class="logo-badge">IDRAC</div>
+        <h1>AI Marketing <span class="gradient-text">Academy</span></h1>
         <p class="login-subtitle">Master 1 Marketing Digital &bull; IDRAC Business School</p>
         <p class="login-mentor">Formation animee par <strong>Maxime BABONNEAU</strong></p>
       </div>
-      <form id="login-form" class="login-form glass-card">
+      <div class="login-form">
         <div class="form-group">
-          <label for="login-name">Ton prenom</label>
-          <input type="text" id="login-name" placeholder="Ex: Marie" required autocomplete="off">
+          <label for="student-name">Ton prenom</label>
+          <input type="text" id="student-name" placeholder="Ex: Marie" required autocomplete="given-name" maxlength="20">
         </div>
         <div class="form-group">
-          <label for="login-code">Code d'acces</label>
-          <input type="text" id="login-code" placeholder="Code fourni par le formateur" required autocomplete="off">
+          <label for="class-code">Code de la formation</label>
+          <input type="text" id="class-code" placeholder="Code fourni par le formateur" required autocomplete="off">
         </div>
-        <button type="submit" class="btn-primary btn-glow">
-          <span>Entrer dans l'Academy</span>
+        <button type="button" class="btn-primary" id="btn-login">
+          <span>Rejoindre la formation</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
-        <p class="login-hint">Pas de compte ? Demande le code a ton formateur !</p>
-      </form>
+      </div>
       <button class="admin-access-link" id="btn-admin-access">Acces Formateur</button>
       <div id="admin-login-panel" class="admin-login-panel hidden glass-card">
         <div class="form-group">
           <label for="admin-password">Mot de passe formateur</label>
           <input type="password" id="admin-password" placeholder="Mot de passe" required autocomplete="off">
         </div>
-        <button type="button" class="btn-primary" id="btn-admin-login">
+        <button type="button" class="btn-primary btn-admin" id="btn-admin-login">
           <span>Connexion Formateur</span>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- ===== APP SHELL ===== -->
+  <!-- ========== APP SHELL ========== -->
   <div id="app-shell" class="hidden">
-
-    <!-- TOP NAV -->
     <nav id="main-nav">
-      <div class="nav-brand" data-navigate="dashboard">
-        <div class="nav-logo-mini">
-          <svg viewBox="0 0 30 30" width="28" height="28">
-            <circle cx="15" cy="15" r="13" fill="none" stroke="#00f0ff" stroke-width="1.5"/>
-            <path d="M10 15 Q12 8 15 11 Q18 6 20 13 Q23 10 21 15 Q24 18 20 19 Q22 24 17 21 Q15 25 13 21 Q8 24 10 19 Q7 18 10 15Z" fill="none" stroke="#8b5cf6" stroke-width="1"/>
-          </svg>
-        </div>
+      <div class="nav-left">
         <span class="nav-title">AI Academy <span class="nav-school">IDRAC</span></span>
       </div>
-      <div class="nav-links">
-        <a href="#" class="nav-link active" data-navigate="dashboard" title="Dashboard">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-          <span>Dashboard</span>
+      <div class="nav-links" id="nav-links">
+        <a href="#" data-navigate="dashboard" class="nav-link active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+          <span>Accueil</span>
         </a>
-        <a href="#" class="nav-link" data-navigate="program" title="Programme">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+        <a href="#" data-navigate="program" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
           <span>Programme</span>
         </a>
-        <a href="#" class="nav-link" data-navigate="business-game" title="Business Game">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          <span>Business Game</span>
+        <a href="#" data-navigate="room" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <span>Salle</span>
         </a>
-        <a href="#" class="nav-link" data-navigate="leaderboard" title="Classement">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2H6v7a6 6 0 0012 0V2z"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22"/></svg>
+        <a href="#" data-navigate="demos" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+          <span>Demos</span>
+        </a>
+        <a href="#" data-navigate="arena" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Arena</span>
+        </a>
+        <a href="#" data-navigate="business-game" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a4 4 0 00-8 0v2"/></svg>
+          <span>Game</span>
+        </a>
+        <a href="#" data-navigate="leaderboard" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 010-5C7 4 7 9 7 9"/><path d="M18 9h1.5a2.5 2.5 0 000-5C17 4 17 9 17 9"/><path d="M4 22h16"/><path d="M10 22V2h4v20"/></svg>
           <span>Classement</span>
         </a>
-        <a href="#" class="nav-link" data-navigate="tools" title="Outils IA">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-          <span>Outils IA</span>
+        <a href="#" data-navigate="profile" class="nav-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0113 0"/></svg>
+          <span>Profil</span>
         </a>
       </div>
-      <div class="nav-user">
-        <div class="nav-xp-mini">
-          <span class="nav-level-badge" id="nav-level">Nv.1</span>
-          <div class="nav-xp-bar"><div class="nav-xp-fill" id="nav-xp-fill"></div></div>
+      <div class="nav-right">
+        <div class="nav-xp" id="nav-xp">
+          <span class="xp-amount" id="nav-xp-amount">0</span>
+          <span class="xp-label">XP</span>
         </div>
-        <button class="nav-avatar" data-navigate="profile" id="nav-avatar-btn" title="Profil">
-          <span id="nav-avatar-letter">?</span>
-        </button>
-        <button class="nav-logout" id="btn-logout" title="Deconnexion">
+        <button class="btn-icon" id="btn-logout" title="Deconnexion">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </button>
       </div>
     </nav>
 
-    <!-- MOBILE NAV -->
     <nav id="mobile-nav">
-      <a href="#" class="mob-link active" data-navigate="dashboard">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        <span>Home</span>
+      <a href="#" data-navigate="dashboard" class="mobile-link active">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        <span>Accueil</span>
       </a>
-      <a href="#" class="mob-link" data-navigate="program">
+      <a href="#" data-navigate="program" class="mobile-link">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
-        <span>Cours</span>
+        <span>Programme</span>
       </a>
-      <a href="#" class="mob-link" data-navigate="business-game">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-        <span>Game</span>
+      <a href="#" data-navigate="room" class="mobile-link">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span>Salle</span>
       </a>
-      <a href="#" class="mob-link" data-navigate="leaderboard">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2H6v7a6 6 0 0012 0V2z"/><path d="M4 22h16"/></svg>
-        <span>Rank</span>
+      <a href="#" data-navigate="demos" class="mobile-link">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+        <span>Demos</span>
       </a>
-      <a href="#" class="mob-link" data-navigate="profile">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <a href="#" data-navigate="profile" class="mobile-link">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0113 0"/></svg>
         <span>Profil</span>
       </a>
     </nav>
 
-    <!-- ===== MAIN CONTENT ===== -->
-    <main id="main-content">
-
-      <!-- DASHBOARD -->
-      <section id="page-dashboard" class="page">
-        <div class="page-header">
-          <div>
-            <h1>Bonjour, <span id="dash-username" class="gradient-text">Etudiant</span> !</h1>
-            <p class="page-subtitle" id="dash-date">Jour 1 &bull; Lundi 8 Juin 2026</p>
-          </div>
-          <div class="dash-streak" id="dash-streak">
-            <span class="streak-flame">&#x1F525;</span>
-            <span class="streak-count" id="streak-count">0</span>
-            <span class="streak-label">jours</span>
-          </div>
-        </div>
-
-        <div class="xp-card glass-card glow-border">
-          <div class="xp-header">
-            <div class="xp-level">
-              <span class="level-number" id="xp-level-num">1</span>
-              <span class="level-title" id="xp-level-title">Novice IA</span>
-            </div>
-            <div class="xp-points">
-              <span class="xp-current" id="xp-current">0</span>
-              <span class="xp-separator">/</span>
-              <span class="xp-needed" id="xp-needed">100</span>
-              <span class="xp-label">XP</span>
-            </div>
-          </div>
-          <div class="xp-bar-container">
-            <div class="xp-bar"><div class="xp-bar-fill" id="xp-bar-fill"></div></div>
-          </div>
-          <div class="xp-badges" id="xp-badges"></div>
-        </div>
-
-        <div class="dash-grid">
-          <div class="dash-card glass-card clickable" data-navigate="day-current">
-            <div class="dash-card-icon cyan">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-            <h3>Aujourd'hui</h3>
-            <p id="dash-today-desc">Decouvre le programme du jour</p>
-            <div class="dash-card-progress">
-              <div class="mini-progress"><div class="mini-progress-fill" id="dash-today-progress"></div></div>
-              <span id="dash-today-pct">0%</span>
-            </div>
-          </div>
-          <div class="dash-card glass-card clickable" data-navigate="business-game">
-            <div class="dash-card-icon purple">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-            </div>
-            <h3>Business Game</h3>
-            <p>Lance ton produit fictif avec l'IA</p>
-            <div class="dash-card-progress">
-              <div class="mini-progress"><div class="mini-progress-fill purple" id="dash-game-progress"></div></div>
-              <span id="dash-game-pct">0%</span>
-            </div>
-          </div>
-          <div class="dash-card glass-card clickable" data-navigate="leaderboard">
-            <div class="dash-card-icon pink">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 2H6v7a6 6 0 0012 0V2z"/><path d="M4 22h16"/></svg>
-            </div>
-            <h3>Classement</h3>
-            <p>Vois ou tu en es face aux autres</p>
-            <span class="dash-rank" id="dash-rank">#--</span>
-          </div>
-          <div class="dash-card glass-card clickable" data-navigate="tools">
-            <div class="dash-card-icon green">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-            </div>
-            <h3>Boite a outils IA</h3>
-            <p>9 outils IA a maitriser</p>
-            <span class="dash-tools-count" id="dash-tools-count">0/9</span>
-          </div>
-        </div>
-
-        <div class="dash-activity glass-card">
-          <h3>Activite recente</h3>
-          <div id="activity-feed" class="activity-feed">
-            <p class="activity-empty">Aucune activite pour le moment. Commence le Jour 1 !</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- PROGRAMME -->
-      <section id="page-program" class="page hidden">
-        <div class="page-header">
-          <h1>Programme <span class="gradient-text">4 Jours</span></h1>
-          <p class="page-subtitle">Du lundi 8 au jeudi 11 juin 2026</p>
-        </div>
-        <div class="program-timeline">
-          <div class="timeline-line"></div>
-          <div class="program-day glass-card clickable" data-navigate="day1" data-day="1">
-            <div class="day-marker cyan"><span>J1</span></div>
-            <div class="day-content">
-              <div class="day-tag">Lundi 8 Juin</div>
-              <h2>EVEIL</h2>
-              <h3>Decouverte de l'IA Generative</h3>
-              <p>Comprendre la revolution IA, maitriser le prompt engineering, premiers pas avec ChatGPT et Claude.</p>
-              <div class="day-activities">
-                <span class="act-tag cours">2 Cours</span>
-                <span class="act-tag atelier">2 Ateliers</span>
-                <span class="act-tag defi">1 Defi</span>
-              </div>
-              <div class="day-progress"><div class="mini-progress"><div class="mini-progress-fill" id="prog-day1-fill"></div></div><span id="prog-day1-pct">0%</span></div>
-            </div>
-            <div class="day-xp">+200 XP</div>
-          </div>
-          <div class="program-day glass-card clickable" data-navigate="day2" data-day="2">
-            <div class="day-marker purple"><span>J2</span></div>
-            <div class="day-content">
-              <div class="day-tag">Mardi 9 Juin</div>
-              <h2>CREATION</h2>
-              <h3>Contenu Marketing avec l'IA</h3>
-              <p>Copywriting IA, generation visuelle, brand voice et storytelling assistes par l'intelligence artificielle.</p>
-              <div class="day-activities">
-                <span class="act-tag cours">1 Cours</span>
-                <span class="act-tag atelier">2 Ateliers</span>
-                <span class="act-tag defi">1 Defi</span>
-              </div>
-              <div class="day-progress"><div class="mini-progress"><div class="mini-progress-fill purple" id="prog-day2-fill"></div></div><span id="prog-day2-pct">0%</span></div>
-            </div>
-            <div class="day-xp">+250 XP</div>
-          </div>
-          <div class="program-day glass-card clickable" data-navigate="day3" data-day="3">
-            <div class="day-marker pink"><span>J3</span></div>
-            <div class="day-content">
-              <div class="day-tag">Mercredi 10 Juin</div>
-              <h2>STRATEGIE</h2>
-              <h3>IA Avancee &amp; Business Game</h3>
-              <p>Video et voix IA, automation marketing, lancement du Business Game en equipes.</p>
-              <div class="day-activities">
-                <span class="act-tag cours">1 Cours</span>
-                <span class="act-tag atelier">1 Atelier</span>
-                <span class="act-tag game">Business Game</span>
-              </div>
-              <div class="day-progress"><div class="mini-progress"><div class="mini-progress-fill pink" id="prog-day3-fill"></div></div><span id="prog-day3-pct">0%</span></div>
-            </div>
-            <div class="day-xp">+300 XP</div>
-          </div>
-          <div class="program-day glass-card clickable" data-navigate="day4" data-day="4">
-            <div class="day-marker gold"><span>J4</span></div>
-            <div class="day-content">
-              <div class="day-tag">Jeudi 11 Juin</div>
-              <h2>LANCEMENT</h2>
-              <h3>Production &amp; Pitchs Finals</h3>
-              <p>Finalisation des campagnes marketing, presentations devant la classe, ceremonie des Awards.</p>
-              <div class="day-activities">
-                <span class="act-tag game">Production</span>
-                <span class="act-tag pitch">Pitchs</span>
-                <span class="act-tag award">Awards</span>
-              </div>
-              <div class="day-progress"><div class="mini-progress"><div class="mini-progress-fill gold" id="prog-day4-fill"></div></div><span id="prog-day4-pct">0%</span></div>
-            </div>
-            <div class="day-xp">+350 XP</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- DAY VIEW -->
-      <section id="page-day" class="page hidden">
-        <div class="page-header">
-          <button class="btn-back" data-navigate="program">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            Programme
-          </button>
-          <div>
-            <h1 id="day-title">Jour 1</h1>
-            <p class="page-subtitle" id="day-subtitle">EVEIL - Decouverte de l'IA Generative</p>
-          </div>
-          <div class="day-xp-badge" id="day-xp-badge">+200 XP</div>
-        </div>
-        <div class="day-tabs">
-          <button class="day-tab active" data-tab="matin">Matin (9h-12h30)</button>
-          <button class="day-tab" data-tab="aprem">Apres-midi (14h-17h30)</button>
-        </div>
-        <div id="day-content" class="day-content-area"></div>
-      </section>
-
-      <!-- BUSINESS GAME -->
-      <section id="page-business-game" class="page hidden">
-        <div class="page-header">
-          <h1>Business <span class="gradient-text">Game</span></h1>
-          <p class="page-subtitle">Lancez votre produit fictif de A a Z avec l'IA</p>
-        </div>
-        <div class="game-status glass-card glow-border">
-          <div class="game-status-header">
-            <h2 id="game-team-name">Equipe non assignee</h2>
-            <span class="game-phase-badge" id="game-phase">Phase 0</span>
-          </div>
-          <div class="game-brief">
-            <h3>Le Brief</h3>
-            <p>Votre equipe doit <strong>concevoir et lancer un produit fictif</strong> en utilisant exclusivement des outils d'IA generative. Livrable final : une <strong>campagne marketing complete</strong> comprenant strategie, visuels, copywriting, plan media et prototype de landing page.</p>
-          </div>
-        </div>
-        <div class="game-phases">
-          <div class="game-phase-card glass-card" data-phase="1">
-            <div class="phase-number">01</div>
-            <div class="phase-info">
-              <h3>Ideation &amp; Recherche</h3>
-              <p>Brainstorming IA, analyse de marche, definition du produit et de la cible.</p>
-              <div class="phase-deliverables">
-                <label class="deliverable-check"><input type="checkbox" data-del="product-idea"><span>Idee produit</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="target-persona"><span>Persona cible</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="market-analysis"><span>Analyse marche</span></label>
-              </div>
-            </div>
-            <div class="phase-status" id="phase1-status">A faire</div>
-          </div>
-          <div class="game-phase-card glass-card" data-phase="2">
-            <div class="phase-number">02</div>
-            <div class="phase-info">
-              <h3>Branding &amp; Identite</h3>
-              <p>Nom de marque, logo, charte graphique, brand voice — tout genere par IA.</p>
-              <div class="phase-deliverables">
-                <label class="deliverable-check"><input type="checkbox" data-del="brand-name"><span>Nom de marque</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="logo"><span>Logo IA</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="brand-guide"><span>Charte graphique</span></label>
-              </div>
-            </div>
-            <div class="phase-status" id="phase2-status">A faire</div>
-          </div>
-          <div class="game-phase-card glass-card" data-phase="3">
-            <div class="phase-number">03</div>
-            <div class="phase-info">
-              <h3>Campagne Marketing</h3>
-              <p>Visuels publicitaires, textes de campagne, plan media, strategie de contenu.</p>
-              <div class="phase-deliverables">
-                <label class="deliverable-check"><input type="checkbox" data-del="ad-visuals"><span>Visuels pubs</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="copy"><span>Copy &amp; textes</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="media-plan"><span>Plan media</span></label>
-              </div>
-            </div>
-            <div class="phase-status" id="phase3-status">A faire</div>
-          </div>
-          <div class="game-phase-card glass-card" data-phase="4">
-            <div class="phase-number">04</div>
-            <div class="phase-info">
-              <h3>Landing Page &amp; Pitch</h3>
-              <p>Prototype de landing page, video pitch IA, presentation finale.</p>
-              <div class="phase-deliverables">
-                <label class="deliverable-check"><input type="checkbox" data-del="landing-page"><span>Landing page</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="pitch-video"><span>Video pitch</span></label>
-                <label class="deliverable-check"><input type="checkbox" data-del="final-deck"><span>Deck final</span></label>
-              </div>
-            </div>
-            <div class="phase-status" id="phase4-status">A faire</div>
-          </div>
-        </div>
-        <div class="game-notes glass-card">
-          <h3>Notes d'equipe</h3>
-          <textarea id="game-notes-input" placeholder="Notez vos idees, liens, prompts utilises..." rows="6"></textarea>
-          <button class="btn-secondary" id="btn-save-notes">Sauvegarder les notes</button>
-        </div>
-      </section>
-
-      <!-- LEADERBOARD -->
-      <section id="page-leaderboard" class="page hidden">
-        <div class="page-header">
-          <h1>Classement <span class="gradient-text">Live</span></h1>
-          <p class="page-subtitle">La competition est lancee !</p>
-        </div>
-        <div class="podium" id="podium">
-          <div class="podium-place second" id="podium-2">
-            <div class="podium-avatar">2</div>
-            <p class="podium-name">---</p>
-            <p class="podium-xp">0 XP</p>
-            <div class="podium-bar"></div>
-          </div>
-          <div class="podium-place first" id="podium-1">
-            <div class="podium-crown">&#x1F451;</div>
-            <div class="podium-avatar">1</div>
-            <p class="podium-name">---</p>
-            <p class="podium-xp">0 XP</p>
-            <div class="podium-bar"></div>
-          </div>
-          <div class="podium-place third" id="podium-3">
-            <div class="podium-avatar">3</div>
-            <p class="podium-name">---</p>
-            <p class="podium-xp">0 XP</p>
-            <div class="podium-bar"></div>
-          </div>
-        </div>
-        <div class="lb-toggle">
-          <button class="lb-toggle-btn active" data-lb="individual">Individuel</button>
-          <button class="lb-toggle-btn" data-lb="teams">Equipes</button>
-        </div>
-        <div class="rankings glass-card" id="rankings-container">
-          <div class="ranking-row header">
-            <span class="rank-pos">#</span>
-            <span class="rank-name">Nom</span>
-            <span class="rank-xp">XP</span>
-            <span class="rank-level">Niveau</span>
-          </div>
-          <div id="rankings-list"></div>
-        </div>
-      </section>
-
-      <!-- OUTILS IA -->
-      <section id="page-tools" class="page hidden">
-        <div class="page-header">
-          <h1>Boite a Outils <span class="gradient-text">IA</span></h1>
-          <p class="page-subtitle">Les 9 outils a maitriser cette semaine</p>
-        </div>
-        <div class="tools-grid" id="tools-grid"></div>
-        <div class="tools-tips glass-card">
-          <h3>Conseils de Maxime</h3>
-          <ul>
-            <li>Commence toujours par un prompt clair et structure</li>
-            <li>Itere : le premier resultat n'est jamais le meilleur</li>
-            <li>Combine les outils pour des resultats uniques</li>
-            <li>Documente tes meilleurs prompts pour les reutiliser</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- PROFIL -->
-      <section id="page-profile" class="page hidden">
-        <div class="page-header">
-          <h1>Mon <span class="gradient-text">Profil</span></h1>
-        </div>
-        <div class="profile-grid">
-          <div class="profile-card glass-card glow-border">
-            <div class="profile-avatar-big" id="profile-avatar">?</div>
-            <h2 id="profile-name">Etudiant</h2>
-            <p class="profile-team" id="profile-team">Pas d'equipe</p>
-            <div class="profile-stats">
-              <div class="stat"><span class="stat-value" id="profile-xp">0</span><span class="stat-label">XP Total</span></div>
-              <div class="stat"><span class="stat-value" id="profile-level">1</span><span class="stat-label">Niveau</span></div>
-              <div class="stat"><span class="stat-value" id="profile-badges-count">0</span><span class="stat-label">Badges</span></div>
-              <div class="stat"><span class="stat-value" id="profile-streak">0</span><span class="stat-label">Streak</span></div>
-            </div>
-          </div>
-          <div class="profile-badges-section glass-card">
-            <h3>Badges Obtenus</h3>
-            <div class="badges-grid" id="profile-badges-grid"></div>
-          </div>
-          <div class="profile-history glass-card">
-            <h3>Historique XP</h3>
-            <div id="profile-xp-history" class="xp-history-list"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ADMIN -->
-      <section id="page-admin" class="page hidden">
-        <div class="page-header">
-          <div>
-            <h1>Panel <span class="gradient-text">Formateur</span></h1>
-            <p class="page-subtitle">Maxime BABONNEAU &bull; IDRAC Business School</p>
-          </div>
-          <div class="admin-badge">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span>Formateur</span>
-          </div>
-        </div>
-        <div class="admin-grid">
-          <div class="admin-card glass-card">
-            <h3>Configuration</h3>
-            <div class="form-group">
-              <label>Code d'acces classe</label>
-              <input type="text" id="admin-class-code" value="AIMARK2026">
-            </div>
-            <div class="form-group">
-              <label>Nombre d'equipes</label>
-              <input type="number" id="admin-team-count" value="5" min="2" max="10">
-            </div>
-            <button class="btn-primary" id="btn-save-config">Sauvegarder la config</button>
-          </div>
-          <div class="admin-card glass-card">
-            <h3>Attribution XP manuelle</h3>
-            <div class="form-group">
-              <label>Etudiant ou equipe</label>
-              <select id="admin-xp-target"></select>
-            </div>
-            <div class="form-group">
-              <label>Points XP</label>
-              <input type="number" id="admin-xp-amount" value="50" min="1" max="500">
-            </div>
-            <div class="form-group">
-              <label>Raison</label>
-              <input type="text" id="admin-xp-reason" placeholder="Ex: Excellent pitch">
-            </div>
-            <button class="btn-primary" id="btn-award-xp">Attribuer XP</button>
-          </div>
-          <div class="admin-card glass-card full-width">
-            <h3>Etudiants connectes</h3>
-            <div id="admin-students-list" class="admin-list"></div>
-          </div>
-        </div>
-      </section>
-
-    </main>
+    <main id="main-content"></main>
   </div>
 
-  <!-- TOASTS -->
+  <!-- ========== POPUPS ========== -->
   <div id="toast-container"></div>
-
-  <!-- XP POPUP -->
   <div id="xp-popup" class="xp-popup hidden">
     <div class="xp-popup-content">
-      <div class="xp-popup-icon">&#x2B50;</div>
-      <div class="xp-popup-amount" id="xp-popup-amount">+50 XP</div>
-      <div class="xp-popup-reason" id="xp-popup-reason">Activite completee</div>
+      <span class="xp-popup-amount" id="xp-popup-amount">+50</span>
+      <span class="xp-popup-reason" id="xp-popup-reason">Activite completee</span>
     </div>
   </div>
-
-  <!-- BADGE POPUP -->
   <div id="badge-popup" class="badge-popup hidden">
     <div class="badge-popup-content glass-card">
-      <div class="badge-popup-glow"></div>
-      <h2>Nouveau Badge !</h2>
-      <div class="badge-popup-icon" id="badge-popup-icon"></div>
-      <h3 id="badge-popup-name"></h3>
-      <p id="badge-popup-desc"></p>
-      <button class="btn-primary" id="badge-popup-close">Genial !</button>
+      <div class="badge-popup-icon" id="badge-popup-icon">🏆</div>
+      <h3>Badge debloque !</h3>
+      <p id="badge-popup-name">Nom du badge</p>
+      <button class="btn-primary btn-sm" id="badge-popup-close">Super !</button>
     </div>
   </div>
 
+  <!-- ========== SCRIPTS ========== -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/room.js"></script>
+  <script src="js/demos.js"></script>
+  <script src="js/battle.js"></script>
+  <script src="js/admin.js"></script>
 </body>
 </html>

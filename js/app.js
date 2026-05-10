@@ -1,715 +1,607 @@
 /* ==============================================
-   AI MARKETING ACADEMY — Application JavaScript
+   AI MARKETING ACADEMY — Core Application
+   IDRAC Business School — Maxime BABONNEAU
    ============================================== */
-
 (function () {
   'use strict';
 
-  const CONFIG = {
+  var CONFIG = {
     classCode: 'AIMARK2026',
     adminHash: '7b74562a',
     storagePrefix: 'aia_',
-    dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11'],
-    dateLabels: ['Lundi 8 Juin', 'Mardi 9 Juin', 'Mercredi 10 Juin', 'Jeudi 11 Juin'],
+    dates: ['2026-06-08','2026-06-09','2026-06-10','2026-06-11'],
+    dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Jeudi 11 Juin'],
     mentorName: 'Maxime BABONNEAU',
     school: 'IDRAC Business School',
+    firebaseConfig: null
   };
 
-  function hashPass(str) {
-    var h = 0;
-    for (var i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
-    return (h >>> 0).toString(16);
-  }
-
-  const LEVELS = [
+  var LEVELS = [
     { level: 1, title: 'Novice IA', xpNeeded: 0 },
     { level: 2, title: 'Curieux Digital', xpNeeded: 100 },
     { level: 3, title: 'Apprenti Prompt', xpNeeded: 250 },
     { level: 4, title: 'Createur IA', xpNeeded: 450 },
     { level: 5, title: 'Stratege Marketing', xpNeeded: 700 },
     { level: 6, title: 'Expert IA', xpNeeded: 1000 },
-    { level: 7, title: 'Maitre du Marketing IA', xpNeeded: 1400 },
+    { level: 7, title: 'Maitre du Marketing IA', xpNeeded: 1400 }
   ];
 
-  const BADGES = [
-    { id: 'first-login', icon: '\u{1F680}', name: 'Premier Pas', desc: 'Premiere connexion a l\'Academy' },
-    { id: 'prompt-master', icon: '\u{270D}️', name: 'Prompt Master', desc: 'Termine l\'atelier Prompt Engineering' },
-    { id: 'visual-creator', icon: '\u{1F3A8}', name: 'Createur Visuel', desc: 'Termine l\'atelier generation visuelle' },
-    { id: 'copywriter', icon: '\u{1F4DD}', name: 'Copywriter IA', desc: 'Termine l\'atelier copywriting' },
-    { id: 'video-star', icon: '\u{1F3AC}', name: 'Video Star', desc: 'Termine l\'atelier video IA' },
-    { id: 'team-player', icon: '\u{1F91D}', name: 'Team Player', desc: 'Rejoindre une equipe du Business Game' },
-    { id: 'day1-complete', icon: '\u{2B50}', name: 'Jour 1 Complete', desc: 'Terminer toutes les activites du Jour 1' },
-    { id: 'day2-complete', icon: '\u{1F31F}', name: 'Jour 2 Complete', desc: 'Terminer toutes les activites du Jour 2' },
-    { id: 'day3-complete', icon: '\u{1F4AB}', name: 'Jour 3 Complete', desc: 'Terminer toutes les activites du Jour 3' },
-    { id: 'day4-complete', icon: '\u{1F3C6}', name: 'Jour 4 Complete', desc: 'Terminer toutes les activites du Jour 4' },
-    { id: 'streak-3', icon: '\u{1F525}', name: 'On Fire!', desc: '3 jours de suite sur la plateforme' },
-    { id: 'xp-500', icon: '\u{1F48E}', name: 'Demi-Millier', desc: 'Atteindre 500 XP' },
-    { id: 'all-tools', icon: '\u{1F9F0}', name: 'Toolbox Complete', desc: 'Explorer tous les outils IA' },
-    { id: 'game-complete', icon: '\u{1F3AF}', name: 'Game Over', desc: 'Completer toutes les phases du Business Game' },
-    { id: 'graduate', icon: '\u{1F393}', name: 'Diplome IA', desc: 'Terminer l\'integralite du programme' },
+  var BADGES = [
+    { id: 'first-login', icon: '🚀', name: 'Premier Pas', desc: 'Premiere connexion' },
+    { id: 'prompt-master', icon: '✍️', name: 'Prompt Master', desc: 'Atelier Prompt Engineering' },
+    { id: 'visual-creator', icon: '🎨', name: 'Createur Visuel', desc: 'Atelier generation visuelle' },
+    { id: 'copywriter', icon: '📝', name: 'Copywriter IA', desc: 'Atelier copywriting' },
+    { id: 'video-star', icon: '🎬', name: 'Video Star', desc: 'Atelier video IA' },
+    { id: 'team-player', icon: '🤝', name: 'Team Player', desc: 'Rejoindre le Business Game' },
+    { id: 'day1-complete', icon: '⭐', name: 'Jour 1', desc: 'Toutes activites Jour 1' },
+    { id: 'day2-complete', icon: '🌟', name: 'Jour 2', desc: 'Toutes activites Jour 2' },
+    { id: 'day3-complete', icon: '💫', name: 'Jour 3', desc: 'Toutes activites Jour 3' },
+    { id: 'day4-complete', icon: '🏆', name: 'Jour 4', desc: 'Toutes activites Jour 4' },
+    { id: 'streak-3', icon: '🔥', name: 'En Feu', desc: '3 jours consecutifs' },
+    { id: 'xp-500', icon: '💎', name: 'Diamant', desc: 'Atteindre 500 XP' },
+    { id: 'all-tools', icon: '🧰', name: 'Outille', desc: 'Explorer tous les outils' },
+    { id: 'game-complete', icon: '🎯', name: 'Entrepreneur', desc: 'Terminer le Business Game' },
+    { id: 'graduate', icon: '🎓', name: 'Diplome', desc: 'Terminer les 4 jours' },
+    { id: 'battle-win', icon: '⚔️', name: 'Champion', desc: 'Gagner une battle' },
+    { id: 'quiz-perfect', icon: '🧠', name: 'Genie', desc: 'Quiz parfait' },
+    { id: 'avatar-custom', icon: '👾', name: 'Pixel Artist', desc: 'Customiser son avatar' },
+    { id: 'demo-all', icon: '🔬', name: 'Scientifique', desc: 'Tester toutes les demos' }
   ];
 
-  const AI_TOOLS = [
-    { id: 'chatgpt', name: 'ChatGPT', icon: '\u{1F916}', tag: 'freemium', desc: 'Assistant conversationnel d\'OpenAI. Ideal pour le brainstorming, la redaction, l\'analyse et la creation de contenu marketing.', uses: ['Brainstorming', 'Redaction', 'Analyse', 'SEO'] },
-    { id: 'claude', name: 'Claude', icon: '\u{1F9E0}', tag: 'freemium', desc: 'Assistant IA d\'Anthropic. Excellent pour les analyses longues, la strategie et le raisonnement complexe.', uses: ['Strategie', 'Analyse', 'Redaction', 'Code'] },
-    { id: 'midjourney', name: 'Midjourney', icon: '\u{1F3A8}', tag: 'paid', desc: 'Generation d\'images par IA. Creez des visuels marketing, logos, mockups et illustrations uniques.', uses: ['Visuels pubs', 'Logos', 'Mockups', 'Branding'] },
-    { id: 'canva', name: 'Canva AI', icon: '\u{2728}', tag: 'freemium', desc: 'Design assiste par IA. Templates marketing, generation d\'images, edition de photos et creation de presentations.', uses: ['Design', 'Templates', 'Presentations', 'Social media'] },
-    { id: 'copyai', name: 'Copy.ai', icon: '\u{1F4DD}', tag: 'freemium', desc: 'Copywriting automatise. Generez des textes marketing, emails, posts sociaux et descriptions produits.', uses: ['Copywriting', 'Emails', 'Social posts', 'Ads'] },
-    { id: 'jasper', name: 'Jasper', icon: '\u{1F4A1}', tag: 'paid', desc: 'Plateforme de contenu IA pour les equipes marketing. Brand voice, campagnes et contenu a grande echelle.', uses: ['Brand voice', 'Campagnes', 'Blog', 'Contenu'] },
-    { id: 'heygen', name: 'HeyGen', icon: '\u{1F3AC}', tag: 'freemium', desc: 'Creation de videos avec avatars IA. Parfait pour les pitchs, demos produits et contenus marketing video.', uses: ['Video pitch', 'Demos', 'Tutoriels', 'Ads video'] },
-    { id: 'elevenlabs', name: 'ElevenLabs', icon: '\u{1F399}️', tag: 'freemium', desc: 'Synthese vocale IA ultra-realiste. Creez des voix-off pour vos videos, podcasts et publicites.', uses: ['Voix-off', 'Podcasts', 'Audio ads', 'Narration'] },
-    { id: 'perplexity', name: 'Perplexity', icon: '\u{1F50D}', tag: 'free', desc: 'Moteur de recherche IA avec sources. Ideal pour la veille concurrentielle et la recherche de marche.', uses: ['Recherche', 'Veille', 'Analyse marche', 'Sources'] },
-  ];
-
-  const PROGRAM = {
+  var PROGRAM = {
     day1: {
-      title: 'Jour 1 — EVEIL',
-      subtitle: 'Decouverte de l\'IA Generative',
-      xp: 200,
+      title: 'Decouverte de l\'IA Generative', subtitle: 'Introduction et premiers pas avec l\'IA en marketing', xp: 200,
       matin: [
-        { id: 'd1-accueil', type: 'cours', time: '9h00 - 9h30', title: 'Accueil & Ice-breaker IA', desc: 'Presentation du programme, formation des premiers contacts. Mini-jeu : devine si c\'est l\'IA ou l\'humain.', xp: 15, items: ['Presentation de la semaine', 'Regles du jeu et systeme XP', 'Ice-breaker : IA ou Humain ?'] },
-        { id: 'd1-cours1', type: 'cours', time: '9h30 - 10h30', title: 'L\'IA Generative : comprendre la revolution', desc: 'Comment fonctionnent les LLMs, les modeles de diffusion. Panorama complet des outils IA pour le marketing.', xp: 30, items: ['Comment fonctionne ChatGPT (tokens, transformers)', 'Images IA : de DALL-E a Midjourney', 'Le paysage IA marketing en 2026', 'Cas concrets de marques utilisant l\'IA'] },
-        { id: 'd1-atelier1', type: 'atelier', time: '10h45 - 12h30', title: 'Prompt Engineering : l\'art de parler aux machines', desc: 'Maitrisez les techniques de prompting pour obtenir exactement ce que vous voulez de l\'IA.', xp: 50, items: ['La structure d\'un prompt efficace', 'Techniques : role-play, few-shot, chain-of-thought', 'Exercices pratiques sur ChatGPT et Claude', 'Creer son prompt book personnel'] },
+        { id: 'd1-accueil', type: 'cours', time: '9h00-9h30', title: 'Accueil & Ice Breaker', desc: 'Presentation, objectifs, creation de votre avatar', xp: 15 },
+        { id: 'd1-intro-ia', type: 'cours', time: '9h30-10h30', title: 'L\'IA Generative : Revolution Marketing', desc: 'Comprendre ChatGPT, Claude, Midjourney et leur impact', xp: 25 },
+        { id: 'd1-premier-prompt', type: 'atelier', time: '10h45-12h00', title: 'Premiers Prompts', desc: 'Atelier pratique : ecrire ses premiers prompts efficaces', xp: 40 }
       ],
       aprem: [
-        { id: 'd1-atelier2', type: 'atelier', time: '14h00 - 15h30', title: 'ChatGPT & Claude : vos assistants marketing', desc: 'Utilisez les chatbots IA pour des taches marketing concretes : analyse, redaction, brainstorming.', xp: 45, items: ['Analyser un brief marketing avec l\'IA', 'Generer des idees de campagne', 'Rediger un communique de presse', 'Comparer ChatGPT vs Claude sur un meme brief'] },
-        { id: 'd1-defi', type: 'defi', time: '15h45 - 17h00', title: 'DEFI — Le Prompt Battle', desc: 'Competition individuelle ! Creez le meilleur prompt marketing en temps limite. Les meilleurs gagnent des XP bonus.', xp: 60, items: ['Brief mystere revele en direct', '30 minutes pour creer LE prompt parfait', 'Presentation des 5 meilleurs', 'Vote de la classe + XP bonus'] },
-      ],
+        { id: 'd1-prompt-avance', type: 'atelier', time: '13h30-15h00', title: 'Prompt Engineering Avance', desc: 'Chain-of-thought, few-shot, role prompting', xp: 50 },
+        { id: 'd1-defi', type: 'defi', time: '15h15-16h30', title: 'Defi Prompt Battle', desc: 'Battle de prompts entre etudiants avec vote', xp: 50 },
+        { id: 'd1-debrief', type: 'cours', time: '16h30-17h00', title: 'Debrief & Quiz du Jour', desc: 'Retour sur les apprentissages et quiz interactif', xp: 20 }
+      ]
     },
     day2: {
-      title: 'Jour 2 — CREATION',
-      subtitle: 'Contenu Marketing avec l\'IA',
-      xp: 250,
+      title: 'Creation de Contenu IA', subtitle: 'Visuels, copywriting et video avec l\'IA', xp: 250,
       matin: [
-        { id: 'd2-cours1', type: 'cours', time: '9h00 - 10h30', title: 'Copywriting IA : de la pub au SEO', desc: 'Maitrisez l\'art de la redaction assistee par IA. Du slogan publicitaire a l\'article de blog optimise SEO.', xp: 35, items: ['Les frameworks de copywriting (AIDA, PAS, BAB)', 'Adapter le ton et la brand voice avec l\'IA', 'SEO : keywords et meta descriptions generees', 'Email marketing assiste par IA'] },
-        { id: 'd2-atelier1', type: 'atelier', time: '10h45 - 12h30', title: 'Generation visuelle : Midjourney, DALL-E & Canva AI', desc: 'Creez des visuels marketing professionnels sans competences graphiques.', xp: 55, items: ['Maitriser les prompts visuels (style, composition, mood)', 'Creer une serie de visuels de campagne', 'Retouche et adaptation avec Canva AI', 'Constituer une banque de visuels coherente'] },
+        { id: 'd2-visuel', type: 'cours', time: '9h00-9h45', title: 'Generation Visuelle IA', desc: 'Midjourney, DALL-E, Canva AI : panorama et bonnes pratiques', xp: 20 },
+        { id: 'd2-atelier-image', type: 'atelier', time: '9h45-11h00', title: 'Atelier Creation Visuelle', desc: 'Creer des visuels marketing avec l\'IA generative', xp: 45 },
+        { id: 'd2-copywriting', type: 'atelier', time: '11h15-12h30', title: 'Copywriting IA', desc: 'Rediger des textes marketing percutants avec l\'IA', xp: 45 }
       ],
       aprem: [
-        { id: 'd2-atelier2', type: 'atelier', time: '14h00 - 15h30', title: 'Brand Voice & Storytelling avec l\'IA', desc: 'Apprenez a creer une identite de marque coherente et un storytelling captivant avec l\'assistance IA.', xp: 45, items: ['Definir une brand voice avec l\'IA', 'Creer un manifeste de marque', 'Storytelling : le hero\'s journey marketing', 'Decliner la voice sur differents canaux'] },
-        { id: 'd2-defi', type: 'defi', time: '15h45 - 17h00', title: 'DEFI — La campagne en 60 minutes', desc: 'Par binomes, creez une mini-campagne complete (visuel + copy + post social) pour un produit tire au sort.', xp: 65, items: ['Tirage au sort du produit', '60 minutes chrono : 1 visuel + 1 copy + 1 post', 'Presentation express (2 min/binome)', 'Vote + XP bonus pour le top 3'] },
-      ],
+        { id: 'd2-video', type: 'atelier', time: '13h30-15h00', title: 'Video & Voix IA', desc: 'HeyGen, ElevenLabs : creer des videos et voix off IA', xp: 50 },
+        { id: 'd2-demo-sentiment', type: 'demo', time: '15h15-16h00', title: 'Demo : Analyse de Sentiment', desc: 'Tester l\'analyse de sentiment sur des avis clients', xp: 40 },
+        { id: 'd2-challenge', type: 'defi', time: '16h00-17h00', title: 'Challenge Creatif', desc: 'Creer une campagne complete en equipe', xp: 50 }
+      ]
     },
     day3: {
-      title: 'Jour 3 — STRATEGIE',
-      subtitle: 'IA Avancee & Business Game',
-      xp: 300,
+      title: 'Strategie Marketing IA', subtitle: 'SEO, analytics, chatbots et automatisation', xp: 280,
       matin: [
-        { id: 'd3-cours1', type: 'cours', time: '9h00 - 10h30', title: 'Video, Voix & Automation Marketing', desc: 'Decouvrez les outils IA avances : creation video, synthese vocale et automation des workflows marketing.', xp: 35, items: ['HeyGen : creer des videos avec avatars IA', 'ElevenLabs : voix-off ultra-realistes', 'Automation : chatbots, email sequences, social scheduling', 'L\'IA dans le marketing predictif'] },
-        { id: 'd3-atelier1', type: 'atelier', time: '10h45 - 12h30', title: 'HeyGen + ElevenLabs : le marketing augmente', desc: 'Creez votre premiere video marketing avec avatar IA et voix synthetique.', xp: 55, items: ['Configurer un avatar HeyGen', 'Ecrire un script de video marketing', 'Ajouter une voix ElevenLabs', 'Monter et exporter sa video'] },
+        { id: 'd3-seo', type: 'cours', time: '9h00-10h00', title: 'SEO & Analytics IA', desc: 'Optimisation SEO avec l\'IA, analyse de donnees marketing', xp: 30 },
+        { id: 'd3-demo-seo', type: 'demo', time: '10h00-11h00', title: 'Demo : SEO Analyzer', desc: 'Analyser et optimiser le SEO d\'une page en temps reel', xp: 40 },
+        { id: 'd3-abtest', type: 'demo', time: '11h15-12h30', title: 'Demo : A/B Testing IA', desc: 'Simuler des tests A/B automatises par l\'IA', xp: 40 }
       ],
       aprem: [
-        { id: 'd3-brief', type: 'game', time: '14h00 - 14h30', title: 'BUSINESS GAME — Le Brief', desc: 'Presentation du challenge : lancer un produit fictif de A a Z avec l\'IA en equipe !', xp: 20, items: ['Presentation du challenge et des regles', 'Criteres d\'evaluation', 'Livrables attendus'] },
-        { id: 'd3-teams', type: 'game', time: '14h30 - 15h00', title: 'Formation des equipes', desc: 'Constitution des equipes et attribution des roles.', xp: 15, items: ['Tirage au sort ou choix libre', 'Attribution des roles (CEO, CMO, CTO, Designer, Content)', 'Creation de l\'espace equipe'] },
-        { id: 'd3-game1', type: 'game', time: '15h15 - 17h00', title: 'Phase 1 — Ideation & Recherche', desc: 'Brainstorming IA, analyse de marche et definition du produit.', xp: 50, items: ['Brainstorming assiste par ChatGPT/Claude', 'Recherche de marche avec Perplexity', 'Definition du produit et de la cible', 'Creation du persona client avec l\'IA'] },
-      ],
+        { id: 'd3-chatbot', type: 'demo', time: '13h30-14h30', title: 'Demo : Chatbot Marketing', desc: 'Construire un chatbot marketing conversationnel', xp: 45 },
+        { id: 'd3-game-launch', type: 'game', time: '14h30-16h00', title: 'Business Game : Lancement', desc: 'Former les equipes et demarrer le Business Game', xp: 50 },
+        { id: 'd3-arena', type: 'defi', time: '16h00-17h00', title: 'Arena : Quiz & Battles', desc: 'Quiz interactif et battles entre equipes', xp: 75 }
+      ]
     },
     day4: {
-      title: 'Jour 4 — LANCEMENT',
-      subtitle: 'Production & Pitchs Finals',
-      xp: 350,
+      title: 'Projet Final & Pitch', subtitle: 'Finalisation, presentations et awards', xp: 300,
       matin: [
-        { id: 'd4-game2', type: 'game', time: '9h00 - 10h00', title: 'Phase 2 — Branding & Identite', desc: 'Creez l\'identite visuelle de votre marque entierement avec l\'IA.', xp: 40, items: ['Generer le nom de marque (ChatGPT)', 'Creer le logo (Midjourney/Canva)', 'Definir la charte graphique', 'Ecrire le brand manifesto'] },
-        { id: 'd4-game3', type: 'game', time: '10h15 - 11h30', title: 'Phase 3 — Campagne Marketing', desc: 'Produisez les contenus de votre campagne marketing.', xp: 50, items: ['Creer 3 visuels publicitaires', 'Rediger les textes de campagne', 'Elaborer le plan media', 'Creer un post social pret a publier'] },
-        { id: 'd4-game4', type: 'game', time: '11h30 - 12h30', title: 'Phase 4 — Landing Page & Pitch', desc: 'Finalisez votre campagne avec une landing page et un pitch.', xp: 45, items: ['Prototyper une landing page (Canva/Gamma)', 'Creer la video pitch avec HeyGen', 'Preparer le deck de presentation', 'Repeter le pitch (5 min max)'] },
+        { id: 'd4-finalize', type: 'game', time: '9h00-11h00', title: 'Business Game : Sprint Final', desc: 'Finaliser les livrables avec l\'aide de l\'IA', xp: 60 },
+        { id: 'd4-demo-playground', type: 'demo', time: '11h00-12h00', title: 'Demo : Playground Libre', desc: 'Experimenter librement avec les modeles IA', xp: 40 },
+        { id: 'd4-prep-pitch', type: 'atelier', time: '12h00-12h30', title: 'Preparation Pitch', desc: 'Preparer sa presentation finale', xp: 20 }
       ],
       aprem: [
-        { id: 'd4-pitchs', type: 'pitch', time: '14h00 - 16h00', title: 'Pitchs des Equipes', desc: 'Chaque equipe presente sa campagne marketing devant la classe. 10 minutes par equipe + 5 min de questions.', xp: 80, items: ['Presentation du produit et du marche', 'Demonstration de la campagne', 'Video pitch et landing page', 'Q&A avec la classe et le mentor'] },
-        { id: 'd4-awards', type: 'award', time: '16h30 - 17h30', title: 'Ceremonie des Awards & Cloture', desc: 'Vote, remise des prix, certification et cloture de la semaine.', xp: 50, items: ['Vote de la classe (meilleur produit, meilleur pitch, meilleur branding)', 'Remise des awards', 'Recap de la semaine et takeaways', 'Remise des certificats'] },
-      ],
-    },
+        { id: 'd4-pitch', type: 'game', time: '14h00-16h00', title: 'Pitchs & Votes', desc: 'Chaque equipe presente, la classe vote', xp: 80 },
+        { id: 'd4-awards', type: 'cours', time: '16h00-16h30', title: 'Ceremonie des Awards', desc: 'Remise des badges, classement final, diplomes', xp: 50 },
+        { id: 'd4-closing', type: 'cours', time: '16h30-17h00', title: 'Cloture & Perspectives', desc: 'Bilan, ressources et prochaines etapes', xp: 50 }
+      ]
+    }
   };
 
-  // ─── STORAGE ───
-  const Storage = {
-    get(key, fallback) {
-      try {
-        const raw = localStorage.getItem(CONFIG.storagePrefix + key);
-        return raw ? JSON.parse(raw) : fallback;
-      } catch { return fallback; }
-    },
-    set(key, value) {
-      localStorage.setItem(CONFIG.storagePrefix + key, JSON.stringify(value));
-    },
+  var AI_TOOLS = [
+    { id: 'chatgpt', name: 'ChatGPT', icon: '🤖', tag: 'freemium', desc: 'Assistant IA polyvalent d\'OpenAI', uses: ['Redaction','Brainstorming','Analyse'] },
+    { id: 'claude', name: 'Claude', icon: '🧠', tag: 'freemium', desc: 'IA conversationnelle d\'Anthropic', uses: ['Analyse','Redaction','Code'] },
+    { id: 'midjourney', name: 'Midjourney', icon: '🎨', tag: 'paid', desc: 'Generation d\'images artistiques', uses: ['Visuels','Branding','Concepts'] },
+    { id: 'canva', name: 'Canva AI', icon: '✨', tag: 'freemium', desc: 'Design graphique assiste par IA', uses: ['Posts','Presentations','Videos'] },
+    { id: 'copyai', name: 'Copy.ai', icon: '📝', tag: 'freemium', desc: 'Redaction marketing automatisee', uses: ['Emails','Ads','Social'] },
+    { id: 'jasper', name: 'Jasper', icon: '💡', tag: 'paid', desc: 'Plateforme de contenu IA entreprise', uses: ['Blog','SEO','Brand voice'] },
+    { id: 'heygen', name: 'HeyGen', icon: '🎬', tag: 'freemium', desc: 'Creation de videos avec avatars IA', uses: ['Videos','Formations','Ads'] },
+    { id: 'elevenlabs', name: 'ElevenLabs', icon: '🎙️', tag: 'freemium', desc: 'Synthese vocale ultra-realiste', uses: ['Voix off','Podcast','Dubbing'] },
+    { id: 'perplexity', name: 'Perplexity', icon: '🔍', tag: 'free', desc: 'Moteur de recherche IA avec sources', uses: ['Veille','Recherche','Fact-check'] }
+  ];
+
+  var GAME_DELIVERABLES = {
+    phase1: [{ id: 'product-idea', label: 'Idee produit/service validee' },{ id: 'target-persona', label: 'Persona cible defini' },{ id: 'market-analysis', label: 'Analyse marche (via IA)' }],
+    phase2: [{ id: 'brand-name', label: 'Nom de marque genere (IA)' },{ id: 'logo', label: 'Logo cree (Midjourney/Canva)' },{ id: 'brand-guide', label: 'Charte graphique' }],
+    phase3: [{ id: 'ad-visuals', label: 'Visuels publicitaires (IA)' },{ id: 'copy', label: 'Textes marketing (Copy.ai)' },{ id: 'media-plan', label: 'Plan media' }],
+    phase4: [{ id: 'landing-page', label: 'Landing page mockup' },{ id: 'pitch-video', label: 'Video pitch (HeyGen)' },{ id: 'final-deck', label: 'Deck de presentation' }]
   };
 
-  // ─── STATE ───
-  let state = {
-    user: Storage.get('user', null),
-    xp: Storage.get('xp', { total: 0, history: [] }),
-    progress: Storage.get('progress', {}),
-    badges: Storage.get('badges', []),
-    streak: Storage.get('streak', { count: 0, lastDate: null }),
-    gameNotes: Storage.get('gameNotes', ''),
-    gameDeliverables: Storage.get('gameDeliverables', {}),
-    toolsExplored: Storage.get('toolsExplored', []),
+  var state = {
+    user: null, xp: { total: 0, history: [] }, progress: {}, badges: [],
+    streak: { count: 0, lastDate: null }, gameNotes: '', gameDeliverables: {},
+    toolsExplored: [], avatar: null, currentPage: 'dashboard', demosCompleted: []
+  };
+
+  var Storage = {
+    get: function (key, fb) { try { var v = localStorage.getItem(CONFIG.storagePrefix + key); return v ? JSON.parse(v) : fb; } catch (e) { return fb; } },
+    set: function (key, val) { try { localStorage.setItem(CONFIG.storagePrefix + key, JSON.stringify(val)); } catch (e) {} }
   };
 
   function saveState() {
-    Storage.set('user', state.user);
-    Storage.set('xp', state.xp);
-    Storage.set('progress', state.progress);
-    Storage.set('badges', state.badges);
-    Storage.set('streak', state.streak);
-    Storage.set('gameNotes', state.gameNotes);
-    Storage.set('gameDeliverables', state.gameDeliverables);
-    Storage.set('toolsExplored', state.toolsExplored);
+    Storage.set('state', state);
+    if (window.AIA && window.AIA.firebaseSyncState) window.AIA.firebaseSyncState(state);
+  }
+  function loadState() {
+    var s = Storage.get('state', null);
+    if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
   }
 
-  // ─── PARTICLES ───
+  function initFirebase() {
+    var cfg = Storage.get('firebase_config', null);
+    if (!cfg || !cfg.apiKey) return;
+    CONFIG.firebaseConfig = cfg;
+    try {
+      if (!firebase.apps.length) firebase.initializeApp(cfg);
+      window.AIA = window.AIA || {};
+      window.AIA.db = firebase.database();
+      window.AIA.firebaseSyncState = function (st) {
+        if (!st.user || !window.AIA.db) return;
+        var key = st.user.name.replace(/[.#$/\[\]]/g, '_');
+        window.AIA.db.ref('students/' + key).set({
+          name: st.user.name, xp: st.xp.total, level: getLevelInfo(st.xp.total).level,
+          badges: st.badges.length, page: st.currentPage, avatar: st.avatar,
+          lastSeen: Date.now(), progress: st.progress
+        });
+      };
+      window.AIA.firebasePresence = function () {
+        if (!state.user || !window.AIA.db) return;
+        var key = state.user.name.replace(/[.#$/\[\]]/g, '_');
+        var ref = window.AIA.db.ref('students/' + key + '/online');
+        ref.onDisconnect().set(false);
+        ref.set(true);
+      };
+      window.AIA.firebasePresence();
+    } catch (e) {}
+  }
+
   function initParticles() {
-    const canvas = document.getElementById('particles-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const particles = [];
-    const count = 50;
-
-    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-    resize();
-    window.addEventListener('resize', resize);
-
-    for (let i = 0; i < count; i++) {
-      particles.push({
-        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3, vy: (Math.random() - 0.5) * 0.3,
-        r: Math.random() * 2 + 0.5, alpha: Math.random() * 0.4 + 0.1,
-      });
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(function (p) {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0, 240, 255, ' + p.alpha + ')';
-        ctx.fill();
-      });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          var dx = particles[i].x - particles[j].x;
-          var dy = particles[i].y - particles[j].y;
-          var dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = 'rgba(139, 92, 246, ' + (0.08 * (1 - dist / 120)) + ')';
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
+    var c = document.getElementById('particles-canvas');
+    if (!c) return;
+    var ctx = c.getContext('2d'), pts = [], n = 50;
+    function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+    for (var i = 0; i < n; i++) pts.push({ x: Math.random()*c.width, y: Math.random()*c.height, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4, r: Math.random()*2+0.5 });
+    (function draw() {
+      ctx.clearRect(0,0,c.width,c.height);
+      pts.forEach(function(p){ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=c.width; if(p.x>c.width)p.x=0; if(p.y<0)p.y=c.height; if(p.y>c.height)p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle='rgba(167,31,40,0.25)'; ctx.fill(); });
+      for(var i=0;i<pts.length;i++) for(var j=i+1;j<pts.length;j++){
+        var dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+        if(d<120){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle='rgba(167,31,40,'+(0.08*(1-d/120))+')'; ctx.lineWidth=0.5; ctx.stroke(); }
       }
       requestAnimationFrame(draw);
-    }
-    draw();
+    })();
   }
 
-  // ─── ROUTER ───
-  let currentDay = null;
-
-  function navigateTo(page) {
-    if (!state.user && page !== 'login') return;
-    document.querySelectorAll('#main-content .page, #page-login').forEach(function (p) {
-      p.classList.add('hidden');
-    });
-
-    if (page === 'login') {
-      document.getElementById('page-login').classList.remove('hidden');
-      document.getElementById('app-shell').classList.add('hidden');
-      return;
-    }
-
-    document.getElementById('app-shell').classList.remove('hidden');
-
-    if (page.startsWith('day') && page !== 'day-current') {
-      var dayNum = parseInt(page.replace('day', ''));
-      currentDay = dayNum;
-      renderDayView(dayNum);
-      document.getElementById('page-day').classList.remove('hidden');
-    } else if (page === 'day-current') {
-      var today = getCurrentDay();
-      currentDay = today;
-      renderDayView(today);
-      document.getElementById('page-day').classList.remove('hidden');
-    } else {
-      var el = document.getElementById('page-' + page);
-      if (el) el.classList.remove('hidden');
-    }
-
-    updateNavActive(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    if (page === 'dashboard') renderDashboard();
-    if (page === 'program') renderProgramProgress();
-    if (page === 'leaderboard') renderLeaderboard();
-    if (page === 'tools') renderTools();
-    if (page === 'profile') renderProfile();
-    if (page === 'admin') renderAdmin();
-    if (page === 'business-game') renderBusinessGame();
+  function showToast(msg, type) {
+    var c = document.getElementById('toast-container'), t = document.createElement('div');
+    t.className = 'toast ' + (type||'info'); t.textContent = msg; c.appendChild(t);
+    setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); }, 3200);
   }
 
-  function updateNavActive(page) {
-    var base = page.startsWith('day') ? 'program' : page;
-    document.querySelectorAll('.nav-link').forEach(function (l) {
-      l.classList.toggle('active', l.dataset.navigate === base);
-    });
-    document.querySelectorAll('.mob-link').forEach(function (l) {
-      l.classList.toggle('active', l.dataset.navigate === base);
-    });
+  function hashPass(str) { var h=0; for(var i=0;i<str.length;i++){h=((h<<5)-h+str.charCodeAt(i))|0;} return (h>>>0).toString(16); }
+
+  function getLevelInfo(xp) {
+    var lvl=LEVELS[0];
+    for(var i=LEVELS.length-1;i>=0;i--){ if(xp>=LEVELS[i].xpNeeded){lvl=LEVELS[i];break;} }
+    var next=LEVELS[lvl.level]||null;
+    var pct=next?((xp-lvl.xpNeeded)/(next.xpNeeded-lvl.xpNeeded))*100:100;
+    return {level:lvl.level,title:lvl.title,xpNeeded:lvl.xpNeeded,nextXp:next?next.xpNeeded:lvl.xpNeeded,progress:Math.min(100,pct)};
   }
 
-  function getCurrentDay() {
-    var today = new Date().toISOString().slice(0, 10);
-    var idx = CONFIG.dates.indexOf(today);
-    if (idx >= 0) return idx + 1;
-    return 1;
-  }
-
-  // ─── AUTH ───
-  function initAuth() {
-    document.getElementById('login-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var name = document.getElementById('login-name').value.trim();
-      var code = document.getElementById('login-code').value.trim().toUpperCase();
-      if (!name) return showToast('Entre ton prenom !', 'warning');
-      if (code !== CONFIG.classCode) {
-        return showToast('Code d\'acces incorrect', 'error');
-      }
-
-      state.user = { name: name, isAdmin: false, loginDate: new Date().toISOString().slice(0, 10) };
-      updateStreak();
-
-      if (!state.badges.includes('first-login')) {
-        awardBadge('first-login');
-        addXP(10, 'Premiere connexion');
-      }
-      saveState();
-      navigateTo('dashboard');
-      showToast('Bienvenue ' + name + ' !', 'success');
-    });
-
-    document.getElementById('btn-admin-access').addEventListener('click', function () {
-      document.getElementById('admin-login-panel').classList.toggle('hidden');
-    });
-
-    document.getElementById('btn-admin-login').addEventListener('click', function () {
-      var pw = document.getElementById('admin-password').value;
-      if (!pw) return showToast('Mot de passe requis', 'warning');
-      if (hashPass(pw) !== CONFIG.adminHash) {
-        return showToast('Mot de passe incorrect', 'error');
-      }
-      state.user = { name: CONFIG.mentorName, isAdmin: true, loginDate: new Date().toISOString().slice(0, 10) };
-      saveState();
-      navigateTo('dashboard');
-      showToast('Bienvenue Maxime !', 'success');
-    });
-
-    document.getElementById('btn-logout').addEventListener('click', function () {
-      navigateTo('login');
-    });
-  }
-
-  function updateStreak() {
-    var today = new Date().toISOString().slice(0, 10);
-    if (state.streak.lastDate === today) return;
-    var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    if (state.streak.lastDate === yesterday) {
-      state.streak.count++;
-    } else if (state.streak.lastDate !== today) {
-      state.streak.count = 1;
-    }
-    state.streak.lastDate = today;
-    if (state.streak.count >= 3 && !state.badges.includes('streak-3')) awardBadge('streak-3');
-    saveState();
-  }
-
-  // ─── XP SYSTEM ───
   function addXP(amount, reason) {
     state.xp.total += amount;
-    state.xp.history.unshift({ amount: amount, reason: reason, date: new Date().toISOString() });
-    if (state.xp.history.length > 50) state.xp.history = state.xp.history.slice(0, 50);
-    showXPPopup(amount, reason);
-    updateXPDisplay();
-    if (state.xp.total >= 500 && !state.badges.includes('xp-500')) awardBadge('xp-500');
+    state.xp.history.unshift({amount:amount,reason:reason,date:new Date().toISOString()});
+    if(state.xp.history.length>50) state.xp.history.length=50;
+    updateXPDisplay(); showXPPopup(amount,reason);
+    if(state.xp.total>=500) awardBadge('xp-500');
+    saveState();
+  }
+  function updateXPDisplay(){ var el=document.getElementById('nav-xp-amount'); if(el) el.textContent=state.xp.total; }
+  function showXPPopup(amount,reason){
+    var p=document.getElementById('xp-popup');
+    document.getElementById('xp-popup-amount').textContent='+'+amount;
+    document.getElementById('xp-popup-reason').textContent=reason;
+    p.classList.remove('hidden'); setTimeout(function(){p.classList.add('hidden');},1600);
+  }
+
+  function awardBadge(id){
+    if(state.badges.indexOf(id)!==-1) return;
+    state.badges.push(id);
+    var b=BADGES.find(function(x){return x.id===id;});
+    if(b){ document.getElementById('badge-popup-icon').textContent=b.icon; document.getElementById('badge-popup-name').textContent=b.name; document.getElementById('badge-popup').classList.remove('hidden'); }
     saveState();
   }
 
-  function getLevelInfo(totalXP) {
-    var current = LEVELS[0], next = LEVELS[1];
-    for (var i = LEVELS.length - 1; i >= 0; i--) {
-      if (totalXP >= LEVELS[i].xpNeeded) {
-        current = LEVELS[i];
-        next = LEVELS[i + 1] || null;
-        break;
-      }
-    }
-    var xpInLevel = totalXP - current.xpNeeded;
-    var xpForNext = next ? next.xpNeeded - current.xpNeeded : 1;
-    var pct = next ? Math.min((xpInLevel / xpForNext) * 100, 100) : 100;
-    return { level: current.level, title: current.title, pct: pct, nextXP: next ? next.xpNeeded : current.xpNeeded };
+  function completeActivity(actId,xp,reason){
+    if(state.progress[actId]) return;
+    state.progress[actId]=true; addXP(xp,reason); checkDayCompletion(); saveState();
+    if(state.currentPage && state.currentPage.indexOf('day')===0) navigateTo(state.currentPage);
+  }
+  function checkDayCompletion(){
+    ['day1','day2','day3','day4'].forEach(function(k,i){
+      var d=PROGRAM[k], all=d.matin.concat(d.aprem);
+      if(all.every(function(a){return state.progress[a.id];})) awardBadge('day'+(i+1)+'-complete');
+    });
+    if(['day1-complete','day2-complete','day3-complete','day4-complete'].every(function(b){return state.badges.indexOf(b)!==-1;})) awardBadge('graduate');
   }
 
-  function updateXPDisplay() {
-    var info = getLevelInfo(state.xp.total);
-    var s = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
-    var w = function (id, v) { var e = document.getElementById(id); if (e) e.style.width = v; };
-    s('xp-level-num', info.level);
-    s('xp-level-title', info.title);
-    s('xp-current', state.xp.total);
-    s('xp-needed', info.nextXP);
-    w('xp-bar-fill', info.pct + '%');
-    s('nav-level', 'Nv.' + info.level);
-    w('nav-xp-fill', info.pct + '%');
-  }
-
-  function showXPPopup(amount, reason) {
-    var popup = document.getElementById('xp-popup');
-    document.getElementById('xp-popup-amount').textContent = '+' + amount + ' XP';
-    document.getElementById('xp-popup-reason').textContent = reason;
-    popup.classList.remove('hidden');
-    setTimeout(function () { popup.classList.add('hidden'); }, 1600);
-  }
-
-  // ─── BADGES ───
-  function awardBadge(badgeId) {
-    if (state.badges.includes(badgeId)) return;
-    state.badges.push(badgeId);
+  function updateStreak(){
+    var today=new Date().toISOString().split('T')[0];
+    if(state.streak.lastDate===today) return;
+    var yest=new Date(Date.now()-86400000).toISOString().split('T')[0];
+    state.streak.count = state.streak.lastDate===yest ? state.streak.count+1 : 1;
+    state.streak.lastDate=today;
+    if(state.streak.count>=3) awardBadge('streak-3');
     saveState();
-    var badge = BADGES.find(function (b) { return b.id === badgeId; });
-    if (!badge) return;
-    setTimeout(function () {
-      document.getElementById('badge-popup-icon').textContent = badge.icon;
-      document.getElementById('badge-popup-name').textContent = badge.name;
-      document.getElementById('badge-popup-desc').textContent = badge.desc;
-      document.getElementById('badge-popup').classList.remove('hidden');
-    }, 800);
   }
 
-  // ─── ACTIVITY COMPLETION ───
-  function completeActivity(activityId, xp, reason) {
-    if (state.progress[activityId]) return;
-    state.progress[activityId] = true;
-    addXP(xp, reason);
-    saveState();
-    checkDayCompletion();
-    if (currentDay) renderDayView(currentDay);
+  function navigateTo(page){
+    state.currentPage=page;
+    var main=document.getElementById('main-content');
+    var pages={
+      dashboard:renderDashboard, program:renderProgram,
+      day1:function(){renderDayView(1);}, day2:function(){renderDayView(2);}, day3:function(){renderDayView(3);}, day4:function(){renderDayView(4);},
+      room:renderRoom, avatar:renderAvatarEditor, demos:renderDemos,
+      'demo-prompt':function(){if(window.AIA&&window.AIA.renderDemoPrompt)window.AIA.renderDemoPrompt(main);},
+      'demo-sentiment':function(){if(window.AIA&&window.AIA.renderDemoSentiment)window.AIA.renderDemoSentiment(main);},
+      'demo-image':function(){if(window.AIA&&window.AIA.renderDemoImage)window.AIA.renderDemoImage(main);},
+      'demo-chatbot':function(){if(window.AIA&&window.AIA.renderDemoChatbot)window.AIA.renderDemoChatbot(main);},
+      'demo-abtest':function(){if(window.AIA&&window.AIA.renderDemoABTest)window.AIA.renderDemoABTest(main);},
+      'demo-seo':function(){if(window.AIA&&window.AIA.renderDemoSEO)window.AIA.renderDemoSEO(main);},
+      battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
+      arena:renderArena, 'business-game':renderBusinessGame, leaderboard:renderLeaderboard,
+      tools:renderTools, profile:renderProfile, admin:renderAdmin
+    };
+    var fn=pages[page]; if(fn) fn();
+    updateNavActive(page); window.scrollTo(0,0); saveState();
   }
 
-  function checkDayCompletion() {
-    [1, 2, 3, 4].forEach(function (d) {
-      var dayData = PROGRAM['day' + d];
-      if (!dayData) return;
-      var all = dayData.matin.concat(dayData.aprem);
-      var allDone = all.every(function (a) { return state.progress[a.id]; });
-      if (allDone && !state.badges.includes('day' + d + '-complete')) awardBadge('day' + d + '-complete');
+  function updateNavActive(page){
+    document.querySelectorAll('.nav-link,.mobile-link').forEach(function(el){
+      var t=el.getAttribute('data-navigate');
+      el.classList.toggle('active',t===page||(page&&page.indexOf(t)===0));
     });
-    var allDays = [1, 2, 3, 4].every(function (d) { return state.badges.includes('day' + d + '-complete'); });
-    if (allDays && !state.badges.includes('graduate')) awardBadge('graduate');
-  }
-
-  // ─── DASHBOARD ───
-  function renderDashboard() {
-    var day = getCurrentDay();
-    document.getElementById('dash-username').textContent = state.user.name;
-    document.getElementById('dash-date').textContent = 'Jour ' + day + ' • ' + CONFIG.dateLabels[day - 1];
-    document.getElementById('streak-count').textContent = state.streak.count;
-    document.getElementById('nav-avatar-letter').textContent = state.user.name.charAt(0).toUpperCase();
-    updateXPDisplay();
-
-    var dayData = PROGRAM['day' + day];
-    if (dayData) {
-      var allActs = dayData.matin.concat(dayData.aprem);
-      var done = allActs.filter(function (a) { return state.progress[a.id]; }).length;
-      var pct = Math.round((done / allActs.length) * 100);
-      document.getElementById('dash-today-desc').textContent = dayData.subtitle;
-      document.getElementById('dash-today-progress').style.width = pct + '%';
-      document.getElementById('dash-today-pct').textContent = pct + '%';
-    }
-
-    var gameDone = Object.keys(state.gameDeliverables).filter(function (k) { return state.gameDeliverables[k]; }).length;
-    var gamePct = Math.round((gameDone / 12) * 100);
-    document.getElementById('dash-game-progress').style.width = gamePct + '%';
-    document.getElementById('dash-game-pct').textContent = gamePct + '%';
-    document.getElementById('dash-tools-count').textContent = state.toolsExplored.length + '/9';
-
-    renderActivityFeed();
-
-    if (state.user.isAdmin && !document.querySelector('.nav-link[data-navigate="admin"]')) {
-      var adminNav = document.createElement('a');
-      adminNav.href = '#';
-      adminNav.className = 'nav-link';
-      adminNav.dataset.navigate = 'admin';
-      adminNav.title = 'Admin';
-      adminNav.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span>';
-      document.querySelector('.nav-links').appendChild(adminNav);
+    if(state.user&&state.user.isAdmin&&!document.getElementById('nav-admin-link')){
+      var nl=document.getElementById('nav-links'), a=document.createElement('a');
+      a.href='#'; a.setAttribute('data-navigate','admin'); a.className='nav-link'; a.id='nav-admin-link';
+      a.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span>';
+      nl.appendChild(a);
     }
   }
 
-  function renderActivityFeed() {
-    var feed = document.getElementById('activity-feed');
-    if (state.xp.history.length === 0) {
-      feed.innerHTML = '<p class="activity-empty">Aucune activite pour le moment. Commence le Jour 1 !</p>';
-      return;
-    }
-    feed.innerHTML = state.xp.history.slice(0, 8).map(function (h) {
-      var d = new Date(h.date);
-      var time = d.getHours() + 'h' + String(d.getMinutes()).padStart(2, '0');
-      return '<div class="activity-item"><div class="activity-icon" style="background:rgba(0,240,255,0.1)">⚡</div><div class="activity-text"><strong>+' + h.amount + ' XP</strong><p>' + h.reason + '</p></div><span class="activity-time">' + time + '</span></div>';
-    }).join('');
+  function getCurrentDay(){ var t=new Date().toISOString().split('T')[0]; var i=CONFIG.dates.indexOf(t); return i>=0?i+1:1; }
+
+  function renderDashboard(){
+    var main=document.getElementById('main-content'), info=getLevelInfo(state.xp.total);
+    var tA=0,cA=0;
+    ['day1','day2','day3','day4'].forEach(function(d){var p=PROGRAM[d],a=p.matin.concat(p.aprem);tA+=a.length;a.forEach(function(x){if(state.progress[x.id])cA++;});});
+    var pct=tA>0?Math.round((cA/tA)*100):0;
+    main.innerHTML=
+      '<div class="page-header"><h1>Bienvenue <span class="gradient-text">'+(state.user?state.user.name:'')+'</span> !</h1>'+
+      '<p class="page-subtitle">Jour '+getCurrentDay()+' sur 4 &bull; '+CONFIG.school+'</p></div>'+
+      '<div class="xp-card glass-card"><div class="xp-ring" style="--pct:'+info.progress+'%"><div class="xp-ring-inner">'+info.level+'</div></div>'+
+      '<div class="xp-info"><div class="xp-title">'+state.xp.total+' XP</div><div class="xp-level-name">'+info.title+'</div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+info.progress+'%"></div></div>'+
+      '<div class="xp-numbers"><span>Niv. '+info.level+'</span><span>'+(info.nextXp>info.xpNeeded?(info.nextXp-state.xp.total)+' XP restants':'MAX')+'</span></div></div></div>'+
+      '<div class="stats-grid">'+
+      '<div class="stat-card glass-card"><div class="stat-value red">'+pct+'%</div><div class="stat-label">Progression</div></div>'+
+      '<div class="stat-card glass-card"><div class="stat-value gold">'+state.badges.length+'</div><div class="stat-label">Badges</div></div>'+
+      '<div class="stat-card glass-card"><div class="stat-value cyan">'+state.streak.count+'</div><div class="stat-label">Streak</div></div>'+
+      '<div class="stat-card glass-card"><div class="stat-value green">'+cA+'/'+tA+'</div><div class="stat-label">Activites</div></div></div>'+
+      '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Programme</h2>'+
+      '<div class="days-grid">'+renderDayCards()+'</div>'+
+      '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Activite Recente</h2>'+renderActivityFeed();
   }
 
-  // ─── PROGRAM PROGRESS ───
-  function renderProgramProgress() {
-    [1, 2, 3, 4].forEach(function (d) {
-      var dayData = PROGRAM['day' + d];
-      if (!dayData) return;
-      var all = dayData.matin.concat(dayData.aprem);
-      var done = all.filter(function (a) { return state.progress[a.id]; }).length;
-      var pct = Math.round((done / all.length) * 100);
-      var fillEl = document.getElementById('prog-day' + d + '-fill');
-      var pctEl = document.getElementById('prog-day' + d + '-pct');
-      if (fillEl) fillEl.style.width = pct + '%';
-      if (pctEl) pctEl.textContent = pct + '%';
+  function renderDayCards(){
+    var h='';
+    ['day1','day2','day3','day4'].forEach(function(k,i){
+      var d=PROGRAM[k],all=d.matin.concat(d.aprem),done=all.filter(function(a){return state.progress[a.id];}).length;
+      var pct=Math.round((done/all.length)*100), cur=getCurrentDay()===(i+1);
+      h+='<div class="day-card glass-card'+(cur?' current':'')+'" data-navigate="day'+(i+1)+'">'+
+        '<div class="day-num">J'+(i+1)+'</div><h3>'+CONFIG.dateLabels[i]+'</h3><p>'+d.title+'</p>'+
+        '<div class="day-xp">⚡ '+d.xp+' XP</div>'+
+        '<div class="progress-bar sm"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+        '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.3rem">'+done+'/'+all.length+'</div></div>';
     });
+    return h;
   }
 
-  // ─── DAY VIEW ───
-  function renderDayView(dayNum) {
-    var dayData = PROGRAM['day' + dayNum];
-    if (!dayData) return;
-    document.getElementById('day-title').textContent = dayData.title;
-    document.getElementById('day-subtitle').textContent = dayData.subtitle;
-    document.getElementById('day-xp-badge').textContent = '+' + dayData.xp + ' XP';
-
-    var tabs = document.querySelectorAll('.day-tab');
-    tabs.forEach(function (t) { t.classList.remove('active'); });
-    tabs[0].classList.add('active');
-    renderDayContent(dayNum, 'matin');
-
-    tabs.forEach(function (t) {
-      t.onclick = function () {
-        tabs.forEach(function (t2) { t2.classList.remove('active'); });
-        t.classList.add('active');
-        renderDayContent(dayNum, t.dataset.tab);
-      };
+  function renderActivityFeed(){
+    if(!state.xp.history.length) return '<p style="color:var(--text-muted);font-size:0.82rem">Aucune activite. Commence par explorer le programme !</p>';
+    var h='<div class="activity-list">';
+    state.xp.history.slice(0,8).forEach(function(e){
+      var d=new Date(e.date);
+      h+='<div class="activity-item glass-card"><div class="activity-icon cours">⚡</div>'+
+        '<div class="activity-info"><h4>+'+e.amount+' XP</h4><p>'+e.reason+'</p></div>'+
+        '<div class="activity-time">'+d.getHours()+'h'+String(d.getMinutes()).padStart(2,'0')+'</div></div>';
     });
+    return h+'</div>';
   }
 
-  function renderDayContent(dayNum, period) {
-    var dayData = PROGRAM['day' + dayNum];
-    var activities = dayData[period] || [];
-    var container = document.getElementById('day-content');
-    var typeIcons = { cours: '\u{1F4DA}', atelier: '\u{1F527}', defi: '⚔️', game: '\u{1F3AE}', pitch: '\u{1F3A4}', award: '\u{1F3C6}' };
+  function renderProgram(){
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header"><h1>Programme <span class="gradient-text">4 Jours</span></h1>'+
+      '<p class="page-subtitle">8 demi-journees de formation IA & Marketing Digital</p></div>'+
+      '<div class="days-grid">'+renderDayCards()+'</div>'+
+      '<h2 style="font-size:1.1rem;font-weight:700;margin:1.5rem 0 1rem">Planning Detaille</h2>'+
+      '<div class="timeline">'+renderTimeline()+'</div>';
+  }
 
-    container.innerHTML = activities.map(function (act) {
-      var isDone = state.progress[act.id];
-      var icon = typeIcons[act.type] || '\u{1F4CB}';
-      return '<div class="activity-card"><div class="activity-card-header"><div class="activity-type-icon ' + act.type + '-icon">' + icon + '</div><h3>' + act.title + '</h3><span class="act-xp">+' + act.xp + ' XP</span></div><span class="activity-time-slot">' + act.time + '</span><div class="activity-card-body"><p>' + act.desc + '</p><ul>' + act.items.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul></div><button class="btn-complete ' + (isDone ? 'done' : 'pending') + '" data-activity="' + act.id + '" data-xp="' + act.xp + '" data-reason="' + act.title + '"' + (isDone ? ' disabled' : '') + '>' + (isDone ? '✓ Termine' : 'Marquer comme termine') + '</button></div>';
-    }).join('');
-
-    container.querySelectorAll('.btn-complete.pending').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        completeActivity(btn.dataset.activity, parseInt(btn.dataset.xp), btn.dataset.reason);
-        var badgeMap = { 'd1-atelier1': 'prompt-master', 'd2-atelier1': 'visual-creator', 'd2-atelier2': 'copywriter', 'd3-atelier1': 'video-star', 'd3-teams': 'team-player' };
-        if (badgeMap[btn.dataset.activity]) awardBadge(badgeMap[btn.dataset.activity]);
+  function renderTimeline(){
+    var h='';
+    ['day1','day2','day3','day4'].forEach(function(k,i){
+      var d=PROGRAM[k];
+      h+='<div class="timeline-item"><h4 style="color:var(--red-light)">'+CONFIG.dateLabels[i]+' — '+d.title+'</h4></div>';
+      d.matin.concat(d.aprem).forEach(function(a){
+        h+='<div class="timeline-item'+(state.progress[a.id]?' completed':'')+'">'+
+          '<div class="timeline-time">'+a.time+'</div><h4>'+a.title+'</h4><p>'+a.desc+'</p></div>';
       });
     });
+    return h;
   }
 
-  // ─── BUSINESS GAME ───
-  function renderBusinessGame() {
-    document.getElementById('game-notes-input').value = state.gameNotes || '';
-
-    document.querySelectorAll('.deliverable-check input').forEach(function (cb) {
-      cb.checked = !!state.gameDeliverables[cb.dataset.del];
-      cb.onchange = function () {
-        state.gameDeliverables[cb.dataset.del] = cb.checked;
-        saveState();
-        updatePhaseStatuses();
-        if (cb.checked) addXP(10, 'Livrable: ' + cb.parentElement.querySelector('span').textContent);
-      };
-    });
-
-    document.getElementById('btn-save-notes').onclick = function () {
-      state.gameNotes = document.getElementById('game-notes-input').value;
-      saveState();
-      showToast('Notes sauvegardees !', 'success');
-    };
-    updatePhaseStatuses();
-  }
-
-  function updatePhaseStatuses() {
-    var phases = { 1: ['product-idea', 'target-persona', 'market-analysis'], 2: ['brand-name', 'logo', 'brand-guide'], 3: ['ad-visuals', 'copy', 'media-plan'], 4: ['landing-page', 'pitch-video', 'final-deck'] };
-    var allComplete = true;
-
-    Object.keys(phases).forEach(function (num) {
-      var dels = phases[num];
-      var done = dels.filter(function (d) { return state.gameDeliverables[d]; }).length;
-      var el = document.getElementById('phase' + num + '-status');
-      if (!el) return;
-      if (done === dels.length) { el.textContent = 'Complete'; el.className = 'phase-status complete'; }
-      else if (done > 0) { el.textContent = done + '/' + dels.length; el.className = 'phase-status in-progress'; allComplete = false; }
-      else { el.textContent = 'A faire'; el.className = 'phase-status'; allComplete = false; }
-    });
-
-    var currentPhase = Object.keys(phases).find(function (num) { return phases[num].some(function (d) { return !state.gameDeliverables[d]; }); });
-    document.getElementById('game-phase').textContent = currentPhase ? 'Phase ' + currentPhase : 'Termine !';
-    if (allComplete && !state.badges.includes('game-complete')) awardBadge('game-complete');
-  }
-
-  // ─── LEADERBOARD ───
-  function renderLeaderboard() {
-    var students = getDemoLeaderboard().sort(function (a, b) { return b.xp - a.xp; });
-
-    [1, 2, 3].forEach(function (pos) {
-      var s = students[pos - 1];
-      var el = document.getElementById('podium-' + pos);
-      if (!el || !s) return;
-      el.querySelector('.podium-name').textContent = s.name;
-      el.querySelector('.podium-xp').textContent = s.xp + ' XP';
-      el.querySelector('.podium-avatar').textContent = s.name.charAt(0);
-    });
-
-    document.getElementById('rankings-list').innerHTML = students.map(function (s, i) {
-      var info = getLevelInfo(s.xp);
-      var isMe = state.user && s.name === state.user.name;
-      return '<div class="ranking-row' + (isMe ? ' me' : '') + '"><span class="rank-pos">' + (i + 1) + '</span><span class="rank-name">' + (isMe ? '→ ' : '') + s.name + '</span><span class="rank-xp">' + s.xp + '</span><span class="rank-level">Nv.' + info.level + '</span></div>';
-    }).join('');
-
-    document.querySelectorAll('.lb-toggle-btn').forEach(function (btn) {
-      btn.onclick = function () {
-        document.querySelectorAll('.lb-toggle-btn').forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-      };
+  function renderDayView(n){
+    var main=document.getElementById('main-content'),k='day'+n,d=PROGRAM[k];if(!d)return;
+    main.innerHTML='<div class="page-header">'+
+      '<a href="#" data-navigate="program" style="color:var(--text-muted);font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;margin-bottom:0.5rem">'+
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Programme</a>'+
+      '<h1>Jour '+n+' — <span class="gradient-text">'+d.title+'</span></h1>'+
+      '<p class="page-subtitle">'+CONFIG.dateLabels[n-1]+' &bull; '+d.subtitle+'</p></div>'+
+      '<div class="tabs" id="day-tabs"><button class="tab-btn active" data-tab="matin">☀️ Matin</button>'+
+      '<button class="tab-btn" data-tab="aprem">🌙 Apres-midi</button></div>'+
+      '<div id="day-content">'+renderActivities(d.matin)+'</div>';
+    document.getElementById('day-tabs').addEventListener('click',function(e){
+      var b=e.target.closest('.tab-btn');if(!b)return;
+      document.querySelectorAll('#day-tabs .tab-btn').forEach(function(x){x.classList.remove('active');});
+      b.classList.add('active');
+      document.getElementById('day-content').innerHTML=renderActivities(b.getAttribute('data-tab')==='matin'?d.matin:d.aprem);
     });
   }
 
-  function getDemoLeaderboard() {
-    var names = ['Lea', 'Hugo', 'Camille', 'Lucas', 'Emma', 'Nathan', 'Chloe', 'Louis', 'Manon', 'Arthur', 'Jade', 'Raphael', 'Ines', 'Tom', 'Sarah', 'Theo', 'Lola', 'Maxime', 'Eva', 'Jules', 'Clara', 'Adam', 'Zoe', 'Paul', 'Louise', 'Noah', 'Alice', 'Ethan', 'Anna', 'Gabriel'];
-    var students = names.map(function (name) {
-      if (state.user && name === state.user.name) return { name: name, xp: state.xp.total };
-      var seed = name.charCodeAt(0) * 13 + name.charCodeAt(name.length - 1) * 7;
-      return { name: name, xp: Math.floor(((seed % 200) + 50) * (getCurrentDay() / 2)) };
+  function renderActivities(acts){
+    var icons={cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'},h='<div class="activity-list">';
+    acts.forEach(function(a){
+      var done=state.progress[a.id];
+      h+='<div class="activity-item glass-card'+(done?' completed':'')+'">'+
+        '<div class="activity-icon '+a.type+'">'+(icons[a.type]||'📌')+'</div>'+
+        '<div class="activity-info"><h4>'+a.title+'</h4><p>'+a.desc+'</p></div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem">'+
+        '<div class="activity-time">'+a.time+'</div><div class="activity-xp">+'+a.xp+' XP</div>'+
+        (done?'<div class="activity-check">✓</div>':
+          '<button class="btn-outline btn-sm" onclick="window.AIA.completeActivity(\''+a.id+'\','+a.xp+',\''+a.title.replace(/'/g,"\\'")+'\')">Valider</button>')+
+        '</div></div>';
     });
-    if (state.user && !students.find(function (s) { return s.name === state.user.name; })) {
-      students[0] = { name: state.user.name, xp: state.xp.total };
+    return h+'</div>';
+  }
+
+  function renderDemos(){
+    var main=document.getElementById('main-content');
+    var demos=[
+      {id:'demo-prompt',icon:'✍️',title:'Prompt Playground',desc:'Testez et comparez differents prompts en temps reel',tag:'Interactif'},
+      {id:'demo-sentiment',icon:'😊',title:'Analyse de Sentiment',desc:'Analysez le sentiment de textes marketing',tag:'HuggingFace'},
+      {id:'demo-image',icon:'🎨',title:'Generation d\'Images',desc:'Generez des visuels marketing a partir de texte',tag:'IA Generative'},
+      {id:'demo-chatbot',icon:'💬',title:'Chatbot Marketing',desc:'Testez un chatbot marketing conversationnel',tag:'Conversationnel'},
+      {id:'demo-abtest',icon:'📊',title:'A/B Testing IA',desc:'Simulez des tests A/B automatises',tag:'Analytics'},
+      {id:'demo-seo',icon:'🔍',title:'SEO Analyzer',desc:'Analysez et optimisez votre contenu SEO',tag:'SEO'}
+    ];
+    main.innerHTML='<div class="page-header"><h1>Demos <span class="gradient-text">IA Interactives</span></h1>'+
+      '<p class="page-subtitle">6 outils IA en direct — aucune installation requise</p></div>'+
+      '<div class="demos-grid">'+demos.map(function(d){
+        var done=state.demosCompleted.indexOf(d.id)!==-1;
+        return '<div class="demo-card glass-card" data-navigate="'+d.id+'"><div class="demo-tag">'+d.tag+'</div>'+
+          '<div class="demo-icon">'+d.icon+'</div><h3>'+d.title+(done?' ✅':'')+'</h3><p>'+d.desc+'</p></div>';
+      }).join('')+'</div>';
+  }
+
+  function renderArena(){
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header"><h1>Arena <span class="gradient-text">Multijoueur</span></h1>'+
+      '<p class="page-subtitle">Battles, challenges et quiz en temps reel</p></div>'+
+      '<div class="arena-modes">'+
+      '<div class="arena-mode-card glass-card" data-navigate="battle"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Affrontez un autre etudiant : soumettez vos prompts, la classe vote</p></div>'+
+      '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
+      '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div></div>';
+    var q=document.getElementById('btn-start-quiz');
+    if(q) q.addEventListener('click',function(){if(window.AIA&&window.AIA.startQuiz)window.AIA.startQuiz(main);});
+    var ch=document.getElementById('btn-start-challenge');
+    if(ch) ch.addEventListener('click',function(){if(window.AIA&&window.AIA.startChallenge)window.AIA.startChallenge(main);});
+  }
+
+  function renderRoom(){
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header"><h1>Salle de <span class="gradient-text">Classe Virtuelle</span></h1>'+
+      '<p class="page-subtitle">Retrouvez les etudiants et voyez leur activite en direct</p></div>'+
+      '<div class="room-info"><div class="room-info-item"><div class="dot online"></div> En ligne</div>'+
+      '<div class="room-info-item"><div class="dot busy"></div> En activite</div>'+
+      '<div class="room-info-item"><div class="dot idle"></div> Inactif</div></div>'+
+      '<div class="room-canvas-wrap"><canvas id="room-canvas" width="960" height="540"></canvas>'+
+      '<div class="room-toolbar"><button class="btn-ghost" data-navigate="avatar">👾 Personnaliser Avatar</button>'+
+      '<button class="btn-ghost" id="btn-room-refresh">🔄 Rafraichir</button></div></div>';
+    if(window.AIA&&window.AIA.initRoom) window.AIA.initRoom();
+  }
+
+  function renderAvatarEditor(){
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header">'+
+      '<a href="#" data-navigate="room" style="color:var(--text-muted);font-size:0.78rem;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;margin-bottom:0.5rem">'+
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Salle</a>'+
+      '<h1>Editeur d\'<span class="gradient-text">Avatar Pixel Art</span></h1>'+
+      '<p class="page-subtitle">Personnalise ton personnage</p></div>'+
+      '<div id="sprite-editor-root"></div>';
+    if(window.AIA&&window.AIA.initSpriteEditor) window.AIA.initSpriteEditor();
+  }
+
+  function renderBusinessGame(){
+    var main=document.getElementById('main-content');
+    var phases=[{key:'phase1',title:'Ideation & Marche',icon:'💡'},{key:'phase2',title:'Branding & Identite',icon:'🎨'},
+      {key:'phase3',title:'Campagne Marketing',icon:'📢'},{key:'phase4',title:'Pitch & Lancement',icon:'🚀'}];
+    main.innerHTML='<div class="page-header"><h1>Business <span class="gradient-text">Game</span></h1>'+
+      '<p class="page-subtitle">Creez une startup de A a Z avec l\'IA — 4 phases, 12 livrables</p></div>'+
+      '<div class="game-phases">'+phases.map(function(ph,i){
+        var delivs=GAME_DELIVERABLES[ph.key],done=delivs.filter(function(d){return state.gameDeliverables[d.id];}).length;
+        return '<div class="phase-card glass-card"><h3><span class="phase-num">'+(i+1)+'</span> '+ph.icon+' '+ph.title+'</h3>'+
+          '<div class="progress-bar sm" style="margin-bottom:0.5rem"><div class="progress-fill" style="width:'+Math.round((done/delivs.length)*100)+'%"></div></div>'+
+          '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:0.5rem">'+done+'/'+delivs.length+'</div>'+
+          delivs.map(function(d){var ch=state.gameDeliverables[d.id];
+            return '<div class="deliverable-item'+(ch?' checked':'')+'"><input type="checkbox" '+(ch?'checked':'')+
+              ' onchange="window.AIA.toggleDeliverable(\''+d.id+'\')"><span>'+d.label+'</span></div>';}).join('')+'</div>';
+      }).join('')+'</div>'+
+      '<div style="margin-top:1.5rem"><h3 style="font-size:0.92rem;font-weight:700;margin-bottom:0.5rem">📝 Notes d\'equipe</h3>'+
+      '<div class="form-group"><textarea id="game-notes-area" placeholder="Notez vos idees ici...">'+(state.gameNotes||'')+'</textarea></div>'+
+      '<button class="btn-outline" onclick="window.AIA.saveGameNotes()">Sauvegarder</button></div>';
+    awardBadge('team-player');
+  }
+
+  function renderLeaderboard(){
+    var main=document.getElementById('main-content'),students=getLeaderboardData();
+    students.sort(function(a,b){return b.xp-a.xp;});
+    var medals=['🥈','🥇','🥉'],order=[1,0,2],podH='';
+    order.forEach(function(idx){var s=students[idx];if(!s)return;
+      podH+='<div class="podium-item"><div class="rank">'+medals[idx]+'</div>'+
+        '<div class="avatar-small">'+(s.emoji||'👤')+'</div><div class="name">'+s.name+'</div>'+
+        '<div class="xp">'+s.xp+' XP</div><div class="podium-bar"></div></div>';});
+    var tH=students.slice(3).map(function(s,i){
+      return '<tr><td class="rank-cell">'+(i+4)+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.emoji||'👤')+'</div>'+s.name+'</div></td>'+
+        '<td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td></tr>';}).join('');
+    main.innerHTML='<div class="page-header"><h1>Classement <span class="gradient-text">General</span></h1>'+
+      '<p class="page-subtitle">Leaderboard — '+students.length+' etudiants</p></div>'+
+      '<div class="podium">'+podH+'</div>'+
+      '<div class="glass-card" style="overflow:hidden"><table class="ranking-table"><thead><tr><th>#</th><th>Etudiant</th><th>XP</th><th>Badges</th></tr></thead>'+
+      '<tbody>'+tH+'</tbody></table></div>';
+  }
+
+  function getLeaderboardData(){
+    var s=[{name:state.user?state.user.name:'Toi',xp:state.xp.total,badges:state.badges.length,emoji:'⭐'}];
+    var names=['Emma','Lucas','Chloe','Hugo','Lea','Nathan','Manon','Theo','Camille','Louis','Jade','Raphael','Sarah','Mathis','Alice','Ethan','Ines','Gabriel','Lola','Adam','Eva','Jules','Clara','Arthur','Zoe','Tom','Nina','Axel','Lisa','Paul'];
+    var emojis=['🐱','🐶','🦊','🐰','🐼','🐨','🦁','🐯','🐸','🐙','🦋','🐢','🐬','🦄','🐺','🦉','🐝','🦎','🐧','🦑','🐾','🐻','🦈','🦜','🦔','🐳','🦩','🐠','🦚','🐲'];
+    var seed=42;function rng(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646;}
+    for(var i=0;i<29;i++) s.push({name:names[i],xp:Math.floor(rng()*800+50),badges:Math.floor(rng()*8),emoji:emojis[i]});
+    return s;
+  }
+
+  function renderTools(){
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header"><h1>Boite a <span class="gradient-text">Outils IA</span></h1>'+
+      '<p class="page-subtitle">'+state.toolsExplored.length+'/'+AI_TOOLS.length+' explores</p></div>'+
+      '<div class="tools-grid">'+AI_TOOLS.map(function(t){
+        var exp=state.toolsExplored.indexOf(t.id)!==-1;
+        return '<div class="tool-card glass-card"><div class="tool-icon">'+t.icon+'</div><h3>'+t.name+(exp?' ✅':'')+'</h3>'+
+          '<p>'+t.desc+'</p><div class="tool-tag '+t.tag+'">'+t.tag+'</div>'+
+          '<div style="margin-top:0.6rem;font-size:0.7rem;color:var(--text-muted)">'+t.uses.join(' &bull; ')+'</div>'+
+          (!exp?'<button class="btn-outline btn-sm" style="margin-top:0.6rem" onclick="window.AIA.exploreTool(\''+t.id+'\')">Explorer</button>':'')+
+          '</div>';}).join('')+'</div>';
+  }
+
+  function renderProfile(){
+    var main=document.getElementById('main-content'),info=getLevelInfo(state.xp.total);
+    main.innerHTML='<div class="page-header"><h1>Mon <span class="gradient-text">Profil</span></h1></div>'+
+      '<div class="xp-card glass-card"><div class="xp-ring" style="--pct:'+info.progress+'%"><div class="xp-ring-inner">'+info.level+'</div></div>'+
+      '<div class="xp-info"><div class="xp-title">'+(state.user?state.user.name:'')+'</div>'+
+      '<div class="xp-level-name">'+info.title+' &bull; '+state.xp.total+' XP</div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+info.progress+'%"></div></div></div></div>'+
+      '<div style="display:flex;gap:0.5rem;margin-bottom:1.5rem">'+
+      '<button class="btn-ghost" data-navigate="avatar">👾 Editer Avatar</button>'+
+      '<button class="btn-ghost" data-navigate="leaderboard">🏆 Classement</button></div>'+
+      '<h3 style="font-size:1rem;font-weight:700;margin-bottom:0.8rem">Badges ('+state.badges.length+'/'+BADGES.length+')</h3>'+
+      '<div class="badges-grid">'+BADGES.map(function(b){
+        var u=state.badges.indexOf(b.id)!==-1;
+        return '<div class="badge-item '+(u?'unlocked':'locked')+'" title="'+b.desc+'"><div class="badge-icon">'+b.icon+'</div><div class="badge-name">'+b.name+'</div></div>';
+      }).join('')+'</div>'+
+      '<h3 style="font-size:1rem;font-weight:700;margin:1.5rem 0 0.8rem">Historique XP</h3>'+renderActivityFeed();
+  }
+
+  function renderAdmin(){
+    if(!state.user||!state.user.isAdmin){navigateTo('dashboard');return;}
+    var main=document.getElementById('main-content');
+    main.innerHTML='<div class="page-header"><h1>Panel <span class="gradient-text">Formateur</span></h1>'+
+      '<p class="page-subtitle">'+CONFIG.mentorName+' &bull; '+CONFIG.school+'</p>'+
+      '<div class="admin-badge" style="margin-top:0.5rem"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Formateur</div></div>'+
+      '<div id="admin-root"><p style="color:var(--text-muted)">Chargement du panel admin...</p></div>';
+    if(window.AIA&&window.AIA.initAdmin) window.AIA.initAdmin();
+  }
+
+  function initAuth(){
+    document.getElementById('btn-login').addEventListener('click',function(){
+      var name=document.getElementById('student-name').value.trim();
+      var code=document.getElementById('class-code').value.trim().toUpperCase();
+      if(!name) return showToast('Entre ton prenom','warning');
+      if(code!==CONFIG.classCode) return showToast('Code d\'acces incorrect','error');
+      state.user={name:name,isAdmin:false,loginDate:new Date().toISOString().split('T')[0]};
+      awardBadge('first-login'); updateStreak(); saveState();
+      document.getElementById('page-login').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      navigateTo('dashboard'); showToast('Bienvenue '+name+' !','success'); initFirebase();
+    });
+    document.getElementById('btn-admin-access').addEventListener('click',function(){
+      document.getElementById('admin-login-panel').classList.toggle('hidden');
+    });
+    document.getElementById('btn-admin-login').addEventListener('click',function(){
+      var pw=document.getElementById('admin-password').value;
+      if(!pw) return showToast('Mot de passe requis','warning');
+      if(hashPass(pw)!==CONFIG.adminHash) return showToast('Mot de passe incorrect','error');
+      state.user={name:CONFIG.mentorName,isAdmin:true,loginDate:new Date().toISOString().split('T')[0]};
+      saveState(); document.getElementById('page-login').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      navigateTo('dashboard'); showToast('Bienvenue Maxime !','success'); initFirebase();
+    });
+    document.getElementById('btn-logout').addEventListener('click',function(){
+      state.user=null; document.getElementById('app-shell').classList.add('hidden');
+      document.getElementById('page-login').classList.remove('hidden');
+      var al=document.getElementById('nav-admin-link'); if(al) al.parentNode.removeChild(al);
+    });
+  }
+
+  function initNavigation(){
+    document.addEventListener('click',function(e){
+      var el=e.target.closest('[data-navigate]'); if(el){e.preventDefault();navigateTo(el.getAttribute('data-navigate'));}
+    });
+    document.getElementById('badge-popup-close').addEventListener('click',function(){document.getElementById('badge-popup').classList.add('hidden');});
+  }
+
+  window.AIA = window.AIA || {};
+  window.AIA.completeActivity = completeActivity;
+  window.AIA.toggleDeliverable = function(id){
+    state.gameDeliverables[id]=!state.gameDeliverables[id];
+    if(state.gameDeliverables[id]) addXP(10,'Livrable: '+id);
+    var allDone=Object.keys(GAME_DELIVERABLES).every(function(p){return GAME_DELIVERABLES[p].every(function(d){return state.gameDeliverables[d.id];});});
+    if(allDone) awardBadge('game-complete'); saveState();
+  };
+  window.AIA.saveGameNotes=function(){var el=document.getElementById('game-notes-area');if(el){state.gameNotes=el.value;saveState();showToast('Notes sauvegardees','success');}};
+  window.AIA.exploreTool=function(id){
+    if(state.toolsExplored.indexOf(id)===-1){state.toolsExplored.push(id);addXP(15,'Outil: '+id);
+      if(state.toolsExplored.length>=AI_TOOLS.length)awardBadge('all-tools');saveState();renderTools();}
+  };
+  window.AIA.addXP=addXP; window.AIA.awardBadge=awardBadge; window.AIA.showToast=showToast;
+  window.AIA.getState=function(){return state;}; window.AIA.navigateTo=navigateTo;
+  window.AIA.CONFIG=CONFIG; window.AIA.PROGRAM=PROGRAM; window.AIA.BADGES=BADGES; window.AIA.LEVELS=LEVELS;
+  window.AIA.getLevelInfo=getLevelInfo; window.AIA.saveState=saveState; window.AIA.Storage=Storage;
+
+  function init(){
+    initParticles(); loadState(); initAuth(); initNavigation();
+    if(state.user){
+      document.getElementById('page-login').classList.add('hidden');
+      document.getElementById('app-shell').classList.remove('hidden');
+      updateXPDisplay(); updateStreak(); navigateTo(state.currentPage||'dashboard'); initFirebase();
     }
-    return students;
   }
-
-  // ─── TOOLS ───
-  function renderTools() {
-    var grid = document.getElementById('tools-grid');
-    grid.innerHTML = AI_TOOLS.map(function (tool) {
-      var explored = state.toolsExplored.includes(tool.id);
-      return '<div class="tool-card" data-tool="' + tool.id + '"><div class="tool-card-header"><div class="tool-logo">' + tool.icon + '</div><h3>' + tool.name + '</h3><span class="tool-tag ' + tool.tag + '">' + tool.tag + '</span></div><p>' + tool.desc + '</p><div class="tool-use-cases">' + tool.uses.map(function (u) { return '<span class="use-case">' + u + '</span>'; }).join('') + '</div>' + (explored ? '<p style="color:var(--green);font-size:0.8rem;margin-top:0.75rem">✓ Explore</p>' : '<button class="btn-secondary explore-tool-btn" style="margin-top:0.75rem" data-tool="' + tool.id + '">Marquer comme explore</button>') + '</div>';
-    }).join('');
-
-    grid.querySelectorAll('.explore-tool-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var toolId = btn.dataset.tool;
-        if (!state.toolsExplored.includes(toolId)) {
-          state.toolsExplored.push(toolId);
-          var toolName = AI_TOOLS.find(function (t) { return t.id === toolId; }).name;
-          addXP(15, 'Outil explore : ' + toolName);
-          saveState();
-          renderTools();
-          if (state.toolsExplored.length >= 9 && !state.badges.includes('all-tools')) awardBadge('all-tools');
-        }
-      });
-    });
-  }
-
-  // ─── PROFILE ───
-  function renderProfile() {
-    if (!state.user) return;
-    var info = getLevelInfo(state.xp.total);
-    document.getElementById('profile-avatar').textContent = state.user.name.charAt(0).toUpperCase();
-    document.getElementById('profile-name').textContent = state.user.name;
-    document.getElementById('profile-xp').textContent = state.xp.total;
-    document.getElementById('profile-level').textContent = info.level;
-    document.getElementById('profile-badges-count').textContent = state.badges.length;
-    document.getElementById('profile-streak').textContent = state.streak.count;
-
-    document.getElementById('profile-badges-grid').innerHTML = BADGES.map(function (b) {
-      var unlocked = state.badges.includes(b.id);
-      return '<div class="badge-item' + (unlocked ? '' : ' locked') + '"><span class="badge-icon">' + b.icon + '</span><span class="badge-name">' + b.name + '</span></div>';
-    }).join('');
-
-    document.getElementById('profile-xp-history').innerHTML = state.xp.history.slice(0, 20).map(function (h) {
-      var d = new Date(h.date);
-      var dateStr = d.getDate() + '/' + (d.getMonth() + 1) + ' ' + d.getHours() + 'h' + String(d.getMinutes()).padStart(2, '0');
-      return '<div class="xp-history-item"><span class="xp-amount">+' + h.amount + '</span><span class="xp-reason">' + h.reason + '</span><span class="xp-date">' + dateStr + '</span></div>';
-    }).join('');
-  }
-
-  // ─── ADMIN ───
-  function renderAdmin() {
-    if (!state.user || !state.user.isAdmin) { navigateTo('dashboard'); return; }
-    var config = Storage.get('config', { classCode: CONFIG.classCode, teamCount: 5 });
-    document.getElementById('admin-class-code').value = config.classCode;
-    document.getElementById('admin-team-count').value = config.teamCount;
-
-    document.getElementById('btn-save-config').onclick = function () {
-      config.classCode = document.getElementById('admin-class-code').value.trim().toUpperCase();
-      config.teamCount = parseInt(document.getElementById('admin-team-count').value);
-      CONFIG.classCode = config.classCode;
-      Storage.set('config', config);
-      showToast('Configuration sauvegardee', 'success');
-    };
-
-    document.getElementById('btn-award-xp').onclick = function () {
-      var amount = parseInt(document.getElementById('admin-xp-amount').value);
-      var reason = document.getElementById('admin-xp-reason').value.trim();
-      if (amount > 0 && reason) { addXP(amount, '[Mentor] ' + reason); showToast('+' + amount + ' XP attribues !', 'success'); }
-    };
-
-    document.getElementById('admin-students-list').innerHTML = getDemoLeaderboard().sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (s) {
-      return '<div class="admin-student"><span>' + s.name + '</span><span style="color:var(--cyan)">' + s.xp + ' XP</span></div>';
-    }).join('');
-  }
-
-  // ─── TOASTS ───
-  function showToast(message, type) {
-    var container = document.getElementById('toast-container');
-    var icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-    var toast = document.createElement('div');
-    toast.className = 'toast ' + (type || 'info');
-    toast.innerHTML = '<span>' + (icons[type] || 'ℹ️') + '</span><span>' + message + '</span>';
-    container.appendChild(toast);
-    setTimeout(function () { toast.remove(); }, 4000);
-  }
-
-  // ─── EVENT DELEGATION ───
-  function initNavigation() {
-    document.addEventListener('click', function (e) {
-      var navEl = e.target.closest('[data-navigate]');
-      if (navEl) { e.preventDefault(); navigateTo(navEl.dataset.navigate); }
-    });
-    document.getElementById('badge-popup-close').addEventListener('click', function () {
-      document.getElementById('badge-popup').classList.add('hidden');
-    });
-    document.getElementById('badge-popup').addEventListener('click', function (e) {
-      if (e.target === document.getElementById('badge-popup')) document.getElementById('badge-popup').classList.add('hidden');
-    });
-  }
-
-  // ─── INIT ───
-  function init() {
-    initParticles();
-    initAuth();
-    initNavigation();
-    if (state.user) { updateStreak(); navigateTo('dashboard'); }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
