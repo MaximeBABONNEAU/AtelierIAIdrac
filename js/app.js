@@ -7,11 +7,19 @@
 
   const CONFIG = {
     classCode: 'AIMARK2026',
-    adminCode: 'MENTOR2026',
+    adminHash: '7b74562a',
     storagePrefix: 'aia_',
     dates: ['2026-06-08', '2026-06-09', '2026-06-10', '2026-06-11'],
     dateLabels: ['Lundi 8 Juin', 'Mardi 9 Juin', 'Mercredi 10 Juin', 'Jeudi 11 Juin'],
+    mentorName: 'Maxime BABONNEAU',
+    school: 'IDRAC Business School',
   };
+
+  function hashPass(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) { h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+    return (h >>> 0).toString(16);
+  }
 
   const LEVELS = [
     { level: 1, title: 'Novice IA', xpNeeded: 0 },
@@ -268,13 +276,11 @@
       var name = document.getElementById('login-name').value.trim();
       var code = document.getElementById('login-code').value.trim().toUpperCase();
       if (!name) return showToast('Entre ton prenom !', 'warning');
-
-      var isAdmin = code === CONFIG.adminCode;
-      if (code !== CONFIG.classCode && !isAdmin) {
+      if (code !== CONFIG.classCode) {
         return showToast('Code d\'acces incorrect', 'error');
       }
 
-      state.user = { name: name, isAdmin: isAdmin, loginDate: new Date().toISOString().slice(0, 10) };
+      state.user = { name: name, isAdmin: false, loginDate: new Date().toISOString().slice(0, 10) };
       updateStreak();
 
       if (!state.badges.includes('first-login')) {
@@ -284,6 +290,22 @@
       saveState();
       navigateTo('dashboard');
       showToast('Bienvenue ' + name + ' !', 'success');
+    });
+
+    document.getElementById('btn-admin-access').addEventListener('click', function () {
+      document.getElementById('admin-login-panel').classList.toggle('hidden');
+    });
+
+    document.getElementById('btn-admin-login').addEventListener('click', function () {
+      var pw = document.getElementById('admin-password').value;
+      if (!pw) return showToast('Mot de passe requis', 'warning');
+      if (hashPass(pw) !== CONFIG.adminHash) {
+        return showToast('Mot de passe incorrect', 'error');
+      }
+      state.user = { name: CONFIG.mentorName, isAdmin: true, loginDate: new Date().toISOString().slice(0, 10) };
+      saveState();
+      navigateTo('dashboard');
+      showToast('Bienvenue Maxime !', 'success');
     });
 
     document.getElementById('btn-logout').addEventListener('click', function () {

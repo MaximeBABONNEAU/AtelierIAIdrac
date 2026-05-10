@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Marketing Academy</title>
+  <title>AI Marketing Academy | IDRAC Business School</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
@@ -38,7 +38,8 @@
           </svg>
         </div>
         <h1 class="login-title">AI Marketing<br><span class="gradient-text">Academy</span></h1>
-        <p class="login-subtitle">Master 1 Marketing Digital &bull; Juin 2026</p>
+        <p class="login-subtitle">Master 1 Marketing Digital &bull; IDRAC Business School</p>
+        <p class="login-mentor">Formation animee par <strong>Maxime BABONNEAU</strong></p>
       </div>
       <form id="login-form" class="login-form glass-card">
         <div class="form-group">
@@ -47,14 +48,25 @@
         </div>
         <div class="form-group">
           <label for="login-code">Code d'acces</label>
-          <input type="text" id="login-code" placeholder="Code fourni par le mentor" required autocomplete="off">
+          <input type="text" id="login-code" placeholder="Code fourni par le formateur" required autocomplete="off">
         </div>
         <button type="submit" class="btn-primary btn-glow">
           <span>Entrer dans l'Academy</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
-        <p class="login-hint">Pas de compte ? Demande le code a ton mentor !</p>
+        <p class="login-hint">Pas de compte ? Demande le code a ton formateur !</p>
       </form>
+      <button class="admin-access-link" id="btn-admin-access">Acces Formateur</button>
+      <div id="admin-login-panel" class="admin-login-panel hidden glass-card">
+        <div class="form-group">
+          <label for="admin-password">Mot de passe formateur</label>
+          <input type="password" id="admin-password" placeholder="Mot de passe" required autocomplete="off">
+        </div>
+        <button type="button" class="btn-primary" id="btn-admin-login">
+          <span>Connexion Formateur</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -70,7 +82,7 @@
             <path d="M10 15 Q12 8 15 11 Q18 6 20 13 Q23 10 21 15 Q24 18 20 19 Q22 24 17 21 Q15 25 13 21 Q8 24 10 19 Q7 18 10 15Z" fill="none" stroke="#8b5cf6" stroke-width="1"/>
           </svg>
         </div>
-        <span class="nav-title">AI Academy</span>
+        <span class="nav-title">AI Academy <span class="nav-school">IDRAC</span></span>
       </div>
       <div class="nav-links">
         <a href="#" class="nav-link active" data-navigate="dashboard" title="Dashboard">
@@ -439,7 +451,7 @@
         </div>
         <div class="tools-grid" id="tools-grid"></div>
         <div class="tools-tips glass-card">
-          <h3>Conseils du Mentor</h3>
+          <h3>Conseils de Maxime</h3>
           <ul>
             <li>Commence toujours par un prompt clair et structure</li>
             <li>Itere : le premier resultat n'est jamais le meilleur</li>
@@ -480,8 +492,14 @@
       <!-- ADMIN -->
       <section id="page-admin" class="page hidden">
         <div class="page-header">
-          <h1>Panel <span class="gradient-text">Mentor</span></h1>
-          <p class="page-subtitle">Gestion de la classe et des equipes</p>
+          <div>
+            <h1>Panel <span class="gradient-text">Formateur</span></h1>
+            <p class="page-subtitle">Maxime BABONNEAU &bull; IDRAC Business School</p>
+          </div>
+          <div class="admin-badge">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Formateur</span>
+          </div>
         </div>
         <div class="admin-grid">
           <div class="admin-card glass-card">
