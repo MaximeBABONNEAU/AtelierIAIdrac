@@ -21,6 +21,7 @@
     root.innerHTML =
       '<div class="admin-tabs">' +
       '<button class="admin-tab active" data-tab="overview">Vue d\'ensemble</button>' +
+      '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
       '<button class="admin-tab" data-tab="students">Etudiants</button>' +
       '<button class="admin-tab" data-tab="course">Cours</button>' +
       '<button class="admin-tab" data-tab="analytics">Analytics</button>' +
@@ -71,6 +72,7 @@
     function renderTab(tab) {
       var content = document.getElementById('admin-content');
       if (tab === 'overview') renderOverview(content);
+      else if (tab === 'accounts') renderAccounts(content);
       else if (tab === 'students') renderStudents(content);
       else if (tab === 'course') renderCourse(content);
       else if (tab === 'analytics') renderAnalytics(content);
@@ -329,6 +331,138 @@
         '<div class="gstat"><div class="gstat-val">' + Math.max.apply(null, list.map(function (s) { return s.xp; })) + '</div><div>XP max</div></div>' +
         '<div class="gstat"><div class="gstat-val">' + list.reduce(function (s, x) { return s + x.badges; }, 0) + '</div><div>Total badges</div></div>' +
         '</div></div>';
+    }
+
+    /* ======== ACCOUNTS ======== */
+    function renderAccounts(el) {
+      var accts = AIA.getAccounts();
+      var keys = Object.keys(accts);
+      var now = Date.now();
+
+      var rows = keys.map(function (k) {
+        var a = accts[k];
+        var st = AIA.Storage.get('state_' + k, null);
+        var xp = st && st.xp ? st.xp.total : 0;
+        var badges = st && st.badges ? st.badges.length : 0;
+        var progressCount = 0;
+        if (st && st.progress) { for (var p in st.progress) { if (st.progress[p]) progressCount++; } }
+        var lastLogin = a.lastLogin ? new Date(a.lastLogin) : null;
+        var isRecent = lastLogin && (now - lastLogin.getTime()) < 3600000;
+        var createdAt = a.createdAt ? new Date(a.createdAt).toLocaleDateString('fr-FR') : '-';
+        var lastLoginStr = lastLogin ? lastLogin.toLocaleDateString('fr-FR') + ' ' + lastLogin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Jamais';
+
+        return {
+          key: k, firstName: a.firstName || '', lastName: a.lastName || '',
+          xp: xp, badges: badges, progress: progressCount,
+          lastLogin: lastLoginStr, isRecent: isRecent, createdAt: createdAt
+        };
+      });
+
+      rows.sort(function (a, b) { return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName); });
+
+      el.innerHTML =
+        '<div class="admin-section glass-card">' +
+        '<h3>Gestion des comptes etudiants (' + keys.length + ')</h3>' +
+        '<p style="color:var(--text-muted);margin-bottom:1rem">Gerez les comptes, reinitialiser les mots de passe et supprimez les sessions</p>' +
+        (rows.length === 0 ? '<p style="color:var(--text-muted);text-align:center;padding:2rem">Aucun compte etudiant enregistre</p>' :
+          '<table class="admin-table full"><thead><tr>' +
+          '<th>Nom</th><th>Prenom</th><th>XP</th><th>Progression</th><th>Derniere connexion</th><th>Cree le</th><th>Actions</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (r) {
+            return '<tr>' +
+              '<td><strong>' + escapeHtml(r.lastName) + '</strong></td>' +
+              '<td>' + escapeHtml(r.firstName) + '</td>' +
+              '<td>' + r.xp + '</td>' +
+              '<td>' + r.progress + '/24</td>' +
+              '<td><span class="dot ' + (r.isRecent ? 'online' : 'idle') + '"></span> ' + r.lastLogin + '</td>' +
+              '<td>' + r.createdAt + '</td>' +
+              '<td class="actions-cell">' +
+              '<button class="btn-ghost btn-xs" data-reset-pw="' + r.key + '" title="Reinitialiser MDP">🔑</button>' +
+              '<button class="btn-ghost btn-xs" data-reset-progress="' + r.key + '" title="Reinitialiser progression">🔄</button>' +
+              '<button class="btn-ghost btn-xs btn-danger" data-delete-acct="' + r.key + '" title="Supprimer le compte">🗑️</button>' +
+              '</td></tr>';
+          }).join('') +
+          '</tbody></table>') +
+        '</div>' +
+
+        '<div class="admin-section glass-card">' +
+        '<h3>Actions globales</h3>' +
+        '<div style="display:flex;gap:0.8rem;flex-wrap:wrap">' +
+        '<button class="btn-outline" id="btn-reset-all-pw">Reinitialiser tous les MDP</button>' +
+        '<button class="btn-outline" id="btn-reset-all-progress">Reinitialiser toutes les progressions</button>' +
+        '<button class="btn-outline btn-danger" id="btn-delete-all-accts">Supprimer tous les comptes</button>' +
+        '</div></div>';
+
+      document.querySelectorAll('[data-reset-pw]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = this.getAttribute('data-reset-pw');
+          var a = accts[key];
+          if (!a) return;
+          var newPw = prompt('Nouveau mot de passe pour ' + a.firstName + ' ' + a.lastName + ' :');
+          if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
+          accts[key].passwordHash = AIA.hashPass(newPw);
+          AIA.saveAccounts(accts);
+          AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+        });
+      });
+
+      document.querySelectorAll('[data-reset-progress]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = this.getAttribute('data-reset-progress');
+          var a = accts[key];
+          if (!a) return;
+          if (!confirm('Reinitialiser la progression de ' + a.firstName + ' ' + a.lastName + ' ? XP, badges et activites seront remis a zero.')) return;
+          AIA.Storage.set('state_' + key, null);
+          AIA.showToast('Progression reinitialise pour ' + a.firstName, 'success');
+          renderAccounts(el);
+        });
+      });
+
+      document.querySelectorAll('[data-delete-acct]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var key = this.getAttribute('data-delete-acct');
+          var a = accts[key];
+          if (!a) return;
+          if (!confirm('Supprimer le compte de ' + a.firstName + ' ' + a.lastName + ' ? Cette action est irreversible.')) return;
+          delete accts[key];
+          AIA.saveAccounts(accts);
+          AIA.Storage.set('state_' + key, null);
+          AIA.showToast('Compte supprime : ' + a.firstName + ' ' + a.lastName, 'info');
+          renderAccounts(el);
+        });
+      });
+
+      var btnResetAllPw = document.getElementById('btn-reset-all-pw');
+      if (btnResetAllPw) {
+        btnResetAllPw.addEventListener('click', function () {
+          if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
+          var defaultHash = AIA.hashPass('idrac2026');
+          for (var k in accts) { accts[k].passwordHash = defaultHash; }
+          AIA.saveAccounts(accts);
+          AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
+        });
+      }
+
+      var btnResetAllProg = document.getElementById('btn-reset-all-progress');
+      if (btnResetAllProg) {
+        btnResetAllProg.addEventListener('click', function () {
+          if (!confirm('Reinitialiser TOUTES les progressions etudiantes ?')) return;
+          for (var k in accts) { AIA.Storage.set('state_' + k, null); }
+          AIA.showToast('Toutes les progressions reinitialises', 'info');
+          renderAccounts(el);
+        });
+      }
+
+      var btnDeleteAll = document.getElementById('btn-delete-all-accts');
+      if (btnDeleteAll) {
+        btnDeleteAll.addEventListener('click', function () {
+          if (!confirm('SUPPRIMER TOUS les comptes etudiants ? Cette action est IRREVERSIBLE.')) return;
+          for (var k in accts) { AIA.Storage.set('state_' + k, null); }
+          AIA.saveAccounts({});
+          AIA.showToast('Tous les comptes supprimes', 'info');
+          renderAccounts(el);
+        });
+      }
     }
 
     /* ======== SETTINGS ======== */

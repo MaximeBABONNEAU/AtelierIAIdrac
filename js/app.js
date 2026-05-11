@@ -7,7 +7,7 @@
 
   var CONFIG = {
     classCode: 'AIMARK2026',
-    adminHash: '7b74562a',
+    adminHash: '9d9e119b',
     storagePrefix: 'aia_',
     dates: ['2026-06-08','2026-06-09','2026-06-10','2026-06-11'],
     dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Jeudi 11 Juin'],
@@ -134,12 +134,45 @@
     set: function (key, val) { try { localStorage.setItem(CONFIG.storagePrefix + key, JSON.stringify(val)); } catch (e) {} }
   };
 
+  function getAccountKey(lastName, firstName) {
+    return (lastName.trim() + '_' + firstName.trim()).toLowerCase().replace(/[^a-z0-9_]/g, '');
+  }
+
+  function getAccounts() { return Storage.get('accounts', {}); }
+  function saveAccounts(accts) { Storage.set('accounts', accts); }
+
+  function createAccount(lastName, firstName, passwordHash) {
+    var accts = getAccounts();
+    var key = getAccountKey(lastName, firstName);
+    if (accts[key]) return { error: 'Ce compte existe deja. Connectez-vous.' };
+    accts[key] = { firstName: firstName.trim(), lastName: lastName.trim(), passwordHash: passwordHash, createdAt: new Date().toISOString(), lastLogin: null };
+    saveAccounts(accts);
+    return { key: key, account: accts[key] };
+  }
+
+  function loginAccount(lastName, firstName, passwordHash) {
+    var accts = getAccounts();
+    var key = getAccountKey(lastName, firstName);
+    if (!accts[key]) return { error: 'Compte introuvable. Creez un compte.' };
+    if (accts[key].passwordHash !== passwordHash) return { error: 'Mot de passe incorrect.' };
+    accts[key].lastLogin = new Date().toISOString();
+    saveAccounts(accts);
+    return { key: key, account: accts[key] };
+  }
+
   function saveState() {
     Storage.set('state', state);
+    if (state.user && state.user.accountKey) {
+      Storage.set('state_' + state.user.accountKey, state);
+    }
     if (window.AIA && window.AIA.firebaseSyncState) window.AIA.firebaseSyncState(state);
   }
   function loadState() {
     var s = Storage.get('state', null);
+    if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
+  }
+  function loadAccountState(accountKey) {
+    var s = Storage.get('state_' + accountKey, null);
     if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
   }
 
@@ -612,36 +645,99 @@
     if(window.AIA&&window.AIA.initAdmin) window.AIA.initAdmin();
   }
 
+  function enterApp(name, isAdmin, accountKey) {
+    document.getElementById('page-login').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
+    if (!isAdmin) {
+      awardBadge('first-login'); updateStreak();
+    }
+    saveState(); navigateTo(state.currentPage || 'dashboard');
+    showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
+    renderNavAvatar();
+    if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
+    window.addEventListener('beforeunload', function () { saveState(); });
+    if (!isAdmin) { setInterval(saveState, 30000); }
+  }
+
+  function resetLoginUI() {
+    document.getElementById('role-picker').classList.remove('hidden');
+    document.getElementById('student-login-panel').classList.add('hidden');
+    document.getElementById('admin-login-panel').classList.add('hidden');
+    document.getElementById('student-login-form').classList.remove('hidden');
+    document.getElementById('student-register-form').classList.add('hidden');
+  }
+
   function initAuth(){
-    document.getElementById('btn-login').addEventListener('click',function(){
-      var name=document.getElementById('student-name').value.trim();
-      var code=document.getElementById('class-code').value.trim().toUpperCase();
-      if(!name) return showToast('Entre ton prenom','warning');
-      if(code!==CONFIG.classCode) return showToast('Code d\'acces incorrect','error');
-      state.user={name:name,isAdmin:false,loginDate:new Date().toISOString().split('T')[0]};
-      awardBadge('first-login'); updateStreak(); saveState();
-      document.getElementById('page-login').classList.add('hidden');
-      document.getElementById('app-shell').classList.remove('hidden');
-      navigateTo('dashboard'); showToast('Bienvenue '+name+' !','success'); initFirebase();
-      renderNavAvatar(); checkAutoComplete(); setInterval(checkAutoComplete,60000);
+    document.getElementById('role-student').addEventListener('click', function () {
+      document.getElementById('role-picker').classList.add('hidden');
+      document.getElementById('student-login-panel').classList.remove('hidden');
     });
-    document.getElementById('btn-admin-access').addEventListener('click',function(){
-      document.getElementById('admin-login-panel').classList.toggle('hidden');
+    document.getElementById('role-admin').addEventListener('click', function () {
+      document.getElementById('role-picker').classList.add('hidden');
+      document.getElementById('admin-login-panel').classList.remove('hidden');
     });
-    document.getElementById('btn-admin-login').addEventListener('click',function(){
-      var pw=document.getElementById('admin-password').value;
-      if(!pw) return showToast('Mot de passe requis','warning');
-      if(hashPass(pw)!==CONFIG.adminHash) return showToast('Mot de passe incorrect','error');
-      state.user={name:CONFIG.mentorName,isAdmin:true,loginDate:new Date().toISOString().split('T')[0]};
-      saveState(); document.getElementById('page-login').classList.add('hidden');
-      document.getElementById('app-shell').classList.remove('hidden');
-      navigateTo('dashboard'); showToast('Bienvenue Maxime !','success'); initFirebase();
-      renderNavAvatar();
+    document.getElementById('back-role-student').addEventListener('click', resetLoginUI);
+    document.getElementById('back-role-admin').addEventListener('click', resetLoginUI);
+
+    document.getElementById('btn-show-register').addEventListener('click', function () {
+      document.getElementById('student-login-form').classList.add('hidden');
+      document.getElementById('student-register-form').classList.remove('hidden');
     });
-    document.getElementById('btn-logout').addEventListener('click',function(){
-      state.user=null; document.getElementById('app-shell').classList.add('hidden');
+    document.getElementById('btn-show-login').addEventListener('click', function () {
+      document.getElementById('student-register-form').classList.add('hidden');
+      document.getElementById('student-login-form').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-student-login').addEventListener('click', function () {
+      var ln = document.getElementById('login-lastname').value.trim();
+      var fn = document.getElementById('login-firstname').value.trim();
+      var pw = document.getElementById('login-password').value;
+      if (!ln || !fn) return showToast('Entrez votre nom et prenom', 'warning');
+      if (!pw) return showToast('Mot de passe requis', 'warning');
+      var result = loginAccount(ln, fn, hashPass(pw));
+      if (result.error) return showToast(result.error, 'error');
+      var displayName = result.account.firstName + ' ' + result.account.lastName;
+      state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+      loadAccountState(result.key);
+      state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+      enterApp(result.account.firstName, false, result.key);
+    });
+
+    document.getElementById('btn-student-register').addEventListener('click', function () {
+      var ln = document.getElementById('reg-lastname').value.trim();
+      var fn = document.getElementById('reg-firstname').value.trim();
+      var pw = document.getElementById('reg-password').value;
+      var pw2 = document.getElementById('reg-password2').value;
+      var code = document.getElementById('reg-code').value.trim().toUpperCase();
+      if (!ln || !fn) return showToast('Entrez votre nom et prenom (pas de pseudo)', 'warning');
+      if (ln.length < 2 || fn.length < 2) return showToast('Nom et prenom doivent avoir au moins 2 caracteres', 'warning');
+      if (!pw || pw.length < 4) return showToast('Mot de passe de 4 caracteres minimum', 'warning');
+      if (pw !== pw2) return showToast('Les mots de passe ne correspondent pas', 'error');
+      if (code !== CONFIG.classCode) return showToast('Code de formation incorrect', 'error');
+      var result = createAccount(ln, fn, hashPass(pw));
+      if (result.error) return showToast(result.error, 'error');
+      var displayName = fn + ' ' + ln;
+      state.user = { name: displayName, firstName: fn, lastName: ln, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+      enterApp(fn, false, result.key);
+      showToast('Compte cree avec succes !', 'success');
+    });
+
+    document.getElementById('btn-admin-login').addEventListener('click', function () {
+      var pw = document.getElementById('admin-password').value;
+      if (!pw) return showToast('Mot de passe requis', 'warning');
+      if (hashPass(pw) !== CONFIG.adminHash) return showToast('Mot de passe incorrect', 'error');
+      state.user = { name: CONFIG.mentorName, isAdmin: true, loginDate: new Date().toISOString().split('T')[0] };
+      enterApp(CONFIG.mentorName, true, null);
+    });
+
+    document.getElementById('btn-logout').addEventListener('click', function () {
+      saveState();
+      state.user = null;
+      document.getElementById('app-shell').classList.add('hidden');
       document.getElementById('page-login').classList.remove('hidden');
-      var al=document.getElementById('nav-admin-link'); if(al) al.parentNode.removeChild(al);
+      resetLoginUI();
+      var al = document.getElementById('nav-admin-link'); if (al) al.parentNode.removeChild(al);
+      var nav = document.getElementById('nav-avatar'); if (nav) nav.classList.remove('visible');
     });
   }
 
@@ -671,14 +767,20 @@
   window.AIA.getLevelInfo=getLevelInfo; window.AIA.saveState=saveState; window.AIA.Storage=Storage;
   window.AIA.renderNavAvatar=renderNavAvatar; window.AIA.checkAutoComplete=checkAutoComplete;
   window.AIA.getActivityStatus=getActivityStatus; window.AIA.toggleReaction=toggleReaction;
+  window.AIA.getAccounts=getAccounts; window.AIA.saveAccounts=saveAccounts; window.AIA.hashPass=hashPass;
+  window.AIA.getAccountKey=getAccountKey;
 
   function init(){
     initParticles(); loadState(); initAuth(); initNavigation();
     if(state.user){
-      document.getElementById('page-login').classList.add('hidden');
-      document.getElementById('app-shell').classList.remove('hidden');
-      updateXPDisplay(); updateStreak(); renderNavAvatar(); navigateTo(state.currentPage||'dashboard'); initFirebase();
-      checkAutoComplete(); setInterval(checkAutoComplete,60000);
+      if(state.user.accountKey) loadAccountState(state.user.accountKey);
+      if(state.user) {
+        document.getElementById('page-login').classList.add('hidden');
+        document.getElementById('app-shell').classList.remove('hidden');
+        updateXPDisplay(); updateStreak(); renderNavAvatar(); navigateTo(state.currentPage||'dashboard'); initFirebase();
+        if(!state.user.isAdmin){ checkAutoComplete(); setInterval(checkAutoComplete,60000); setInterval(saveState,30000); }
+        window.addEventListener('beforeunload',function(){saveState();});
+      }
     }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();

@@ -152,15 +152,36 @@ body {
 .login-subtitle { color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.3rem; letter-spacing: 0.5px; }
 .login-mentor { color: var(--gold); font-size: 0.82rem; margin-top: 0.3rem; }
 .login-mentor strong { color: var(--text-primary); font-weight: 700; }
-.admin-access-link {
-  background: none; border: none; color: var(--text-muted); font-size: 0.72rem;
-  cursor: pointer; margin-top: 1.5rem; padding: 0.4rem 1rem;
-  border-radius: var(--radius-xs); transition: var(--transition);
-  text-decoration: underline; text-underline-offset: 3px; font-family: var(--font-body);
+.role-picker {
+  display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem; width: 100%;
 }
-.admin-access-link:hover { color: var(--red-light); }
-.admin-login-panel { margin-top: 1rem; padding: 1.2rem; width: 100%; text-align: left; }
+.role-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  padding: 1.5rem 1rem; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md); color: var(--text-main); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: var(--transition); font-family: var(--font-body);
+}
+.role-btn:hover { background: rgba(167,31,40,0.15); border-color: var(--red); transform: translateY(-2px); }
+.role-btn svg { stroke: var(--red-light); }
+.login-panel { width: 100%; text-align: left; margin-top: 1rem; }
+.login-panel.hidden { display: none; }
+.back-to-role {
+  display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: none;
+  color: var(--text-muted); font-size: 0.78rem; cursor: pointer; padding: 0.3rem 0;
+  margin-bottom: 0.8rem; font-family: var(--font-body); transition: var(--transition);
+}
+.back-to-role:hover { color: var(--red-light); }
+.panel-title { font-size: 1rem; font-weight: 700; color: var(--text-main); margin-bottom: 1rem; }
+.login-divider {
+  display: flex; align-items: center; gap: 0.8rem; margin: 1rem 0; color: var(--text-muted); font-size: 0.78rem;
+}
+.login-divider::before, .login-divider::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+.btn-block { width: 100%; }
 .btn-admin { width: 100%; }
+.actions-cell { white-space: nowrap; }
+.btn-xs { padding: 0.2rem 0.4rem; font-size: 0.78rem; min-width: unset; }
+.btn-danger { color: #e74c3c !important; }
+.btn-danger:hover { background: rgba(231,76,60,0.15) !important; }
 
 /* ========== NAV ========== */
 #main-nav {
