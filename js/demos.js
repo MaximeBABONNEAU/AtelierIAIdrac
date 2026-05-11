@@ -112,32 +112,96 @@
       var text = document.getElementById('sentiment-input').value.trim();
       if (!text) { window.AIA.showToast('Entrez un texte a analyser', 'error'); return; }
       var res = document.getElementById('sentiment-results');
-      res.innerHTML = '<div class="loading-pulse">Analyse en cours...</div>';
+      res.innerHTML = '<div class="loading-pulse">Analyse NLP en cours...</div>';
 
       setTimeout(function () {
-        var positive = ['adore','super','excellent','genial','top','parfait','recommande','bravo','merci','qualite','love','best'];
-        var negative = ['decu','nul','horrible','mauvais','pire','arnaque','inutile','cher','probleme','casse','retard','erreur'];
-        var posCount = 0, negCount = 0;
-        var lower = text.toLowerCase();
-        positive.forEach(function (w) { if (lower.indexOf(w) !== -1) posCount++; });
-        negative.forEach(function (w) { if (lower.indexOf(w) !== -1) negCount++; });
+        var lexPos = {
+          'adore':3,'adorer':3,'aime':2,'aimer':2,'apprecie':2,'bravo':2,'brillant':3,'captivant':2,
+          'charmant':2,'chouette':1,'confortable':1,'content':1,'convivial':1,
+          'delicieux':2,'efficace':2,'elegant':2,'emerveillement':3,'enchante':2,
+          'enthousiaste':2,'epoustouflant':3,'excellent':3,'exceptionnel':3,'extraordinaire':3,
+          'fabuleux':3,'facile':1,'fantastique':3,'felicitations':2,'fiable':2,
+          'formidable':3,'genial':3,'gratifiant':2,'heureux':2,'ideal':2,
+          'impressionnant':3,'incroyable':3,'innovant':2,'inspire':2,'interessant':1,
+          'irresistible':2,'joli':1,'joyeux':2,'magnifique':3,'merci':1,'merveilleux':3,
+          'moderne':1,'motivant':2,'parfait':3,'passion':2,'performant':2,'plaisant':1,
+          'positif':1,'pratique':1,'premium':2,'professionnel':2,'qualite':2,'rapide':1,
+          'ravissant':2,'recommande':2,'remarquable':3,'reussi':2,'revolutionnaire':3,
+          'satisfait':2,'seduisant':2,'sensationnel':3,'simple':1,'solide':1,
+          'spectaculaire':3,'splendide':3,'sublime':3,'super':2,'superbe':3,
+          'top':2,'unique':2,'utile':1,'victoire':2,'wow':3,'best':2,'love':2
+        };
+        var lexNeg = {
+          'affreux':3,'agacant':2,'arnaque':3,'atroce':3,'casse':2,
+          'catastrophe':3,'cauchemar':3,'cher':1,'complique':1,'confus':1,'couteux':2,
+          'dangereux':2,'decevant':2,'decu':2,'defaillant':2,'defaut':1,
+          'degoute':3,'deplorable':3,'desagreable':2,'desastreux':3,
+          'detestable':3,'deteste':3,'difficile':1,'dommage':1,'douteux':1,'ennuyeux':1,
+          'epouvantable':3,'erreur':2,'escroquerie':3,'fade':1,'faible':1,'faux':2,
+          'fragile':1,'frustrant':2,'gaspillage':2,'horrible':3,'horreur':3,'honte':2,
+          'ignoble':3,'impossible':2,'inacceptable':3,'inadmissible':3,
+          'incompetent':3,'inefficace':2,'infect':3,'insatisfait':2,
+          'insupportable':3,'inutile':2,'lamentable':3,'lent':1,
+          'mauvais':2,'mediocre':2,'mensonge':3,'minable':3,'moche':2,
+          'naze':2,'negatif':1,'negligent':2,'nul':3,'odieux':3,'penible':2,'pire':3,
+          'pitoyable':3,'probleme':2,'pourri':3,'regrettable':2,'retard':1,'ridicule':2,
+          'scandaleux':3,'terrible':3,'toxique':3,'triste':1,'vulgaire':2,
+          'zero':2,'inexistant':2
+        };
+        var negations = ['ne','pas','plus','jamais','rien','aucun','sans','ni','non','guere'];
+        var intensifiers = {'tres':1.5,'vraiment':1.5,'tellement':1.6,'absolument':1.8,'completement':1.7,'totalement':1.7,'extremement':1.8,'particulierement':1.4,'super':1.5,'trop':1.4};
+        var diminishers = {'peu':0.5,'presque':0.7,'legerement':0.5,'moyennement':0.6,'assez':0.8};
 
-        var total = posCount + negCount || 1;
-        var posScore = Math.round((posCount / total) * 100) || (negCount === 0 ? 65 : 20);
-        var negScore = Math.round((negCount / total) * 100) || (posCount === 0 ? 65 : 20);
-        var neuScore = Math.max(0, 100 - posScore - negScore);
-        var sentiment = posScore > negScore ? 'POSITIF' : negScore > posScore ? 'NEGATIF' : 'NEUTRE';
-        var emoji = sentiment === 'POSITIF' ? '😊' : sentiment === 'NEGATIF' ? '😤' : '😐';
-        var color = sentiment === 'POSITIF' ? '#2ecc71' : sentiment === 'NEGATIF' ? '#e74c3c' : '#f5b731';
+        var lower = text.toLowerCase().replace(/['']/g,"'").replace(/[.,!?;:()"""«»\[\]]/g,' ');
+        var words = lower.split(/\s+/).filter(function(w){return w.length>0;});
+        var posScore=0, negScore=0, posWords=[], negWords=[];
+
+        for(var i=0;i<words.length;i++){
+          var w=words[i], score=0, type=null;
+          if(lexPos[w]){ score=lexPos[w]; type='pos'; }
+          else if(lexNeg[w]){ score=lexNeg[w]; type='neg'; }
+          else { continue; }
+
+          var negated=false;
+          for(var j=Math.max(0,i-3);j<i;j++){
+            if(negations.indexOf(words[j])!==-1){ negated=true; break; }
+          }
+          var mult=1.0;
+          if(i>0 && intensifiers[words[i-1]]) mult=intensifiers[words[i-1]];
+          if(i>0 && diminishers[words[i-1]]) mult=diminishers[words[i-1]];
+
+          var final=score*mult;
+          if(negated){ type=(type==='pos')?'neg':'pos'; final=final*0.8; }
+          if(type==='pos'){ posScore+=final; posWords.push({word:w,score:final}); }
+          else { negScore+=final; negWords.push({word:w,score:final}); }
+        }
+
+        var totalScore=posScore+negScore||1;
+        var pPct=Math.round((posScore/totalScore)*100);
+        var nPct=Math.round((negScore/totalScore)*100);
+        if(posWords.length===0&&negWords.length===0){ pPct=0; nPct=0; }
+        var neuPct=Math.max(0,100-pPct-nPct);
+        var sentiment=pPct>nPct?'POSITIF':nPct>pPct?'NEGATIF':'NEUTRE';
+        var emoji=sentiment==='POSITIF'?'😊':sentiment==='NEGATIF'?'😤':'😐';
+        var color=sentiment==='POSITIF'?'#2ecc71':sentiment==='NEGATIF'?'#e74c3c':'#f5b731';
+        var conf=Math.abs(pPct-nPct);
+        var confLabel=conf>40?'Forte':conf>15?'Moderee':'Faible';
+
+        var highlightHtml='<div class="sentiment-highlights"><h4>Mots detectes</h4><div class="highlight-words">';
+        posWords.forEach(function(pw){highlightHtml+='<span class="highlight-word pos" title="Score: +'+pw.score.toFixed(1)+'">'+pw.word+'</span>';});
+        negWords.forEach(function(nw){highlightHtml+='<span class="highlight-word neg" title="Score: -'+nw.score.toFixed(1)+'">'+nw.word+'</span>';});
+        if(posWords.length===0&&negWords.length===0) highlightHtml+='<span style="color:var(--text-muted)">Aucun mot-cle detecte</span>';
+        highlightHtml+='</div></div>';
 
         res.innerHTML = '<div class="sentiment-result">' +
           '<div class="sentiment-emoji">' + emoji + '</div>' +
           '<div class="sentiment-label" style="color:' + color + '">' + sentiment + '</div>' +
+          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem">Confiance: ' + confLabel + ' (' + conf + '%) &bull; ' + (posWords.length+negWords.length) + ' mots analyses</div>' +
           '<div class="sentiment-bars">' +
-          '<div class="bar-row"><span>Positif</span><div class="bar-track"><div class="bar-fill" style="width:' + posScore + '%;background:#2ecc71"></div></div><span>' + posScore + '%</span></div>' +
-          '<div class="bar-row"><span>Neutre</span><div class="bar-track"><div class="bar-fill" style="width:' + neuScore + '%;background:#f5b731"></div></div><span>' + neuScore + '%</span></div>' +
-          '<div class="bar-row"><span>Negatif</span><div class="bar-track"><div class="bar-fill" style="width:' + negScore + '%;background:#e74c3c"></div></div><span>' + negScore + '%</span></div>' +
-          '</div></div>';
+          '<div class="bar-row"><span>Positif</span><div class="bar-track"><div class="bar-fill" style="width:' + pPct + '%;background:#2ecc71"></div></div><span>' + pPct + '%</span></div>' +
+          '<div class="bar-row"><span>Neutre</span><div class="bar-track"><div class="bar-fill" style="width:' + neuPct + '%;background:#f5b731"></div></div><span>' + neuPct + '%</span></div>' +
+          '<div class="bar-row"><span>Negatif</span><div class="bar-track"><div class="bar-fill" style="width:' + nPct + '%;background:#e74c3c"></div></div><span>' + nPct + '%</span></div>' +
+          '</div>' + highlightHtml + '</div>';
         markDemoComplete('demo-sentiment');
       }, 1500);
     });

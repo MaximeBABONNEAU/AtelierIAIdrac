@@ -125,7 +125,8 @@
   var state = {
     user: null, xp: { total: 0, history: [] }, progress: {}, badges: [],
     streak: { count: 0, lastDate: null }, gameNotes: '', gameDeliverables: {},
-    toolsExplored: [], avatar: null, currentPage: 'dashboard', demosCompleted: []
+    toolsExplored: [], avatar: null, currentPage: 'dashboard', demosCompleted: [],
+    reactions: {}
   };
 
   var Storage = {
@@ -256,6 +257,12 @@
   function navigateTo(page){
     state.currentPage=page;
     var main=document.getElementById('main-content');
+    main.classList.remove('page-transition'); void main.offsetWidth; main.classList.add('page-transition');
+    if(page.indexOf('activity-')===0){
+      var actId=page.replace('activity-','');
+      if(window.AIA&&window.AIA.renderActivityDetail) window.AIA.renderActivityDetail(main,actId);
+      updateNavActive('program'); window.scrollTo(0,0); saveState(); return;
+    }
     var pages={
       dashboard:renderDashboard, program:renderProgram,
       day1:function(){renderDayView(1);}, day2:function(){renderDayView(2);}, day3:function(){renderDayView(3);}, day4:function(){renderDayView(4);},
@@ -288,6 +295,64 @@
   }
 
   function getCurrentDay(){ var t=new Date().toISOString().split('T')[0]; var i=CONFIG.dates.indexOf(t); return i>=0?i+1:1; }
+
+  function parseEndTime(timeStr){
+    var parts=timeStr.split('-'); if(parts.length<2) return null;
+    var end=parts[1].trim(), m=end.match(/(\d+)h(\d+)/);
+    return m?{h:parseInt(m[1]),m:parseInt(m[2])}:null;
+  }
+
+  function getActivityStatus(act, dayIdx){
+    if(state.progress[act.id]) return 'done';
+    var today=new Date(), dateStr=CONFIG.dates[dayIdx];
+    if(!dateStr) return 'upcoming';
+    var actDate=new Date(dateStr+'T00:00:00');
+    var todayDate=new Date(today.toISOString().split('T')[0]+'T00:00:00');
+    if(actDate<todayDate) return 'past';
+    if(actDate>todayDate) return 'upcoming';
+    var end=parseEndTime(act.time);
+    if(!end) return 'upcoming';
+    var now=today.getHours()*60+today.getMinutes(), endMin=end.h*60+end.m;
+    if(now>=endMin) return 'past';
+    var start=act.time.match(/(\d+)h(\d+)/);
+    if(start){var startMin=parseInt(start[1])*60+parseInt(start[2]); if(now>=startMin&&now<endMin) return 'live';}
+    return 'upcoming';
+  }
+
+  function checkAutoComplete(){
+    var changed=false;
+    ['day1','day2','day3','day4'].forEach(function(k,i){
+      var d=PROGRAM[k], all=d.matin.concat(d.aprem);
+      all.forEach(function(a){
+        if(!state.progress[a.id] && getActivityStatus(a,i)==='past'){
+          state.progress[a.id]=true; changed=true;
+          addXP(Math.round(a.xp*0.5),'Auto: '+a.title);
+        }
+      });
+    });
+    if(changed){ checkDayCompletion(); saveState(); if(state.currentPage&&state.currentPage.indexOf('day')===0) navigateTo(state.currentPage); }
+  }
+
+  function renderNavAvatar(){
+    var c=document.getElementById('nav-avatar'); if(!c) return;
+    var ctx=c.getContext('2d');
+    var cfg=state.avatar||window.AIA.getDefaultAvatar();
+    ctx.clearRect(0,0,32,32);
+    if(window.AIA.renderMiniSprite) window.AIA.renderMiniSprite(ctx,cfg,2,0,0);
+    c.classList.add('visible');
+  }
+
+  function toggleReaction(actId, emoji){
+    if(!state.reactions) state.reactions={};
+    state.reactions[actId] = state.reactions[actId]===emoji ? null : emoji;
+    saveState();
+    var bar=document.querySelector('.reactions-bar[data-act="'+actId+'"]');
+    if(bar){
+      bar.querySelectorAll('.reaction-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-emoji')===state.reactions[actId]);
+      });
+    }
+  }
 
   function renderDashboard(){
     var main=document.getElementById('main-content'), info=getLevelInfo(state.xp.total);
@@ -368,26 +433,34 @@
       '<p class="page-subtitle">'+CONFIG.dateLabels[n-1]+' &bull; '+d.subtitle+'</p></div>'+
       '<div class="tabs" id="day-tabs"><button class="tab-btn active" data-tab="matin">☀️ Matin</button>'+
       '<button class="tab-btn" data-tab="aprem">🌙 Apres-midi</button></div>'+
-      '<div id="day-content">'+renderActivities(d.matin)+'</div>';
+      '<div id="day-content">'+renderActivities(d.matin, n-1)+'</div>';
     document.getElementById('day-tabs').addEventListener('click',function(e){
       var b=e.target.closest('.tab-btn');if(!b)return;
       document.querySelectorAll('#day-tabs .tab-btn').forEach(function(x){x.classList.remove('active');});
       b.classList.add('active');
-      document.getElementById('day-content').innerHTML=renderActivities(b.getAttribute('data-tab')==='matin'?d.matin:d.aprem);
+      document.getElementById('day-content').innerHTML=renderActivities(b.getAttribute('data-tab')==='matin'?d.matin:d.aprem, n-1);
     });
   }
 
-  function renderActivities(acts){
-    var icons={cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'},h='<div class="activity-list">';
+  function renderActivities(acts, dayIdx){
+    var icons={cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'};
+    var statusLabels={done:'Termine',past:'Termine',live:'En cours',upcoming:'A venir'};
+    var emojis=['👍','❤️','🔥','💡','🤔'];
+    var h='<div class="activity-list">';
     acts.forEach(function(a){
       var done=state.progress[a.id];
-      h+='<div class="activity-item glass-card'+(done?' completed':'')+'">'+
+      var st=getActivityStatus(a, dayIdx!==undefined?dayIdx:getCurrentDay()-1);
+      var badgeClass=done||st==='past'?'done':st==='live'?'live':'upcoming';
+      var userReaction=state.reactions?state.reactions[a.id]:null;
+      h+='<div class="activity-item glass-card clickable'+(done?' completed':'')+'" data-navigate="activity-'+a.id+'">'+
         '<div class="activity-icon '+a.type+'">'+(icons[a.type]||'📌')+'</div>'+
-        '<div class="activity-info"><h4>'+a.title+'</h4><p>'+a.desc+'</p></div>'+
+        '<div class="activity-info"><h4>'+a.title+'</h4><p>'+a.desc+'</p>'+
+        '<div class="reactions-bar" data-act="'+a.id+'">'+
+        emojis.map(function(e){return '<button class="reaction-btn'+(userReaction===e?' active':'')+'" data-emoji="'+e+'" onclick="event.stopPropagation();window.AIA.toggleReaction(\''+a.id+'\',\''+e+'\')">'+e+'</button>';}).join('')+
+        '</div></div>'+
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem">'+
+        '<div class="auto-badge '+badgeClass+'">'+statusLabels[done?'done':st]+'</div>'+
         '<div class="activity-time">'+a.time+'</div><div class="activity-xp">+'+a.xp+' XP</div>'+
-        (done?'<div class="activity-check">✓</div>':
-          '<button class="btn-outline btn-sm" onclick="window.AIA.completeActivity(\''+a.id+'\','+a.xp+',\''+a.title.replace(/'/g,"\\'")+'\')">Valider</button>')+
         '</div></div>';
     });
     return h+'</div>';
@@ -550,6 +623,7 @@
       document.getElementById('page-login').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
       navigateTo('dashboard'); showToast('Bienvenue '+name+' !','success'); initFirebase();
+      renderNavAvatar(); checkAutoComplete(); setInterval(checkAutoComplete,60000);
     });
     document.getElementById('btn-admin-access').addEventListener('click',function(){
       document.getElementById('admin-login-panel').classList.toggle('hidden');
@@ -562,6 +636,7 @@
       saveState(); document.getElementById('page-login').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
       navigateTo('dashboard'); showToast('Bienvenue Maxime !','success'); initFirebase();
+      renderNavAvatar();
     });
     document.getElementById('btn-logout').addEventListener('click',function(){
       state.user=null; document.getElementById('app-shell').classList.add('hidden');
@@ -594,13 +669,16 @@
   window.AIA.getState=function(){return state;}; window.AIA.navigateTo=navigateTo;
   window.AIA.CONFIG=CONFIG; window.AIA.PROGRAM=PROGRAM; window.AIA.BADGES=BADGES; window.AIA.LEVELS=LEVELS;
   window.AIA.getLevelInfo=getLevelInfo; window.AIA.saveState=saveState; window.AIA.Storage=Storage;
+  window.AIA.renderNavAvatar=renderNavAvatar; window.AIA.checkAutoComplete=checkAutoComplete;
+  window.AIA.getActivityStatus=getActivityStatus; window.AIA.toggleReaction=toggleReaction;
 
   function init(){
     initParticles(); loadState(); initAuth(); initNavigation();
     if(state.user){
       document.getElementById('page-login').classList.add('hidden');
       document.getElementById('app-shell').classList.remove('hidden');
-      updateXPDisplay(); updateStreak(); navigateTo(state.currentPage||'dashboard'); initFirebase();
+      updateXPDisplay(); updateStreak(); renderNavAvatar(); navigateTo(state.currentPage||'dashboard'); initFirebase();
+      checkAutoComplete(); setInterval(checkAutoComplete,60000);
     }
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
