@@ -335,149 +335,158 @@
 
     /* ======== ACCOUNTS ======== */
     function renderAccounts(el) {
-      var accts = AIA.getAccounts();
-      var keys = Object.keys(accts);
-      var now = Date.now();
+      el.innerHTML = '<div class="admin-section glass-card"><p style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement des comptes...</p></div>';
 
-      var rows = keys.map(function (k) {
-        var a = accts[k];
-        var st = AIA.Storage.get('state_' + k, null);
-        var xp = st && st.xp ? st.xp.total : 0;
-        var badges = st && st.badges ? st.badges.length : 0;
-        var progressCount = 0;
-        if (st && st.progress) { for (var p in st.progress) { if (st.progress[p]) progressCount++; } }
-        var lastLogin = a.lastLogin ? new Date(a.lastLogin) : null;
-        var isRecent = lastLogin && (now - lastLogin.getTime()) < 3600000;
-        var createdAt = a.createdAt ? new Date(a.createdAt).toLocaleDateString('fr-FR') : '-';
-        var lastLoginStr = lastLogin ? lastLogin.toLocaleDateString('fr-FR') + ' ' + lastLogin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Jamais';
+      AIA.getAccountsFromFirebase(function (accts) {
+        if (!accts) accts = {};
+        AIA.db.ref('states').once('value', function (statesSnap) {
+          var allStates = statesSnap.val() || {};
+          var keys = Object.keys(accts);
+          var now = Date.now();
 
-        return {
-          key: k, firstName: a.firstName || '', lastName: a.lastName || '',
-          xp: xp, badges: badges, progress: progressCount,
-          lastLogin: lastLoginStr, isRecent: isRecent, createdAt: createdAt
-        };
-      });
+          var rows = keys.map(function (k) {
+            var a = accts[k];
+            var st = allStates[k] || null;
+            var xp = st && st.xp ? st.xp.total : 0;
+            var badges = st && st.badges ? (Array.isArray(st.badges) ? st.badges.length : 0) : 0;
+            var progressCount = 0;
+            if (st && st.progress) { for (var p in st.progress) { if (st.progress[p]) progressCount++; } }
+            var lastLogin = a.lastLogin ? new Date(a.lastLogin) : null;
+            var isRecent = lastLogin && (now - lastLogin.getTime()) < 3600000;
+            var createdAt = a.createdAt ? new Date(a.createdAt).toLocaleDateString('fr-FR') : '-';
+            var lastLoginStr = lastLogin ? lastLogin.toLocaleDateString('fr-FR') + ' ' + lastLogin.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'Jamais';
 
-      rows.sort(function (a, b) { return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName); });
+            return {
+              key: k, firstName: a.firstName || '', lastName: a.lastName || '',
+              xp: xp, badges: badges, progress: progressCount,
+              lastLogin: lastLoginStr, isRecent: isRecent, createdAt: createdAt
+            };
+          });
 
-      el.innerHTML =
-        '<div class="admin-section glass-card">' +
-        '<h3>Gestion des comptes etudiants (' + keys.length + ')</h3>' +
-        '<p style="color:var(--text-muted);margin-bottom:1rem">Gerez les comptes, reinitialiser les mots de passe et supprimez les sessions</p>' +
-        (rows.length === 0 ? '<p style="color:var(--text-muted);text-align:center;padding:2rem">Aucun compte etudiant enregistre</p>' :
-          '<table class="admin-table full"><thead><tr>' +
-          '<th>Nom</th><th>Prenom</th><th>XP</th><th>Progression</th><th>Derniere connexion</th><th>Cree le</th><th>Actions</th>' +
-          '</tr></thead><tbody>' +
-          rows.map(function (r) {
-            return '<tr>' +
-              '<td><strong>' + escapeHtml(r.lastName) + '</strong></td>' +
-              '<td>' + escapeHtml(r.firstName) + '</td>' +
-              '<td>' + r.xp + '</td>' +
-              '<td>' + r.progress + '/24</td>' +
-              '<td><span class="dot ' + (r.isRecent ? 'online' : 'idle') + '"></span> ' + r.lastLogin + '</td>' +
-              '<td>' + r.createdAt + '</td>' +
-              '<td class="actions-cell">' +
-              '<button class="btn-ghost btn-xs" data-reset-pw="' + r.key + '" title="Reinitialiser MDP">🔑</button>' +
-              '<button class="btn-ghost btn-xs" data-reset-progress="' + r.key + '" title="Reinitialiser progression">🔄</button>' +
-              '<button class="btn-ghost btn-xs btn-danger" data-delete-acct="' + r.key + '" title="Supprimer le compte">🗑️</button>' +
-              '</td></tr>';
-          }).join('') +
-          '</tbody></table>') +
-        '</div>' +
+          rows.sort(function (a, b) { return (a.lastName + a.firstName).localeCompare(b.lastName + b.firstName); });
 
-        '<div class="admin-section glass-card">' +
-        '<h3>Actions globales</h3>' +
-        '<div style="display:flex;gap:0.8rem;flex-wrap:wrap">' +
-        '<button class="btn-outline" id="btn-reset-all-pw">Reinitialiser tous les MDP</button>' +
-        '<button class="btn-outline" id="btn-reset-all-progress">Reinitialiser toutes les progressions</button>' +
-        '<button class="btn-outline btn-danger" id="btn-delete-all-accts">Supprimer tous les comptes</button>' +
-        '</div></div>';
+          el.innerHTML =
+            '<div class="admin-section glass-card">' +
+            '<h3>Gestion des comptes etudiants (' + keys.length + ')</h3>' +
+            '<p style="color:var(--text-muted);margin-bottom:1rem">Gerez les comptes, reinitialiser les mots de passe et supprimez les sessions</p>' +
+            (rows.length === 0 ? '<p style="color:var(--text-muted);text-align:center;padding:2rem">Aucun compte etudiant enregistre</p>' :
+              '<table class="admin-table full"><thead><tr>' +
+              '<th>Nom</th><th>Prenom</th><th>XP</th><th>Progression</th><th>Derniere connexion</th><th>Cree le</th><th>Actions</th>' +
+              '</tr></thead><tbody>' +
+              rows.map(function (r) {
+                return '<tr>' +
+                  '<td><strong>' + escapeHtml(r.lastName) + '</strong></td>' +
+                  '<td>' + escapeHtml(r.firstName) + '</td>' +
+                  '<td>' + r.xp + '</td>' +
+                  '<td>' + r.progress + '/24</td>' +
+                  '<td><span class="dot ' + (r.isRecent ? 'online' : 'idle') + '"></span> ' + r.lastLogin + '</td>' +
+                  '<td>' + r.createdAt + '</td>' +
+                  '<td class="actions-cell">' +
+                  '<button class="btn-ghost btn-xs" data-reset-pw="' + r.key + '" title="Reinitialiser MDP">🔑</button>' +
+                  '<button class="btn-ghost btn-xs" data-reset-progress="' + r.key + '" title="Reinitialiser progression">🔄</button>' +
+                  '<button class="btn-ghost btn-xs btn-danger" data-delete-acct="' + r.key + '" title="Supprimer le compte">🗑️</button>' +
+                  '</td></tr>';
+              }).join('') +
+              '</tbody></table>') +
+            '</div>' +
 
-      document.querySelectorAll('[data-reset-pw]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var key = this.getAttribute('data-reset-pw');
-          var a = accts[key];
-          if (!a) return;
-          var newPw = prompt('Nouveau mot de passe pour ' + a.firstName + ' ' + a.lastName + ' :');
-          if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
-          accts[key].passwordHash = AIA.hashPass(newPw);
-          AIA.saveAccounts(accts);
-          AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+            '<div class="admin-section glass-card">' +
+            '<h3>Actions globales</h3>' +
+            '<div style="display:flex;gap:0.8rem;flex-wrap:wrap">' +
+            '<button class="btn-outline" id="btn-reset-all-pw">Reinitialiser tous les MDP</button>' +
+            '<button class="btn-outline" id="btn-reset-all-progress">Reinitialiser toutes les progressions</button>' +
+            '<button class="btn-outline btn-danger" id="btn-delete-all-accts">Supprimer tous les comptes</button>' +
+            '</div></div>';
+
+          document.querySelectorAll('[data-reset-pw]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var key = this.getAttribute('data-reset-pw');
+              var a = accts[key];
+              if (!a) return;
+              var newPw = prompt('Nouveau mot de passe pour ' + a.firstName + ' ' + a.lastName + ' :');
+              if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
+              accts[key].passwordHash = AIA.hashPass(newPw);
+              AIA.saveAccountsToFirebase(accts);
+              AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+            });
+          });
+
+          document.querySelectorAll('[data-reset-progress]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var key = this.getAttribute('data-reset-progress');
+              var a = accts[key];
+              if (!a) return;
+              if (!confirm('Reinitialiser la progression de ' + a.firstName + ' ' + a.lastName + ' ? XP, badges et activites seront remis a zero.')) return;
+              AIA.deleteStudentState(key);
+              AIA.showToast('Progression reinitialise pour ' + a.firstName, 'success');
+              renderAccounts(el);
+            });
+          });
+
+          document.querySelectorAll('[data-delete-acct]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+              var key = this.getAttribute('data-delete-acct');
+              var a = accts[key];
+              if (!a) return;
+              if (!confirm('Supprimer le compte de ' + a.firstName + ' ' + a.lastName + ' ? Cette action est irreversible.')) return;
+              delete accts[key];
+              AIA.saveAccountsToFirebase(accts);
+              AIA.deleteStudentState(key);
+              AIA.showToast('Compte supprime : ' + a.firstName + ' ' + a.lastName, 'info');
+              renderAccounts(el);
+            });
+          });
+
+          var btnResetAllPw = document.getElementById('btn-reset-all-pw');
+          if (btnResetAllPw) {
+            btnResetAllPw.addEventListener('click', function () {
+              if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
+              var defaultHash = AIA.hashPass('idrac2026');
+              for (var k in accts) { accts[k].passwordHash = defaultHash; }
+              AIA.saveAccountsToFirebase(accts);
+              AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
+            });
+          }
+
+          var btnResetAllProg = document.getElementById('btn-reset-all-progress');
+          if (btnResetAllProg) {
+            btnResetAllProg.addEventListener('click', function () {
+              if (!confirm('Reinitialiser TOUTES les progressions etudiantes ?')) return;
+              for (var k in accts) { AIA.deleteStudentState(k); }
+              AIA.showToast('Toutes les progressions reinitialises', 'info');
+              renderAccounts(el);
+            });
+          }
+
+          var btnDeleteAll = document.getElementById('btn-delete-all-accts');
+          if (btnDeleteAll) {
+            btnDeleteAll.addEventListener('click', function () {
+              if (!confirm('SUPPRIMER TOUS les comptes etudiants ? Cette action est IRREVERSIBLE.')) return;
+              for (var k in accts) { AIA.deleteStudentState(k); }
+              AIA.saveAccountsToFirebase({});
+              AIA.showToast('Tous les comptes supprimes', 'info');
+              renderAccounts(el);
+            });
+          }
         });
       });
-
-      document.querySelectorAll('[data-reset-progress]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var key = this.getAttribute('data-reset-progress');
-          var a = accts[key];
-          if (!a) return;
-          if (!confirm('Reinitialiser la progression de ' + a.firstName + ' ' + a.lastName + ' ? XP, badges et activites seront remis a zero.')) return;
-          AIA.Storage.set('state_' + key, null);
-          AIA.showToast('Progression reinitialise pour ' + a.firstName, 'success');
-          renderAccounts(el);
-        });
-      });
-
-      document.querySelectorAll('[data-delete-acct]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var key = this.getAttribute('data-delete-acct');
-          var a = accts[key];
-          if (!a) return;
-          if (!confirm('Supprimer le compte de ' + a.firstName + ' ' + a.lastName + ' ? Cette action est irreversible.')) return;
-          delete accts[key];
-          AIA.saveAccounts(accts);
-          AIA.Storage.set('state_' + key, null);
-          AIA.showToast('Compte supprime : ' + a.firstName + ' ' + a.lastName, 'info');
-          renderAccounts(el);
-        });
-      });
-
-      var btnResetAllPw = document.getElementById('btn-reset-all-pw');
-      if (btnResetAllPw) {
-        btnResetAllPw.addEventListener('click', function () {
-          if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
-          var defaultHash = AIA.hashPass('idrac2026');
-          for (var k in accts) { accts[k].passwordHash = defaultHash; }
-          AIA.saveAccounts(accts);
-          AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
-        });
-      }
-
-      var btnResetAllProg = document.getElementById('btn-reset-all-progress');
-      if (btnResetAllProg) {
-        btnResetAllProg.addEventListener('click', function () {
-          if (!confirm('Reinitialiser TOUTES les progressions etudiantes ?')) return;
-          for (var k in accts) { AIA.Storage.set('state_' + k, null); }
-          AIA.showToast('Toutes les progressions reinitialises', 'info');
-          renderAccounts(el);
-        });
-      }
-
-      var btnDeleteAll = document.getElementById('btn-delete-all-accts');
-      if (btnDeleteAll) {
-        btnDeleteAll.addEventListener('click', function () {
-          if (!confirm('SUPPRIMER TOUS les comptes etudiants ? Cette action est IRREVERSIBLE.')) return;
-          for (var k in accts) { AIA.Storage.set('state_' + k, null); }
-          AIA.saveAccounts({});
-          AIA.showToast('Tous les comptes supprimes', 'info');
-          renderAccounts(el);
-        });
-      }
     }
 
     /* ======== SETTINGS ======== */
     function renderSettings(el) {
-      var fbConfig = AIA.Storage.get('firebaseConfig', null);
+      var fbConnected = !!AIA.db;
 
       el.innerHTML =
         '<div class="admin-section glass-card">' +
-        '<h3>Configuration Firebase</h3>' +
-        '<p style="color:var(--text-muted);margin-bottom:1rem">Collez votre config Firebase pour activer la synchronisation temps reel</p>' +
-        '<textarea id="firebase-config-input" class="demo-textarea" rows="6" placeholder=\'{"apiKey":"...","authDomain":"...","databaseURL":"...","projectId":"..."}\'>' +
-        (fbConfig ? JSON.stringify(fbConfig, null, 2) : '') + '</textarea>' +
-        '<button class="btn-primary" id="btn-save-firebase" style="margin-top:0.8rem">Sauvegarder la config</button>' +
-        '<div id="firebase-status" style="margin-top:0.5rem;font-size:0.82rem;color:' + (fbConfig ? '#2ecc71' : '#e74c3c') + '">' +
-        (fbConfig ? 'Firebase configure' : 'Firebase non configure — mode local') + '</div></div>' +
+        '<h3>Firebase</h3>' +
+        '<div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem">' +
+        '<span class="dot ' + (fbConnected ? 'online' : 'idle') + '"></span>' +
+        '<span style="color:' + (fbConnected ? '#2ecc71' : '#e74c3c') + ';font-weight:600">' +
+        (fbConnected ? 'Firebase connecte' : 'Firebase non connecte') + '</span>' +
+        '</div>' +
+        '<p style="color:var(--text-muted);font-size:0.85rem">Projet : idrac-ai-academy | Region : europe-west1</p>' +
+        '<p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.3rem">Donnees synchronisees en temps reel sur tous les appareils</p>' +
+        '</div>' +
 
         '<div class="admin-section glass-card">' +
         '<h3>Notifications</h3>' +
@@ -492,25 +501,6 @@
         '<button class="btn-outline" id="btn-reset-all">Reinitialiser tous les XP</button>' +
         '<button class="btn-outline" id="btn-export-full">Export complet JSON</button>' +
         '</div></div>';
-
-      document.getElementById('btn-save-firebase').addEventListener('click', function () {
-        var raw = document.getElementById('firebase-config-input').value.trim();
-        if (!raw) {
-          AIA.Storage.set('firebaseConfig', null);
-          AIA.showToast('Config Firebase supprimee', 'info');
-          renderSettings(el);
-          return;
-        }
-        try {
-          var cfg = JSON.parse(raw);
-          if (!cfg.apiKey || !cfg.databaseURL) throw new Error('Missing fields');
-          AIA.Storage.set('firebaseConfig', cfg);
-          AIA.showToast('Config Firebase sauvegardee — rechargez la page', 'success');
-          renderSettings(el);
-        } catch (e) {
-          AIA.showToast('JSON invalide — verifiez le format', 'error');
-        }
-      });
 
       document.getElementById('btn-send-notif').addEventListener('click', function () {
         var msg = document.getElementById('notif-message').value.trim();

@@ -13,7 +13,15 @@
     dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Jeudi 11 Juin'],
     mentorName: 'Maxime BABONNEAU',
     school: 'IDRAC Business School',
-    firebaseConfig: null
+    firebaseConfig: {
+      apiKey: 'AIzaSyAddL7QdGEb-ZCBTmRg_xElm_b-WdT7eHM',
+      authDomain: 'idrac-ai-academy.firebaseapp.com',
+      databaseURL: 'https://idrac-ai-academy-default-rtdb.europe-west1.firebasedatabase.app',
+      projectId: 'idrac-ai-academy',
+      storageBucket: 'idrac-ai-academy.firebasestorage.app',
+      messagingSenderId: '1009333708897',
+      appId: '1:1009333708897:web:da729ad1c2c6442eb8e220'
+    }
   };
 
   var LEVELS = [
@@ -134,74 +142,89 @@
     set: function (key, val) { try { localStorage.setItem(CONFIG.storagePrefix + key, JSON.stringify(val)); } catch (e) {} }
   };
 
+  var db = null;
+
   function getAccountKey(lastName, firstName) {
     return (lastName.trim() + '_' + firstName.trim()).toLowerCase().replace(/[^a-z0-9_]/g, '');
   }
 
-  function getAccounts() { return Storage.get('accounts', {}); }
-  function saveAccounts(accts) { Storage.set('accounts', accts); }
-
-  function createAccount(lastName, firstName, passwordHash) {
-    var accts = getAccounts();
+  function createAccount(lastName, firstName, passwordHash, callback) {
     var key = getAccountKey(lastName, firstName);
-    if (accts[key]) return { error: 'Ce compte existe deja. Connectez-vous.' };
-    accts[key] = { firstName: firstName.trim(), lastName: lastName.trim(), passwordHash: passwordHash, createdAt: new Date().toISOString(), lastLogin: null };
-    saveAccounts(accts);
-    return { key: key, account: accts[key] };
+    db.ref('accounts/' + key).once('value', function (snap) {
+      if (snap.exists()) return callback({ error: 'Ce compte existe deja. Connectez-vous.' });
+      var acct = { firstName: firstName.trim(), lastName: lastName.trim(), passwordHash: passwordHash, createdAt: new Date().toISOString(), lastLogin: null };
+      db.ref('accounts/' + key).set(acct, function (err) {
+        if (err) return callback({ error: 'Erreur de creation du compte.' });
+        callback({ key: key, account: acct });
+      });
+    });
   }
 
-  function loginAccount(lastName, firstName, passwordHash) {
-    var accts = getAccounts();
+  function loginAccount(lastName, firstName, passwordHash, callback) {
     var key = getAccountKey(lastName, firstName);
-    if (!accts[key]) return { error: 'Compte introuvable. Creez un compte.' };
-    if (accts[key].passwordHash !== passwordHash) return { error: 'Mot de passe incorrect.' };
-    accts[key].lastLogin = new Date().toISOString();
-    saveAccounts(accts);
-    return { key: key, account: accts[key] };
+    db.ref('accounts/' + key).once('value', function (snap) {
+      if (!snap.exists()) return callback({ error: 'Compte introuvable. Creez un compte.' });
+      var acct = snap.val();
+      if (acct.passwordHash !== passwordHash) return callback({ error: 'Mot de passe incorrect.' });
+      acct.lastLogin = new Date().toISOString();
+      db.ref('accounts/' + key).update({ lastLogin: acct.lastLogin });
+      callback({ key: key, account: acct });
+    });
   }
 
+  var _saveDebounce = null;
   function saveState() {
-    Storage.set('state', state);
-    if (state.user && state.user.accountKey) {
-      Storage.set('state_' + state.user.accountKey, state);
-    }
-    if (window.AIA && window.AIA.firebaseSyncState) window.AIA.firebaseSyncState(state);
+    if (!state.user || !state.user.accountKey || !db) return;
+    if (_saveDebounce) clearTimeout(_saveDebounce);
+    _saveDebounce = setTimeout(function () {
+      db.ref('states/' + state.user.accountKey).set(state);
+      var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
+      db.ref('students/' + state.user.accountKey).set({
+        name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
+        badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
+        lastSeen: Date.now(), online: true, progress: pCount
+      });
+    }, 500);
   }
-  function loadState() {
-    var s = Storage.get('state', null);
-    if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
+
+  function saveStateNow() {
+    if (_saveDebounce) clearTimeout(_saveDebounce);
+    if (!state.user || !state.user.accountKey || !db) return;
+    db.ref('states/' + state.user.accountKey).set(state);
+    var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
+    db.ref('students/' + state.user.accountKey).set({
+      name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
+      badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
+      lastSeen: Date.now(), online: true, progress: pCount
+    });
   }
-  function loadAccountState(accountKey) {
-    var s = Storage.get('state_' + accountKey, null);
-    if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
+
+  function loadAccountState(accountKey, callback) {
+    db.ref('states/' + accountKey).once('value', function (snap) {
+      var s = snap.val();
+      if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
+      if (callback) callback();
+    });
+  }
+
+  function getAccountsFromFirebase(callback) {
+    db.ref('accounts').once('value', function (snap) { callback(snap.val() || {}); });
+  }
+
+  function saveAccountsToFirebase(accts) { db.ref('accounts').set(accts); }
+
+  function deleteStudentState(key) {
+    db.ref('states/' + key).remove();
+    db.ref('students/' + key).remove();
   }
 
   function initFirebase() {
-    var cfg = Storage.get('firebase_config', null);
-    if (!cfg || !cfg.apiKey) return;
-    CONFIG.firebaseConfig = cfg;
     try {
-      if (!firebase.apps.length) firebase.initializeApp(cfg);
+      if (!firebase.apps.length) firebase.initializeApp(CONFIG.firebaseConfig);
+      db = firebase.database();
       window.AIA = window.AIA || {};
-      window.AIA.db = firebase.database();
-      window.AIA.firebaseSyncState = function (st) {
-        if (!st.user || !window.AIA.db) return;
-        var key = st.user.name.replace(/[.#$/\[\]]/g, '_');
-        window.AIA.db.ref('students/' + key).set({
-          name: st.user.name, xp: st.xp.total, level: getLevelInfo(st.xp.total).level,
-          badges: st.badges.length, page: st.currentPage, avatar: st.avatar,
-          lastSeen: Date.now(), progress: st.progress
-        });
-      };
-      window.AIA.firebasePresence = function () {
-        if (!state.user || !window.AIA.db) return;
-        var key = state.user.name.replace(/[.#$/\[\]]/g, '_');
-        var ref = window.AIA.db.ref('students/' + key + '/online');
-        ref.onDisconnect().set(false);
-        ref.set(true);
-      };
-      window.AIA.firebasePresence();
-    } catch (e) {}
+      window.AIA.db = db;
+    } catch (e) { console.error('Firebase init error:', e); }
   }
 
   function initParticles() {
@@ -655,7 +678,7 @@
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
     renderNavAvatar();
     if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
-    window.addEventListener('beforeunload', function () { saveState(); });
+    window.addEventListener('beforeunload', function () { saveStateNow(); });
     if (!isAdmin) { setInterval(saveState, 30000); }
   }
 
@@ -694,13 +717,16 @@
       var pw = document.getElementById('login-password').value;
       if (!ln || !fn) return showToast('Entrez votre nom et prenom', 'warning');
       if (!pw) return showToast('Mot de passe requis', 'warning');
-      var result = loginAccount(ln, fn, hashPass(pw));
-      if (result.error) return showToast(result.error, 'error');
-      var displayName = result.account.firstName + ' ' + result.account.lastName;
-      state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
-      loadAccountState(result.key);
-      state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
-      enterApp(result.account.firstName, false, result.key);
+      showToast('Connexion...', 'info');
+      loginAccount(ln, fn, hashPass(pw), function (result) {
+        if (result.error) return showToast(result.error, 'error');
+        var displayName = result.account.firstName + ' ' + result.account.lastName;
+        state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+        loadAccountState(result.key, function () {
+          state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+          enterApp(result.account.firstName, false, result.key);
+        });
+      });
     });
 
     document.getElementById('btn-student-register').addEventListener('click', function () {
@@ -714,12 +740,14 @@
       if (!pw || pw.length < 4) return showToast('Mot de passe de 4 caracteres minimum', 'warning');
       if (pw !== pw2) return showToast('Les mots de passe ne correspondent pas', 'error');
       if (code !== CONFIG.classCode) return showToast('Code de formation incorrect', 'error');
-      var result = createAccount(ln, fn, hashPass(pw));
-      if (result.error) return showToast(result.error, 'error');
-      var displayName = fn + ' ' + ln;
-      state.user = { name: displayName, firstName: fn, lastName: ln, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
-      enterApp(fn, false, result.key);
-      showToast('Compte cree avec succes !', 'success');
+      showToast('Creation du compte...', 'info');
+      createAccount(ln, fn, hashPass(pw), function (result) {
+        if (result.error) return showToast(result.error, 'error');
+        var displayName = fn + ' ' + ln;
+        state.user = { name: displayName, firstName: fn, lastName: ln, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+        enterApp(fn, false, result.key);
+        showToast('Compte cree avec succes !', 'success');
+      });
     });
 
     document.getElementById('btn-admin-login').addEventListener('click', function () {
@@ -731,8 +759,14 @@
     });
 
     document.getElementById('btn-logout').addEventListener('click', function () {
-      saveState();
-      state.user = null;
+      saveStateNow();
+      if (db && state.user && state.user.accountKey) {
+        db.ref('students/' + state.user.accountKey + '/online').set(false);
+      }
+      state.user = null; state.xp = { total: 0, history: [] }; state.progress = {};
+      state.badges = []; state.streak = { count: 0, lastDate: null }; state.gameNotes = '';
+      state.gameDeliverables = {}; state.toolsExplored = []; state.avatar = null;
+      state.currentPage = 'dashboard'; state.demosCompleted = []; state.reactions = {};
       document.getElementById('app-shell').classList.add('hidden');
       document.getElementById('page-login').classList.remove('hidden');
       resetLoginUI();
@@ -767,21 +801,12 @@
   window.AIA.getLevelInfo=getLevelInfo; window.AIA.saveState=saveState; window.AIA.Storage=Storage;
   window.AIA.renderNavAvatar=renderNavAvatar; window.AIA.checkAutoComplete=checkAutoComplete;
   window.AIA.getActivityStatus=getActivityStatus; window.AIA.toggleReaction=toggleReaction;
-  window.AIA.getAccounts=getAccounts; window.AIA.saveAccounts=saveAccounts; window.AIA.hashPass=hashPass;
-  window.AIA.getAccountKey=getAccountKey;
+  window.AIA.getAccountsFromFirebase=getAccountsFromFirebase; window.AIA.saveAccountsToFirebase=saveAccountsToFirebase;
+  window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
+  window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
 
   function init(){
-    initParticles(); loadState(); initAuth(); initNavigation();
-    if(state.user){
-      if(state.user.accountKey) loadAccountState(state.user.accountKey);
-      if(state.user) {
-        document.getElementById('page-login').classList.add('hidden');
-        document.getElementById('app-shell').classList.remove('hidden');
-        updateXPDisplay(); updateStreak(); renderNavAvatar(); navigateTo(state.currentPage||'dashboard'); initFirebase();
-        if(!state.user.isAdmin){ checkAutoComplete(); setInterval(checkAutoComplete,60000); setInterval(saveState,30000); }
-        window.addEventListener('beforeunload',function(){saveState();});
-      }
-    }
+    initParticles(); initFirebase(); initAuth(); initNavigation();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
