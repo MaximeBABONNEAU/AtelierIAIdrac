@@ -382,9 +382,29 @@
       html += '<div class="course-slide glass-card"><h3>Contenu</h3><p>' + activity.desc + '</p></div>';
     }
 
-    var demoMap = {'d2-demo-sentiment':'demo-sentiment','d3-demo-seo':'demo-seo','d3-abtest':'demo-abtest','d3-chatbot':'demo-chatbot','d4-demo-playground':'demo-prompt'};
-    if (activity.type === 'demo' && demoMap[actId]) {
-      html += '<div style="margin-top:1.5rem;text-align:center"><button class="btn-primary" data-navigate="' + demoMap[actId] + '">Lancer la demo interactive</button></div>';
+    /* --- Inline demo embed map (expanded) --- */
+    var inlineDemoMap = {
+      'd1-premier-prompt':'renderDemoPrompt', 'd1-prompt-avance':'renderDemoPrompt',
+      'd2-demo-sentiment':'renderDemoSentiment', 'd2-visuel':'renderDemoImage',
+      'd2-atelier-image':'renderDemoImage', 'd2-copywriting':'renderDemoChatbot',
+      'd3-demo-seo':'renderDemoSEO', 'd3-abtest':'renderDemoABTest',
+      'd3-chatbot':'renderDemoChatbot', 'd4-demo-playground':'renderDemoPrompt',
+      'd1-defi':'renderDemoPrompt', 'd3-seo':'renderDemoSEO'
+    };
+    var inlineRenderer = inlineDemoMap[actId];
+    if (inlineRenderer && AIA[inlineRenderer]) {
+      html += '<div class="activity-demo-inline"><h4>&#128300; Atelier Pratique Interactif</h4>' +
+        '<div id="inline-demo-target"></div></div>';
+    }
+
+    /* --- Exercise submission --- */
+    var hasExercise = content && content.slides && content.slides.some(function(s){ return !!s.exercise; });
+    if (hasExercise && !done) {
+      html += '<div class="exercise-submission">' +
+        '<h4>&#9999;&#65039; Soumettez votre travail</h4>' +
+        '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.8rem">Decrivez ce que vous avez fait, collez vos prompts ou vos resultats. Votre formateur pourra voir votre soumission.</p>' +
+        '<textarea id="exercise-submission-text" placeholder="Collez vos prompts, resultats ou reflexions ici..."></textarea>' +
+        '<button class="btn-submit" id="btn-submit-exercise">Soumettre mon travail</button></div>';
     }
 
     var reactions = st.reactions[actId] || {};
@@ -402,6 +422,29 @@
     }
 
     main.innerHTML = html;
+
+    /* --- Render inline demo after DOM is set --- */
+    if (inlineRenderer && AIA[inlineRenderer]) {
+      var target = document.getElementById('inline-demo-target');
+      if (target) AIA[inlineRenderer](target, true);
+    }
+
+    /* --- Wire exercise submission button --- */
+    var submitBtn = document.getElementById('btn-submit-exercise');
+    if (submitBtn) {
+      submitBtn.addEventListener('click', function() {
+        var textarea = document.getElementById('exercise-submission-text');
+        var text = textarea ? textarea.value.trim() : '';
+        if (!text) { AIA.showToast('Ecrivez quelque chose avant de soumettre', 'warning'); return; }
+        if (AIA.submitActivity) {
+          AIA.submitActivity(actId, { type: 'exercise-submission', text: text.substring(0, 2000) });
+        }
+        AIA.showToast('Travail soumis ! Votre formateur peut le voir.', 'success');
+        submitBtn.textContent = 'Soumis !';
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.6';
+      });
+    }
   }
 
   window.AIA = window.AIA || {};

@@ -173,17 +173,23 @@
   }
 
   var _saveDebounce = null;
+  function _buildStudentSummary() {
+    var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
+    return {
+      name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
+      badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
+      lastSeen: Date.now(), online: true, progress: pCount,
+      completedActivities: pCount, demosCompleted: state.demosCompleted ? state.demosCompleted.length : 0,
+      streak: state.streak ? state.streak.count : 0
+    };
+  }
+
   function saveState() {
     if (!state.user || !state.user.accountKey || !db) return;
     if (_saveDebounce) clearTimeout(_saveDebounce);
     _saveDebounce = setTimeout(function () {
       db.ref('states/' + state.user.accountKey).set(state);
-      var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
-      db.ref('students/' + state.user.accountKey).set({
-        name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
-        badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
-        lastSeen: Date.now(), online: true, progress: pCount
-      });
+      db.ref('students/' + state.user.accountKey).set(_buildStudentSummary());
     }, 500);
   }
 
@@ -191,12 +197,38 @@
     if (_saveDebounce) clearTimeout(_saveDebounce);
     if (!state.user || !state.user.accountKey || !db) return;
     db.ref('states/' + state.user.accountKey).set(state);
-    var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
-    db.ref('students/' + state.user.accountKey).set({
-      name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
-      badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
-      lastSeen: Date.now(), online: true, progress: pCount
+    db.ref('students/' + state.user.accountKey).set(_buildStudentSummary());
+  }
+
+  function submitActivity(actId, submission) {
+    if (!state.user || !state.user.accountKey || !db) return;
+    submission.timestamp = new Date().toISOString();
+    submission.studentName = state.user.name;
+    db.ref('submissions/' + actId + '/' + state.user.accountKey).set(submission);
+  }
+
+  var dayLocks = { day1: false, day2: true, day3: true, day4: true };
+  var _dayLocksListener = null;
+
+  function listenDayLocks() {
+    if (!db) return;
+    _dayLocksListener = db.ref('config/dayLocks').on('value', function (snap) {
+      var v = snap.val();
+      if (v) dayLocks = v;
     });
+  }
+
+  function isActivityUnlocked(actId, dayIdx) {
+    if (state.user && state.user.isAdmin) return true;
+    var dayKey = 'day' + (dayIdx + 1);
+    if (dayLocks[dayKey]) return false;
+    var d = PROGRAM[dayKey];
+    if (!d) return false;
+    var all = d.matin.concat(d.aprem);
+    var idx = -1;
+    for (var i = 0; i < all.length; i++) { if (all[i].id === actId) { idx = i; break; } }
+    if (idx <= 0) return true;
+    return !!state.progress[all[idx - 1].id];
   }
 
   function loadAccountState(accountKey, callback) {
@@ -316,6 +348,12 @@
     main.classList.remove('page-transition'); void main.offsetWidth; main.classList.add('page-transition');
     if(page.indexOf('activity-')===0){
       var actId=page.replace('activity-','');
+      var _dayIdx=-1;
+      ['day1','day2','day3','day4'].forEach(function(k,i){var d=PROGRAM[k];d.matin.concat(d.aprem).forEach(function(a){if(a.id===actId)_dayIdx=i;});});
+      if(_dayIdx>=0&&!isActivityUnlocked(actId,_dayIdx)){
+        showToast('Completez l\'activite precedente d\'abord','warning');
+        return;
+      }
       if(window.AIA&&window.AIA.renderActivityDetail) window.AIA.renderActivityDetail(main,actId);
       updateNavActive('program'); window.scrollTo(0,0); saveState(); return;
     }
@@ -508,14 +546,17 @@
       var st=getActivityStatus(a, dayIdx!==undefined?dayIdx:getCurrentDay()-1);
       var badgeClass=done||st==='past'?'done':st==='live'?'live':'upcoming';
       var userReaction=state.reactions?state.reactions[a.id]:null;
-      h+='<div class="activity-item glass-card clickable'+(done?' completed':'')+'" data-navigate="activity-'+a.id+'">'+
-        '<div class="activity-icon '+a.type+'">'+(icons[a.type]||'📌')+'</div>'+
-        '<div class="activity-info"><h4>'+a.title+'</h4><p>'+a.desc+'</p>'+
-        '<div class="reactions-bar" data-act="'+a.id+'">'+
+      var locked=!isActivityUnlocked(a.id, dayIdx!==undefined?dayIdx:getCurrentDay()-1);
+      h+='<div class="activity-item glass-card'+(locked?' locked':' clickable')+(done?' completed':'')+'"'+(locked?'':' data-navigate="activity-'+a.id+'"')+'>'+
+        '<div class="activity-icon '+a.type+'">'+(locked?'🔒':(icons[a.type]||'📌'))+'</div>'+
+        '<div class="activity-info"><h4'+(locked?' style="opacity:0.5"':'')+'>'+a.title+'</h4>'+(locked?'<p style="color:var(--text-muted);font-size:0.75rem">Completez l\'activite precedente pour debloquer</p>':'<p>'+a.desc+'</p>')+
+        (!locked?'<div class="reactions-bar" data-act="'+a.id+'">'+
         emojis.map(function(e){return '<button class="reaction-btn'+(userReaction===e?' active':'')+'" data-emoji="'+e+'" onclick="event.stopPropagation();window.AIA.toggleReaction(\''+a.id+'\',\''+e+'\')">'+e+'</button>';}).join('')+
-        '</div></div>'+
+        '</div>':'')+
+        '</div>'+
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.3rem">'+
-        '<div class="auto-badge '+badgeClass+'">'+statusLabels[done?'done':st]+'</div>'+
+        (locked?'<div class="auto-badge upcoming">Verrouille</div>':
+        '<div class="auto-badge '+badgeClass+'">'+statusLabels[done?'done':st]+'</div>')+
         '<div class="activity-time">'+a.time+'</div><div class="activity-xp">+'+a.xp+' XP</div>'+
         '</div></div>';
     });
@@ -600,31 +641,48 @@
     awardBadge('team-player');
   }
 
+  var _leaderboardListener = null;
+
   function renderLeaderboard(){
-    var main=document.getElementById('main-content'),students=getLeaderboardData();
-    students.sort(function(a,b){return b.xp-a.xp;});
-    var medals=['🥈','🥇','🥉'],order=[1,0,2],podH='';
-    order.forEach(function(idx){var s=students[idx];if(!s)return;
-      podH+='<div class="podium-item"><div class="rank">'+medals[idx]+'</div>'+
-        '<div class="avatar-small">'+(s.emoji||'👤')+'</div><div class="name">'+s.name+'</div>'+
-        '<div class="xp">'+s.xp+' XP</div><div class="podium-bar"></div></div>';});
-    var tH=students.slice(3).map(function(s,i){
-      return '<tr><td class="rank-cell">'+(i+4)+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.emoji||'👤')+'</div>'+s.name+'</div></td>'+
-        '<td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td></tr>';}).join('');
+    var main=document.getElementById('main-content');
     main.innerHTML='<div class="page-header"><h1>Classement <span class="gradient-text">General</span></h1>'+
-      '<p class="page-subtitle">Leaderboard — '+students.length+' etudiants</p></div>'+
-      '<div class="podium">'+podH+'</div>'+
-      '<div class="glass-card" style="overflow:hidden"><table class="ranking-table"><thead><tr><th>#</th><th>Etudiant</th><th>XP</th><th>Badges</th></tr></thead>'+
-      '<tbody>'+tH+'</tbody></table></div>';
+      '<p class="page-subtitle">Leaderboard en temps reel</p></div>'+
+      '<div id="leaderboard-content"><div class="loading-pulse" style="padding:2rem;text-align:center">Chargement du classement...</div></div>';
+    if(_leaderboardListener) db.ref('students').off('value',_leaderboardListener);
+    if(!db){_renderLeaderboardData([]);return;}
+    _leaderboardListener=db.ref('students').on('value',function(snap){
+      var data=snap.val()||{}, list=[];
+      for(var k in data){
+        var s=data[k];
+        list.push({key:k,name:s.name||k,xp:s.xp||0,badges:typeof s.badges==='number'?s.badges:0,
+          online:!!s.online,streak:s.streak||0,progress:s.progress||0,
+          isMe:state.user&&state.user.accountKey===k});
+      }
+      _renderLeaderboardData(list);
+    });
   }
 
-  function getLeaderboardData(){
-    var s=[{name:state.user?state.user.name:'Toi',xp:state.xp.total,badges:state.badges.length,emoji:'⭐'}];
-    var names=['Emma','Lucas','Chloe','Hugo','Lea','Nathan','Manon','Theo','Camille','Louis','Jade','Raphael','Sarah','Mathis','Alice','Ethan','Ines','Gabriel','Lola','Adam','Eva','Jules','Clara','Arthur','Zoe','Tom','Nina','Axel','Lisa','Paul'];
-    var emojis=['🐱','🐶','🦊','🐰','🐼','🐨','🦁','🐯','🐸','🐙','🦋','🐢','🐬','🦄','🐺','🦉','🐝','🦎','🐧','🦑','🐾','🐻','🦈','🦜','🦔','🐳','🦩','🐠','🦚','🐲'];
-    var seed=42;function rng(){seed=(seed*16807)%2147483647;return(seed-1)/2147483646;}
-    for(var i=0;i<29;i++) s.push({name:names[i],xp:Math.floor(rng()*800+50),badges:Math.floor(rng()*8),emoji:emojis[i]});
-    return s;
+  function _renderLeaderboardData(students){
+    var el=document.getElementById('leaderboard-content');if(!el)return;
+    students.sort(function(a,b){return b.xp-a.xp||a.name.localeCompare(b.name);});
+    if(students.length===0){
+      el.innerHTML='<div class="glass-card" style="text-align:center;padding:3rem"><h3>Soyez le premier au classement !</h3><p style="color:var(--text-muted)">Les XP gagnes pendant les activites apparaitront ici en temps reel.</p></div>';
+      return;
+    }
+    var medals=['🥈','🥇','🥉'],order=[1,0,2],podH='';
+    order.forEach(function(idx){var s=students[idx];if(!s)return;
+      podH+='<div class="podium-item'+(s.isMe?' is-me':'')+'"><div class="rank">'+medals[idx]+'</div>'+
+        '<div class="avatar-small">'+(s.isMe?'⭐':'👤')+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+'</div>'+
+        '<div class="xp">'+s.xp+' XP</div>'+(s.streak>1?'<div style="font-size:0.7rem">🔥 '+s.streak+'j</div>':'')+
+        '<div class="podium-bar"></div></div>';});
+    var tH=students.slice(3).map(function(s,i){
+      return '<tr class="'+(s.isMe?'is-me':'')+'"><td class="rank-cell">'+(i+4)+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.isMe?'⭐':'👤')+'</div>'+
+        s.name+(s.isMe?' (vous)':'')+'</div></td><td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td>'+
+        '<td><span class="dot '+(s.online?'online':'idle')+'"></span></td></tr>';}).join('');
+    el.innerHTML='<p class="page-subtitle" style="margin-bottom:1rem">'+students.length+' etudiants inscrits</p>'+
+      '<div class="podium">'+podH+'</div>'+
+      '<div class="glass-card" style="overflow:hidden"><table class="ranking-table"><thead><tr><th>#</th><th>Etudiant</th><th>XP</th><th>Badges</th><th>Statut</th></tr></thead>'+
+      '<tbody>'+tH+'</tbody></table></div>';
   }
 
   function renderTools(){
@@ -674,7 +732,7 @@
     if (!isAdmin) {
       awardBadge('first-login'); updateStreak();
     }
-    saveState(); navigateTo(state.currentPage || 'dashboard');
+    saveState(); listenDayLocks(); navigateTo(state.currentPage || 'dashboard');
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
     renderNavAvatar();
     if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
@@ -804,6 +862,8 @@
   window.AIA.getAccountsFromFirebase=getAccountsFromFirebase; window.AIA.saveAccountsToFirebase=saveAccountsToFirebase;
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
+  window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
+  window.AIA.dayLocks=dayLocks; window.AIA.db=null;
 
   function init(){
     initParticles(); initFirebase(); initAuth(); initNavigation();

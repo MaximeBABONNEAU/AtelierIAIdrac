@@ -24,6 +24,7 @@
       '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
       '<button class="admin-tab" data-tab="students">Etudiants</button>' +
       '<button class="admin-tab" data-tab="course">Cours</button>' +
+      '<button class="admin-tab" data-tab="submissions">Activites</button>' +
       '<button class="admin-tab" data-tab="analytics">Analytics</button>' +
       '<button class="admin-tab" data-tab="settings">Parametres</button>' +
       '</div>' +
@@ -75,6 +76,7 @@
       else if (tab === 'accounts') renderAccounts(content);
       else if (tab === 'students') renderStudents(content);
       else if (tab === 'course') renderCourse(content);
+      else if (tab === 'submissions') renderSubmissions(content);
       else if (tab === 'analytics') renderAnalytics(content);
       else if (tab === 'settings') renderSettings(content);
     }
@@ -211,49 +213,175 @@
 
     /* ======== COURSE CONTROL ======== */
     function renderCourse(el) {
-      var dayLocks = AIA.Storage.get('dayLocks', { day1: false, day2: true, day3: true, day4: true });
+      el.innerHTML = '<div class="admin-section glass-card"><p style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement...</p></div>';
 
-      el.innerHTML =
-        '<div class="admin-section glass-card">' +
-        '<h3>Controle des jours</h3>' +
-        '<p style="color:var(--text-muted);margin-bottom:1rem">Verrouillez ou deverrouillez les jours du programme</p>' +
-        '<div class="day-locks">' +
-        CONFIG.dateLabels.map(function (label, i) {
-          var key = 'day' + (i + 1);
+      var dayLocks = { day1: false, day2: true, day3: true, day4: true };
+
+      function build(locks) {
+        dayLocks = locks;
+        var dayKeys = ['day1','day2','day3','day4'];
+
+        var locksHtml = CONFIG.dateLabels.map(function (label, i) {
+          var key = dayKeys[i];
           var locked = !!dayLocks[key];
           return '<div class="day-lock-row">' +
-            '<span class="day-label">' + label + '</span>' +
-            '<button class="btn-sm ' + (locked ? 'btn-outline' : 'btn-primary') + '" data-lockday="' + key + '">' +
-            (locked ? '🔒 Verrouille' : '🔓 Deverrouille') + '</button></div>';
-        }).join('') +
-        '</div></div>' +
+            '<div><span class="day-label">Jour ' + (i + 1) + '</span>' +
+            '<span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.5rem">' + label + '</span></div>' +
+            '<div style="display:flex;align-items:center;gap:0.8rem">' +
+            '<span style="font-size:0.78rem;color:' + (locked ? 'var(--text-muted)' : 'var(--green)') + '">' + (locked ? 'Verrouille' : 'Ouvert') + '</span>' +
+            '<label class="toggle-switch"><input type="checkbox" data-lockday="' + key + '"' + (locked ? '' : ' checked') + '>' +
+            '<span class="toggle-slider"></span></label></div></div>';
+        }).join('');
 
-        '<div class="admin-section glass-card">' +
-        '<h3>Programme detaille</h3>' +
-        PROGRAM.map(function (day, di) {
-          return '<div class="admin-day-block">' +
-            '<h4>Jour ' + (di + 1) + ' — ' + day.title + '</h4>' +
-            '<div class="admin-activities">' +
-            day.activities.map(function (a) {
-              return '<div class="admin-activity-row">' +
-                '<span class="act-time">' + a.time + '</span>' +
-                '<span class="act-title">' + escapeHtml(a.title) + '</span>' +
-                '<span class="act-type badge-' + a.type + '">' + a.type + '</span>' +
-                '<span class="act-xp">+' + a.xp + ' XP</span></div>';
+        var programHtml = dayKeys.map(function (key, di) {
+          var day = PROGRAM[key];
+          if (!day) return '';
+          var activities = day.matin.concat(day.aprem);
+          return '<div class="admin-day-block" style="margin-top:1rem">' +
+            '<h4 style="color:var(--gold);margin-bottom:0.5rem">Jour ' + (di + 1) + ' — ' + CONFIG.dateLabels[di] + '</h4>' +
+            '<div class="admin-activities" style="display:flex;flex-direction:column;gap:0.3rem">' +
+            activities.map(function (a) {
+              var icons = {cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'};
+              return '<div style="display:flex;align-items:center;gap:0.8rem;padding:0.4rem 0.6rem;background:var(--bg-secondary);border-radius:var(--radius-xs);font-size:0.82rem">' +
+                '<span style="min-width:60px;color:var(--text-muted)">' + a.time + '</span>' +
+                '<span>' + (icons[a.type] || '📌') + '</span>' +
+                '<span style="flex:1">' + escapeHtml(a.title) + '</span>' +
+                '<span style="color:var(--text-muted);font-size:0.72rem">' + a.type + '</span>' +
+                '<span style="color:var(--gold);font-size:0.72rem;font-weight:700">+' + a.xp + ' XP</span></div>';
             }).join('') + '</div></div>';
-        }).join('') + '</div>';
+        }).join('');
 
-      document.querySelectorAll('[data-lockday]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var key = this.getAttribute('data-lockday');
-          dayLocks[key] = !dayLocks[key];
-          AIA.Storage.set('dayLocks', dayLocks);
-          if (AIA.db) {
-            AIA.db.ref('config/dayLocks').set(dayLocks);
-          }
-          AIA.showToast(CONFIG.dateLabels[parseInt(key.replace('day', '')) - 1] + ' ' + (dayLocks[key] ? 'verrouille' : 'deverrouille'), 'info');
-          renderCourse(el);
+        el.innerHTML =
+          '<div class="admin-section glass-card">' +
+          '<h3>Controle des jours</h3>' +
+          '<p style="color:var(--text-muted);margin-bottom:1rem">Activez/desactivez l\'acces aux jours du programme. Les etudiants ne voient que les jours ouverts.</p>' +
+          '<div class="day-locks">' + locksHtml + '</div></div>' +
+          '<div class="admin-section glass-card">' +
+          '<h3>Programme detaille (' + dayKeys.reduce(function(s, k){ var d=PROGRAM[k]; return s + (d ? d.matin.length + d.aprem.length : 0); }, 0) + ' activites)</h3>' +
+          programHtml + '</div>';
+
+        document.querySelectorAll('[data-lockday]').forEach(function (toggle) {
+          toggle.addEventListener('change', function () {
+            var key = this.getAttribute('data-lockday');
+            dayLocks[key] = !this.checked;
+            if (AIA.db) { AIA.db.ref('config/dayLocks').set(dayLocks); }
+            AIA.showToast('Jour ' + key.replace('day','') + ' ' + (dayLocks[key] ? 'verrouille' : 'ouvert'), 'info');
+            renderCourse(el);
+          });
         });
+      }
+
+      if (AIA.db) {
+        AIA.db.ref('config/dayLocks').once('value', function (snap) {
+          build(snap.val() || dayLocks);
+        });
+      } else {
+        build(dayLocks);
+      }
+    }
+
+    /* ======== SUBMISSIONS VIEWER ======== */
+    function renderSubmissions(el) {
+      if (!AIA.db) {
+        el.innerHTML = '<div class="admin-section glass-card"><p style="text-align:center;padding:2rem;color:var(--text-muted)">Firebase non connecte</p></div>';
+        return;
+      }
+      el.innerHTML = '<div class="admin-section glass-card"><p style="text-align:center;padding:2rem;color:var(--text-muted)">Chargement des soumissions...</p></div>';
+
+      AIA.db.ref('submissions').once('value', function (snap) {
+        var allSubs = snap.val() || {};
+        var actIds = Object.keys(allSubs);
+
+        if (actIds.length === 0) {
+          el.innerHTML = '<div class="admin-section glass-card"><p style="text-align:center;padding:2rem;color:var(--text-muted)">Aucune soumission etudiant pour le moment. Les soumissions apparaitront ici quand les etudiants utiliseront les demos et exercices.</p></div>';
+          return;
+        }
+
+        /* Build activity title map */
+        var titleMap = {};
+        ['day1','day2','day3','day4'].forEach(function (k) {
+          var d = PROGRAM[k]; if (!d) return;
+          d.matin.concat(d.aprem).forEach(function (a) { titleMap[a.id] = a.title; });
+        });
+        titleMap['demo-prompt'] = 'Demo: Prompt Playground';
+        titleMap['demo-sentiment'] = 'Demo: Analyse Sentiment';
+        titleMap['demo-image'] = 'Demo: Generation Images';
+        titleMap['demo-chatbot'] = 'Demo: Chatbot Marketing';
+        titleMap['demo-abtest'] = 'Demo: A/B Testing';
+        titleMap['demo-seo'] = 'Demo: SEO Analyzer';
+
+        var html = '<div class="admin-section glass-card">' +
+          '<h3>Soumissions etudiants (' + actIds.length + ' activites)</h3>' +
+          '<p style="color:var(--text-muted);margin-bottom:1rem">Consultez ce que les etudiants ont soumis pour chaque activite et demo.</p>' +
+          '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem">';
+
+        actIds.forEach(function (actId) {
+          var count = Object.keys(allSubs[actId] || {}).length;
+          html += '<button class="btn-ghost btn-sm" data-view-act="' + actId + '">' +
+            (titleMap[actId] || actId) + ' <span style="background:var(--red);color:#fff;padding:0.1rem 0.4rem;border-radius:8px;font-size:0.65rem;margin-left:0.3rem">' + count + '</span></button>';
+        });
+        html += '</div><div id="submissions-detail"></div></div>';
+        el.innerHTML = html;
+
+        /* Default: show first activity */
+        function showActivity(actId) {
+          var subs = allSubs[actId] || {};
+          var detail = document.getElementById('submissions-detail');
+          var entries = [];
+          for (var studentKey in subs) {
+            var s = subs[studentKey];
+            entries.push({ key: studentKey, name: s.studentName || studentKey, type: s.type || 'unknown', text: s.text || '', timestamp: s.timestamp || '', data: s });
+          }
+          entries.sort(function (a, b) { return (b.timestamp || '').localeCompare(a.timestamp || ''); });
+
+          var dHtml = '<h4 style="color:var(--gold);margin-bottom:0.8rem">' + (titleMap[actId] || actId) + ' — ' + entries.length + ' soumission(s)</h4>';
+          if (entries.length === 0) {
+            dHtml += '<p style="color:var(--text-muted)">Aucune soumission</p>';
+          } else {
+            entries.forEach(function (e) {
+              var time = e.timestamp ? new Date(e.timestamp).toLocaleString('fr-FR') : '-';
+              dHtml += '<div class="submission-card">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center">' +
+                '<span class="student-name">' + escapeHtml(e.name) + '</span>' +
+                '<span class="submission-time">' + time + '</span></div>' +
+                '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:0.2rem">Type: ' + escapeHtml(e.type) + '</div>';
+              if (e.text) {
+                dHtml += '<div class="submission-text">' + escapeHtml(e.text).substring(0, 500) + '</div>';
+              }
+              /* Show extra data fields for demo submissions */
+              var extra = [];
+              if (e.data.scoreA !== undefined) extra.push('Score A: ' + e.data.scoreA);
+              if (e.data.scoreB !== undefined) extra.push('Score B: ' + e.data.scoreB);
+              if (e.data.sentiment) extra.push('Sentiment: ' + e.data.sentiment);
+              if (e.data.grade) extra.push('Grade SEO: ' + e.data.grade);
+              if (e.data.keyword) extra.push('Mot-cle: ' + e.data.keyword);
+              if (e.data.winner) extra.push('Gagnant: ' + e.data.winner);
+              if (e.data.confidence) extra.push('Confiance: ' + e.data.confidence + '%');
+              if (extra.length > 0) {
+                dHtml += '<div style="margin-top:0.4rem;display:flex;gap:0.4rem;flex-wrap:wrap">' +
+                  extra.map(function (x) { return '<span style="padding:0.15rem 0.4rem;background:rgba(167,31,40,0.1);border-radius:4px;font-size:0.68rem;color:var(--text-secondary)">' + x + '</span>'; }).join('') +
+                  '</div>';
+              }
+              dHtml += '</div>';
+            });
+          }
+          detail.innerHTML = dHtml;
+        }
+
+        document.querySelectorAll('[data-view-act]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            document.querySelectorAll('[data-view-act]').forEach(function (b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            showActivity(this.getAttribute('data-view-act'));
+          });
+        });
+
+        /* Show first by default */
+        if (actIds.length > 0) {
+          var firstBtn = document.querySelector('[data-view-act]');
+          if (firstBtn) firstBtn.classList.add('active');
+          showActivity(actIds[0]);
+        }
       });
     }
 

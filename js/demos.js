@@ -1,11 +1,26 @@
 /* ==============================================
-   DEMOS.JS — 6 Interactive AI Demos
+   DEMOS.JS — Interactive AI Demos + HuggingFace
    IDRAC Business School — Maxime BABONNEAU
    ============================================== */
 (function () {
   'use strict';
 
   var ALL_DEMO_IDS = ['demo-prompt','demo-sentiment','demo-image','demo-chatbot','demo-abtest','demo-seo'];
+
+  /* ---------- HuggingFace Space embed utility ---------- */
+  function createHFEmbed(spaceUrl, label, opts) {
+    opts = opts || {};
+    var cls = 'hf-embed-container' + (opts.tall ? ' tall' : '');
+    return '<div class="' + cls + '">' +
+      '<div class="hf-embed-label">' +
+      '<span style="font-size:1.1rem">&#129303;</span> ' + label +
+      '</div>' +
+      '<iframe src="' + spaceUrl + '" ' +
+      'loading="lazy" ' +
+      'sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" ' +
+      'allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone">' +
+      '</iframe></div>';
+  }
 
   function markDemoComplete(demoId) {
     var AIA = window.AIA;
@@ -33,54 +48,107 @@
   }
 
   /* ======== DEMO 1: PROMPT PLAYGROUND ======== */
-  function renderDemoPrompt(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
+  function renderDemoPrompt(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
       '<h1>Prompt <span class="gradient-text">Playground</span></h1>' +
-      '<p class="page-subtitle">Comparez differentes formulations de prompt</p></div>' +
+      '<p class="page-subtitle">Comparez differentes formulations de prompt et mesurez leur efficacite</p></div>';
+
+    main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
       '<div class="demo-split">' +
       '<div class="demo-panel">' +
-      '<h3>Prompt A</h3>' +
+      '<h3>&#9888;&#65039; Prompt Basique</h3>' +
       '<textarea id="prompt-a" class="demo-textarea" rows="4" placeholder="Ex: Ecris un slogan pour une marque de cafe bio"></textarea>' +
       '</div>' +
       '<div class="demo-panel">' +
-      '<h3>Prompt B</h3>' +
-      '<textarea id="prompt-b" class="demo-textarea" rows="4" placeholder="Ex: En tant qu\'expert copywriter, cree un slogan percutant pour une marque de cafe bio premium"></textarea>' +
+      '<h3>&#10024; Prompt Structure (CRAC)</h3>' +
+      '<textarea id="prompt-b" class="demo-textarea" rows="4" placeholder="Ex: En tant qu\'expert copywriter specialise luxe, cree 3 slogans percutants pour une marque de cafe bio premium. Cible : millennials urbains. Ton : sophistique et authentique. Max 8 mots par slogan."></textarea>' +
       '</div></div>' +
       '<div style="text-align:center;margin:1rem 0">' +
-      '<button class="btn-primary" id="btn-prompt-go">Comparer les resultats</button></div>' +
+      '<button class="btn-primary" id="btn-prompt-go">&#9889; Analyser & Comparer</button></div>' +
       '<div id="prompt-results" class="demo-results"></div>' +
       '<div class="demo-tips glass-card" style="margin-top:1.5rem">' +
-      '<h4>Techniques de Prompt Engineering</h4>' +
+      '<h4>&#128218; Methode CRAC — Prompt Engineering</h4>' +
       '<div class="tips-grid">' +
-      '<div class="tip"><strong>Role Playing</strong><br>Donner un role : "En tant que..."</div>' +
-      '<div class="tip"><strong>Contraintes</strong><br>Preciser format, longueur, ton</div>' +
-      '<div class="tip"><strong>Exemples</strong><br>Fournir des exemples (few-shot)</div>' +
-      '<div class="tip"><strong>Chain of Thought</strong><br>"Reflechis etape par etape"</div>' +
-      '</div></div></div>';
+      '<div class="tip"><strong>C — Contexte</strong><br>Definir la situation : marque, secteur, objectif</div>' +
+      '<div class="tip"><strong>R — Role</strong><br>Donner un persona : "En tant que copywriter senior..."</div>' +
+      '<div class="tip"><strong>A — Action</strong><br>Preciser la tache : generer, analyser, comparer</div>' +
+      '<div class="tip"><strong>C — Contraintes</strong><br>Format, longueur, ton, cible, nombre de variantes</div>' +
+      '</div>' +
+      '<div style="margin-top:1rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--cyan);margin-bottom:0.5rem">&#128161; Techniques Avancees</h4>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Chain of Thought</strong><br>"Reflechis etape par etape avant de repondre"</div>' +
+      '<div class="tip"><strong>Few-Shot</strong><br>Donner 2-3 exemples du format attendu</div>' +
+      '<div class="tip"><strong>Self-Consistency</strong><br>Demander N variantes et choisir la meilleure</div>' +
+      '<div class="tip"><strong>Negative Prompting</strong><br>"Ne fais PAS : cliches, jargon, plus de 8 mots"</div>' +
+      '</div></div></div></div>';
 
     document.getElementById('btn-prompt-go').addEventListener('click', function () {
       var a = document.getElementById('prompt-a').value.trim();
       var b = document.getElementById('prompt-b').value.trim();
       if (!a && !b) { window.AIA.showToast('Ecrivez au moins un prompt', 'error'); return; }
       var res = document.getElementById('prompt-results');
-      res.innerHTML = '<div class="loading-pulse">Generation en cours...</div>';
+      res.innerHTML = '<div class="loading-pulse">Analyse des prompts en cours...</div>';
 
       setTimeout(function () {
-        var scoreA = Math.min(95, 40 + a.length);
-        var scoreB = Math.min(95, 40 + b.length);
-        var html = '<div class="demo-split">';
-        if (a) html += '<div class="demo-result-panel"><h4>Resultat A</h4><p>Reponse generee pour votre prompt ' +
-          (a.length > 50 ? 'detaille' : 'court') + '. Un prompt plus structure produit des resultats plus precis.</p>' +
-          '<div class="prompt-score">Score: ' + scoreA + '/100</div></div>';
-        if (b) html += '<div class="demo-result-panel"><h4>Resultat B</h4><p>Reponse generee pour votre prompt ' +
-          (b.length > 50 ? 'detaille et contextualise' : 'concis') + '. La longueur et la precision impactent la qualite.</p>' +
-          '<div class="prompt-score">Score: ' + scoreB + '/100</div></div>';
-        html += '</div>';
-        if (a && b) {
-          var winner = scoreA >= scoreB ? 'A' : 'B';
-          html += '<div class="prompt-verdict">Le prompt ' + winner + ' est plus detaille et produit generalement de meilleurs resultats.</div>';
+        function scorePrompt(txt) {
+          if (!txt) return { total: 0, breakdown: {} };
+          var s = { context: 0, role: 0, action: 0, constraints: 0, specificity: 0, length: 0 };
+          var lower = txt.toLowerCase();
+          if (lower.indexOf('en tant que') !== -1 || lower.indexOf('tu es') !== -1 || lower.indexOf('expert') !== -1 || lower.indexOf('specialise') !== -1) s.role = 20;
+          else if (lower.indexOf('comme') !== -1) s.role = 10;
+          if (lower.indexOf('cible') !== -1 || lower.indexOf('audience') !== -1 || lower.indexOf('pour') !== -1 || lower.indexOf('millennials') !== -1 || lower.indexOf('b2b') !== -1) s.context = 15;
+          if (lower.indexOf('cree') !== -1 || lower.indexOf('genere') !== -1 || lower.indexOf('redige') !== -1 || lower.indexOf('analyse') !== -1 || lower.indexOf('compare') !== -1) s.action = 15;
+          if (lower.indexOf('ton') !== -1 || lower.indexOf('max') !== -1 || lower.indexOf('format') !== -1 || lower.indexOf('mots') !== -1 || lower.indexOf('caracteres') !== -1) s.constraints = 15;
+          var words = txt.split(/\s+/).length;
+          s.length = words > 30 ? 15 : words > 15 ? 10 : words > 8 ? 5 : 2;
+          s.specificity = (txt.match(/\d+/g) || []).length * 5;
+          s.specificity = Math.min(s.specificity, 20);
+          var total = Math.min(100, s.role + s.context + s.action + s.constraints + s.length + s.specificity);
+          return { total: total, breakdown: s };
         }
+
+        var sA = scorePrompt(a), sB = scorePrompt(b);
+        var html = '<div class="demo-split">';
+        function renderScore(label, sc, txt) {
+          if (!txt) return '';
+          var grade = sc.total >= 75 ? 'A' : sc.total >= 55 ? 'B' : sc.total >= 35 ? 'C' : 'D';
+          var gradeColor = sc.total >= 75 ? '#2ecc71' : sc.total >= 55 ? '#f5b731' : sc.total >= 35 ? '#e67e22' : '#e74c3c';
+          return '<div class="demo-result-panel">' +
+            '<h4>' + label + '</h4>' +
+            '<div style="text-align:center;margin:0.5rem 0"><span style="font-size:2rem;font-weight:800;color:' + gradeColor + '">' + grade + '</span>' +
+            '<div style="font-size:0.8rem;color:var(--text-muted)">' + sc.total + '/100</div></div>' +
+            '<div class="sentiment-bars" style="margin-top:0.8rem">' +
+            '<div class="bar-row"><span style="font-size:0.75rem">Role</span><div class="bar-track"><div class="bar-fill" style="width:' + (sc.breakdown.role * 5) + '%;background:var(--cyan)"></div></div><span style="font-size:0.75rem">' + sc.breakdown.role + '</span></div>' +
+            '<div class="bar-row"><span style="font-size:0.75rem">Contexte</span><div class="bar-track"><div class="bar-fill" style="width:' + (sc.breakdown.context * 6.6) + '%;background:var(--purple)"></div></div><span style="font-size:0.75rem">' + sc.breakdown.context + '</span></div>' +
+            '<div class="bar-row"><span style="font-size:0.75rem">Action</span><div class="bar-track"><div class="bar-fill" style="width:' + (sc.breakdown.action * 6.6) + '%;background:var(--gold)"></div></div><span style="font-size:0.75rem">' + sc.breakdown.action + '</span></div>' +
+            '<div class="bar-row"><span style="font-size:0.75rem">Contraintes</span><div class="bar-track"><div class="bar-fill" style="width:' + (sc.breakdown.constraints * 6.6) + '%;background:var(--green)"></div></div><span style="font-size:0.75rem">' + sc.breakdown.constraints + '</span></div>' +
+            '<div class="bar-row"><span style="font-size:0.75rem">Specificite</span><div class="bar-track"><div class="bar-fill" style="width:' + (sc.breakdown.specificity * 5) + '%;background:var(--pink)"></div></div><span style="font-size:0.75rem">' + sc.breakdown.specificity + '</span></div>' +
+            '</div></div>';
+        }
+        if (a) html += renderScore('Prompt A', sA, a);
+        if (b) html += renderScore('Prompt B', sB, b);
+        html += '</div>';
+
+        if (a && b) {
+          var winner = sA.total >= sB.total ? 'A' : 'B';
+          var diff = Math.abs(sA.total - sB.total);
+          html += '<div class="prompt-verdict" style="margin-top:1rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs);text-align:center">' +
+            '<strong style="color:var(--gold)">Prompt ' + winner + ' gagne</strong> avec ' + diff + ' points d\'avance.<br>' +
+            '<span style="font-size:0.8rem;color:var(--text-muted)">Un prompt structure CRAC produit des resultats 3-5x plus pertinents avec les LLM.</span></div>';
+        }
+
+        if (window.AIA.submitActivity) {
+          window.AIA.submitActivity('demo-prompt', {
+            type: 'prompt-comparison',
+            promptA: a ? a.substring(0, 200) : '',
+            promptB: b ? b.substring(0, 200) : '',
+            scoreA: sA.total,
+            scoreB: sB.total
+          });
+        }
+
         res.innerHTML = html;
         markDemoComplete('demo-prompt');
       }, 1200);
@@ -88,19 +156,26 @@
   }
 
   /* ======== DEMO 2: SENTIMENT ANALYSIS ======== */
-  function renderDemoSentiment(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
+  function renderDemoSentiment(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
       '<h1>Analyse de <span class="gradient-text">Sentiment</span></h1>' +
-      '<p class="page-subtitle">Analysez la tonalite emotionnelle de textes marketing</p></div>' +
+      '<p class="page-subtitle">Analysez la tonalite emotionnelle de textes marketing avec le NLP</p></div>';
+
+    main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
       '<textarea id="sentiment-input" class="demo-textarea" rows="4" placeholder="Collez un avis client, un commentaire ou un texte marketing..."></textarea>' +
       '<div class="demo-presets">' +
-      '<button class="btn-ghost btn-sm" data-preset="J\'adore ce produit, la qualite est exceptionnelle ! Je recommande a 100%">Positif</button>' +
-      '<button class="btn-ghost btn-sm" data-preset="Le produit est correct, rien de special. Le prix est un peu eleve.">Neutre</button>' +
-      '<button class="btn-ghost btn-sm" data-preset="Tres decu, le produit ne correspond pas du tout a la description. Service client inexistant.">Negatif</button>' +
+      '<button class="btn-ghost btn-sm" data-preset="J\'adore ce produit, la qualite est exceptionnelle et le service client remarquable ! Je recommande a 100%">&#128077; Positif</button>' +
+      '<button class="btn-ghost btn-sm" data-preset="Le produit est correct, rien de special. Le prix est un peu eleve pour ce que c\'est. Livraison dans les temps.">&#128528; Neutre</button>' +
+      '<button class="btn-ghost btn-sm" data-preset="Tres decu, le produit ne correspond pas du tout a la description. Qualite mediocre et service client inexistant. A fuir !">&#128078; Negatif</button>' +
+      '<button class="btn-ghost btn-sm" data-preset="Le design est magnifique mais la batterie est catastrophique. Bon ecran, mauvaise autonomie. Mitige.">&#129300; Mixte</button>' +
       '</div>' +
-      '<button class="btn-primary" id="btn-sentiment-go" style="margin-top:1rem">Analyser le sentiment</button>' +
-      '<div id="sentiment-results" class="demo-results"></div></div>';
+      '<button class="btn-primary" id="btn-sentiment-go" style="margin-top:1rem">&#128300; Analyser le sentiment</button>' +
+      '<div id="sentiment-results" class="demo-results"></div>' +
+      '<div style="margin-top:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--cyan);margin-bottom:0.5rem">&#128218; Comment ca marche ?</h4>' +
+      '<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">Cette demo utilise un <strong>lexique de sentiment francais</strong> (200+ mots) avec detection de negations, intensificateurs et diminuteurs. En production, des modeles comme <strong>CamemBERT</strong> ou <strong>FlauBERT</strong> offrent une precision de 90%+ sur le francais. Outils pro : Brandwatch, Meltwater, Sprout Social.</p>' +
+      '</div></div>';
 
     document.querySelectorAll('[data-preset]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -133,7 +208,7 @@
         };
         var lexNeg = {
           'affreux':3,'agacant':2,'arnaque':3,'atroce':3,'casse':2,
-          'catastrophe':3,'cauchemar':3,'cher':1,'complique':1,'confus':1,'couteux':2,
+          'catastrophe':3,'catastrophique':3,'cauchemar':3,'cher':1,'complique':1,'confus':1,'couteux':2,
           'dangereux':2,'decevant':2,'decu':2,'defaillant':2,'defaut':1,
           'degoute':3,'deplorable':3,'desagreable':2,'desastreux':3,
           'detestable':3,'deteste':3,'difficile':1,'dommage':1,'douteux':1,'ennuyeux':1,
@@ -142,17 +217,17 @@
           'ignoble':3,'impossible':2,'inacceptable':3,'inadmissible':3,
           'incompetent':3,'inefficace':2,'infect':3,'insatisfait':2,
           'insupportable':3,'inutile':2,'lamentable':3,'lent':1,
-          'mauvais':2,'mediocre':2,'mensonge':3,'minable':3,'moche':2,
+          'mauvais':2,'mauvaise':2,'mediocre':2,'mensonge':3,'minable':3,'moche':2,
           'naze':2,'negatif':1,'negligent':2,'nul':3,'odieux':3,'penible':2,'pire':3,
           'pitoyable':3,'probleme':2,'pourri':3,'regrettable':2,'retard':1,'ridicule':2,
           'scandaleux':3,'terrible':3,'toxique':3,'triste':1,'vulgaire':2,
-          'zero':2,'inexistant':2
+          'zero':2,'inexistant':2,'fuir':3,'mitige':1
         };
         var negations = ['ne','pas','plus','jamais','rien','aucun','sans','ni','non','guere'];
         var intensifiers = {'tres':1.5,'vraiment':1.5,'tellement':1.6,'absolument':1.8,'completement':1.7,'totalement':1.7,'extremement':1.8,'particulierement':1.4,'super':1.5,'trop':1.4};
         var diminishers = {'peu':0.5,'presque':0.7,'legerement':0.5,'moyennement':0.6,'assez':0.8};
 
-        var lower = text.toLowerCase().replace(/['']/g,"'").replace(/[.,!?;:()"""«»\[\]]/g,' ');
+        var lower = text.toLowerCase().replace(/['']/g,"'").replace(/[.,!?;:()"""'«»\[\]]/g,' ');
         var words = lower.split(/\s+/).filter(function(w){return w.length>0;});
         var posScore=0, negScore=0, posWords=[], negWords=[];
 
@@ -161,7 +236,6 @@
           if(lexPos[w]){ score=lexPos[w]; type='pos'; }
           else if(lexNeg[w]){ score=lexNeg[w]; type='neg'; }
           else { continue; }
-
           var negated=false;
           for(var j=Math.max(0,i-3);j<i;j++){
             if(negations.indexOf(words[j])!==-1){ negated=true; break; }
@@ -169,7 +243,6 @@
           var mult=1.0;
           if(i>0 && intensifiers[words[i-1]]) mult=intensifiers[words[i-1]];
           if(i>0 && diminishers[words[i-1]]) mult=diminishers[words[i-1]];
-
           var final=score*mult;
           if(negated){ type=(type==='pos')?'neg':'pos'; final=final*0.8; }
           if(type==='pos'){ posScore+=final; posWords.push({word:w,score:final}); }
@@ -182,7 +255,7 @@
         if(posWords.length===0&&negWords.length===0){ pPct=0; nPct=0; }
         var neuPct=Math.max(0,100-pPct-nPct);
         var sentiment=pPct>nPct?'POSITIF':nPct>pPct?'NEGATIF':'NEUTRE';
-        var emoji=sentiment==='POSITIF'?'😊':sentiment==='NEGATIF'?'😤':'😐';
+        var emoji=sentiment==='POSITIF'?'&#128522;':sentiment==='NEGATIF'?'&#128548;':'&#128528;';
         var color=sentiment==='POSITIF'?'#2ecc71':sentiment==='NEGATIF'?'#e74c3c':'#f5b731';
         var conf=Math.abs(pPct-nPct);
         var confLabel=conf>40?'Forte':conf>15?'Moderee':'Faible';
@@ -194,194 +267,176 @@
         highlightHtml+='</div></div>';
 
         res.innerHTML = '<div class="sentiment-result">' +
-          '<div class="sentiment-emoji">' + emoji + '</div>' +
-          '<div class="sentiment-label" style="color:' + color + '">' + sentiment + '</div>' +
-          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem">Confiance: ' + confLabel + ' (' + conf + '%) &bull; ' + (posWords.length+negWords.length) + ' mots analyses</div>' +
+          '<div class="sentiment-emoji" style="font-size:3rem;text-align:center">' + emoji + '</div>' +
+          '<div class="sentiment-label" style="color:' + color + ';text-align:center;font-size:1.3rem;font-weight:800;margin:0.5rem 0">' + sentiment + '</div>' +
+          '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:1rem;text-align:center">Confiance: ' + confLabel + ' (' + conf + '%) &bull; ' + (posWords.length+negWords.length) + ' mots-cles detectes sur ' + words.length + ' mots</div>' +
           '<div class="sentiment-bars">' +
           '<div class="bar-row"><span>Positif</span><div class="bar-track"><div class="bar-fill" style="width:' + pPct + '%;background:#2ecc71"></div></div><span>' + pPct + '%</span></div>' +
           '<div class="bar-row"><span>Neutre</span><div class="bar-track"><div class="bar-fill" style="width:' + neuPct + '%;background:#f5b731"></div></div><span>' + neuPct + '%</span></div>' +
           '<div class="bar-row"><span>Negatif</span><div class="bar-track"><div class="bar-fill" style="width:' + nPct + '%;background:#e74c3c"></div></div><span>' + nPct + '%</span></div>' +
           '</div>' + highlightHtml + '</div>';
+
+        if (window.AIA.submitActivity) {
+          window.AIA.submitActivity('demo-sentiment', {
+            type: 'sentiment-analysis', textLength: text.length,
+            sentiment: sentiment, posScore: pPct, negScore: nPct
+          });
+        }
         markDemoComplete('demo-sentiment');
       }, 1500);
     });
   }
 
-  /* ======== DEMO 3: IMAGE GENERATION ======== */
-  function renderDemoImage(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>Generation d\'<span class="gradient-text">Images</span></h1>' +
-      '<p class="page-subtitle">Creez des visuels marketing a partir de descriptions textuelles</p></div>' +
+  /* ======== DEMO 3: IMAGE GENERATION (HuggingFace) ======== */
+  function renderDemoImage(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Generation d\'<span class="gradient-text">Images IA</span></h1>' +
+      '<p class="page-subtitle">Creez des visuels marketing avec Stable Diffusion et explorez Midjourney</p></div>';
+
+    main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<textarea id="image-prompt" class="demo-textarea" rows="3" placeholder="Decrivez votre visuel : ex. Un packaging minimaliste pour un parfum de luxe, fond dore"></textarea>' +
-      '<div class="demo-presets">' +
-      '<button class="btn-ghost btn-sm" data-imgp="Flat design logo for a sustainable fashion brand, green tones">Logo eco</button>' +
-      '<button class="btn-ghost btn-sm" data-imgp="Product photography of premium coffee beans, dramatic lighting">Photo produit</button>' +
-      '<button class="btn-ghost btn-sm" data-imgp="Social media banner for a tech startup, futuristic blue neon">Banner tech</button>' +
+      '<h3 style="margin-bottom:0.5rem">&#127912; Stable Diffusion 3 — Generation en temps reel</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Generez des visuels marketing directement depuis HuggingFace. Essayez des prompts comme : <em>"Product photography of premium coffee beans, dramatic studio lighting, dark background"</em></p>' +
+      createHFEmbed('https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium-diffusers', 'Stable Diffusion 3 Medium', { tall: true }) +
       '</div>' +
-      '<div class="demo-options" style="margin:1rem 0">' +
-      '<label>Style : <select id="image-style"><option>Photorealiste</option><option>Illustration</option><option>Flat Design</option><option>3D Render</option><option>Aquarelle</option></select></label>' +
-      '<label style="margin-left:1rem">Format : <select id="image-ratio"><option>1:1 (Carre)</option><option>16:9 (Paysage)</option><option>9:16 (Portrait)</option></select></label>' +
+
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3 style="margin-bottom:0.8rem">&#128218; Guide Prompt pour Images Marketing</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Style</strong><br>"photorealistic", "flat design", "isometric", "watercolor", "3D render"</div>' +
+      '<div class="tip"><strong>Eclairage</strong><br>"studio lighting", "golden hour", "neon", "dramatic shadows"</div>' +
+      '<div class="tip"><strong>Composition</strong><br>"close-up", "bird\'s eye view", "centered", "rule of thirds"</div>' +
+      '<div class="tip"><strong>Marketing</strong><br>"product photography", "social media post", "banner ad", "logo design"</div>' +
       '</div>' +
-      '<button class="btn-primary" id="btn-image-go">Generer le visuel</button>' +
-      '<div id="image-results" class="demo-results"></div></div>';
 
-    document.querySelectorAll('[data-imgp]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        document.getElementById('image-prompt').value = this.getAttribute('data-imgp');
-      });
-    });
+      '<div style="margin-top:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--gold);margin-bottom:0.5rem">&#127775; Templates Prompts Marketing</h4>' +
+      '<div id="prompt-templates" style="display:flex;flex-direction:column;gap:0.5rem">' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Professional product photography of [your product], clean white background, soft studio lighting, high resolution, commercial quality">' +
+      '<strong>Photo Produit</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Professional product photography of [your product], clean white background, soft studio lighting, high resolution</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Modern minimalist logo for a sustainable brand, flat design, green and earth tones, vector style, clean lines">' +
+      '<strong>Logo Eco</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Modern minimalist logo for a sustainable brand, flat design, green and earth tones, vector style</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Eye-catching social media banner for tech startup, futuristic blue and purple gradient, geometric shapes, bold typography space">' +
+      '<strong>Banner Social</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Eye-catching social media banner for tech startup, futuristic blue and purple gradient, geometric shapes</code></div>' +
+      '</div></div>' +
 
-    document.getElementById('btn-image-go').addEventListener('click', function () {
-      var prompt = document.getElementById('image-prompt').value.trim();
-      if (!prompt) { window.AIA.showToast('Decrivez le visuel souhaite', 'error'); return; }
-      var style = document.getElementById('image-style').value;
-      var ratio = document.getElementById('image-ratio').value;
-      var res = document.getElementById('image-results');
-      res.innerHTML = '<div class="loading-pulse">Generation en cours (simulation)...</div>';
-
-      setTimeout(function () {
-        var c = document.createElement('canvas');
-        var w = ratio.indexOf('9:16') !== -1 ? 256 : ratio.indexOf('16:9') !== -1 ? 512 : 320;
-        var h = ratio.indexOf('9:16') !== -1 ? 455 : ratio.indexOf('16:9') !== -1 ? 288 : 320;
-        c.width = w; c.height = h;
-        var cx = c.getContext('2d');
-
-        var hue = 0;
-        for (var i = 0; i < prompt.length; i++) hue = (hue + prompt.charCodeAt(i) * 7) % 360;
-        var grad = cx.createLinearGradient(0, 0, w, h);
-        grad.addColorStop(0, 'hsl(' + hue + ',70%,25%)');
-        grad.addColorStop(0.5, 'hsl(' + ((hue + 60) % 360) + ',60%,35%)');
-        grad.addColorStop(1, 'hsl(' + ((hue + 120) % 360) + ',50%,20%)');
-        cx.fillStyle = grad;
-        cx.fillRect(0, 0, w, h);
-
-        for (var s = 0; s < 8; s++) {
-          cx.fillStyle = 'rgba(255,255,255,' + (0.03 + Math.random() * 0.06) + ')';
-          var sz = 20 + Math.random() * 80;
-          cx.beginPath();
-          cx.arc(Math.random() * w, Math.random() * h, sz, 0, Math.PI * 2);
-          cx.fill();
-        }
-
-        cx.fillStyle = 'rgba(0,0,0,0.4)';
-        cx.fillRect(0, h - 60, w, 60);
-        cx.fillStyle = '#fff';
-        cx.font = 'bold 14px Montserrat, sans-serif';
-        cx.textAlign = 'center';
-        cx.fillText('[Simulation] ' + style, w / 2, h - 35);
-        cx.font = '10px Montserrat, sans-serif';
-        var shortPrompt = prompt.length > 40 ? prompt.substring(0, 40) + '...' : prompt;
-        cx.fillText(shortPrompt, w / 2, h - 15);
-
-        res.innerHTML = '<div class="image-result">' +
-          '<img src="' + c.toDataURL() + '" alt="Generated visual" style="max-width:100%;border-radius:8px;border:1px solid var(--glass-border)">' +
-          '<p style="margin-top:0.8rem;color:var(--text-muted);font-size:0.82rem">Visuel en simulation — en production, connectez DALL-E, Midjourney ou Stable Diffusion via API.</p></div>';
-        markDemoComplete('demo-image');
-      }, 2000);
-    });
-  }
-
-  /* ======== DEMO 4: MARKETING CHATBOT ======== */
-  function renderDemoChatbot(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>Chatbot <span class="gradient-text">Marketing</span></h1>' +
-      '<p class="page-subtitle">Discutez avec un chatbot specialise marketing</p></div>' +
-      '<div class="demo-workspace glass-card">' +
-      '<div id="chat-messages" class="chat-messages"></div>' +
-      '<div class="chat-input-row">' +
-      '<input type="text" id="chat-input" class="demo-input" placeholder="Posez une question marketing...">' +
-      '<button class="btn-primary" id="btn-chat-send">Envoyer</button>' +
-      '</div>' +
-      '<div class="demo-presets" style="margin-top:0.8rem">' +
-      '<button class="btn-ghost btn-sm" data-chatq="Comment definir un persona marketing ?">Persona</button>' +
-      '<button class="btn-ghost btn-sm" data-chatq="Quelle strategie pour les reseaux sociaux en 2026 ?">Social Media</button>' +
-      '<button class="btn-ghost btn-sm" data-chatq="Comment ameliorer mon taux de conversion ?">Conversion</button>' +
+      '<div style="margin-top:1.5rem;padding:1rem;background:rgba(167,31,40,0.08);border-radius:var(--radius-xs);border:1px solid rgba(167,31,40,0.2)">' +
+      '<h4 style="color:var(--red-light);margin-bottom:0.5rem">&#128736;&#65039; Outils Pro pour la Production</h4>' +
+      '<p style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">' +
+      '<strong>Midjourney</strong> — Qualite artistique premium, ideal branding ($10/mois)<br>' +
+      '<strong>DALL-E 3</strong> — Integre a ChatGPT, excellent pour iterations rapides<br>' +
+      '<strong>Adobe Firefly</strong> — Integre Photoshop, usage commercial safe<br>' +
+      '<strong>Canva AI</strong> — Templates marketing + generation IA integree</p>' +
       '</div></div>';
 
-    var messages = document.getElementById('chat-messages');
-    var input = document.getElementById('chat-input');
-
-    function addMsg(text, isUser) {
-      var div = document.createElement('div');
-      div.className = 'chat-msg ' + (isUser ? 'user' : 'bot');
-      div.innerHTML = '<div class="chat-bubble">' + escapeHtml(text) + '</div>';
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
+    markDemoComplete('demo-image');
+    if (window.AIA.submitActivity) {
+      window.AIA.submitActivity('demo-image', { type: 'image-gen-explored', timestamp: new Date().toISOString() });
     }
-
-    addMsg('Bonjour ! Je suis votre assistant marketing IA. Posez-moi vos questions sur le marketing digital, la strategie de contenu, les reseaux sociaux ou le branding.', false);
-
-    var RESPONSES = {
-      persona: 'Un persona marketing est un portrait semi-fictif de votre client ideal. Pour le definir : 1) Analysez vos donnees clients, 2) Menez des interviews, 3) Identifiez demographics, motivations et pain points, 4) Creez une fiche complete. L\'IA accelere cette analyse avec le clustering.',
-      social: 'En 2026 : 1) Video court (Reels, TikTok), 2) Authenticite et UGC, 3) Social commerce integre, 4) Chatbots IA sur les DMs, 5) Personnalisation via IA. Concentrez-vous sur 2-3 plateformes max.',
-      conversion: 'Pour ameliorer votre taux de conversion : 1) Optimisez vos CTA, 2) Simplifiez les formulaires, 3) Ajoutez des preuves sociales, 4) A/B testing systematique, 5) Personnalisez avec l\'IA, 6) Reduisez la friction checkout.',
-      seo: 'Le SEO en 2026 repose sur l\'E-E-A-T, le contenu de qualite, les Core Web Vitals, et l\'optimisation pour la recherche vocale/IA. Les outils IA comme Surfer SEO aident a optimiser le contenu.',
-      branding: 'Branding solide : 1) Mission et valeurs claires, 2) Identite visuelle coherente, 3) Tone of voice distinctif, 4) Storytelling authentique, 5) Experience client uniforme. L\'IA generative accelere la creation d\'assets.',
-      default: 'Excellente question ! En marketing digital, analysez votre audience, definissez des KPIs clairs et testez differentes approches. L\'IA peut automatiser l\'analyse, generer du contenu et personnaliser l\'experience client.'
-    };
-
-    function getResponse(q) {
-      var lower = q.toLowerCase();
-      if (lower.indexOf('persona') !== -1) return RESPONSES.persona;
-      if (lower.indexOf('social') !== -1 || lower.indexOf('reseau') !== -1 || lower.indexOf('tiktok') !== -1) return RESPONSES.social;
-      if (lower.indexOf('conversion') !== -1 || lower.indexOf('taux') !== -1 || lower.indexOf('cta') !== -1) return RESPONSES.conversion;
-      if (lower.indexOf('seo') !== -1 || lower.indexOf('referencement') !== -1 || lower.indexOf('google') !== -1) return RESPONSES.seo;
-      if (lower.indexOf('brand') !== -1 || lower.indexOf('marque') !== -1 || lower.indexOf('identite') !== -1) return RESPONSES.branding;
-      return RESPONSES.default;
-    }
-
-    function sendMessage() {
-      var q = input.value.trim();
-      if (!q) return;
-      addMsg(q, true);
-      input.value = '';
-      setTimeout(function () {
-        addMsg(getResponse(q), false);
-        markDemoComplete('demo-chatbot');
-      }, 800 + Math.random() * 700);
-    }
-
-    document.getElementById('btn-chat-send').addEventListener('click', sendMessage);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') sendMessage(); });
-    document.querySelectorAll('[data-chatq]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        input.value = this.getAttribute('data-chatq');
-        sendMessage();
-      });
-    });
   }
 
-  /* ======== DEMO 5: A/B TESTING ======== */
-  function renderDemoABTest(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>A/B Testing <span class="gradient-text">IA</span></h1>' +
-      '<p class="page-subtitle">Simulez un test A/B automatise sur des elements marketing</p></div>' +
+  /* ======== DEMO 4: CHATBOT MARKETING (HuggingFace) ======== */
+  function renderDemoChatbot(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Chatbot <span class="gradient-text">Marketing IA</span></h1>' +
+      '<p class="page-subtitle">Testez un LLM en direct et evaluez ses capacites marketing</p></div>';
+
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">&#129302; Chat IA en Direct — HuggingChat</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Discutez avec un modele de langage open-source. Testez des prompts marketing : persona, copywriting, strategie, analyse.</p>' +
+      createHFEmbed('https://huggingface.co/chat/', 'HuggingChat — Modele Open Source', { tall: true }) +
+      '</div>' +
+
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3 style="margin-bottom:0.8rem">&#127919; Missions a Tester</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:0.6rem" id="chatbot-missions">' +
+
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      'data-p="En tant que directeur marketing d\'une startup de cosmetiques bio, cree un persona detaille de mon client ideal. Inclus : demographics, motivations, pain points, canaux preferes, et un parcours d\'achat type.">' +
+      '<strong style="color:var(--cyan)">Mission 1 : Persona Marketing</strong><br>' +
+      '<span style="font-size:0.78rem;color:var(--text-secondary)">Generer un persona client complet pour une marque de cosmetiques bio</span></div>' +
+
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      'data-p="Redige 3 versions d\'un email de relance panier abandonne pour un e-commerce de mode. Version 1 : ton amical. Version 2 : urgence (stock limite). Version 3 : offre speciale. Max 100 mots chacun. Inclus l\'objet et le CTA.">' +
+      '<strong style="color:var(--gold)">Mission 2 : Email Copywriting</strong><br>' +
+      '<span style="font-size:0.78rem;color:var(--text-secondary)">3 versions d\'un email de relance panier abandonne (amical, urgent, promo)</span></div>' +
+
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      'data-p="Analyse la strategie marketing de Netflix en 2025. Structure ton analyse avec : 1) Positionnement, 2) Canaux de communication, 3) Strategie de contenu, 4) Forces et faiblesses, 5) Recommandations d\'amelioration. Sois concis et factuel.">' +
+      '<strong style="color:var(--green)">Mission 3 : Analyse Strategique</strong><br>' +
+      '<span style="font-size:0.78rem;color:var(--text-secondary)">Analyser la strategie marketing de Netflix avec un framework structure</span></div>' +
+
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      'data-p="Cree un calendrier editorial pour le compte Instagram d\'une boulangerie artisanale pour le mois de juin. 4 posts par semaine. Pour chaque post inclus : jour, type de contenu (photo/reel/carousel), legende, hashtags (5 max), et hook de la premiere ligne.">' +
+      '<strong style="color:var(--pink)">Mission 4 : Calendrier Editorial</strong><br>' +
+      '<span style="font-size:0.78rem;color:var(--text-secondary)">Creer un calendrier editorial Instagram complet pour une boulangerie</span></div>' +
+      '</div>' +
+
+      '<div style="margin-top:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--purple);margin-bottom:0.5rem">&#128161; Comparatif LLM pour le Marketing</h4>' +
+      '<table style="width:100%;font-size:0.78rem;color:var(--text-secondary);border-collapse:collapse">' +
+      '<tr style="border-bottom:1px solid var(--border-glass)"><th style="text-align:left;padding:0.4rem;color:var(--text-primary)">Modele</th><th style="padding:0.4rem">Copy</th><th style="padding:0.4rem">Analyse</th><th style="padding:0.4rem">Code</th><th style="padding:0.4rem">Prix</th></tr>' +
+      '<tr style="border-bottom:1px solid var(--border-glass)"><td style="padding:0.4rem;font-weight:600">ChatGPT 4o</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">$20/m</td></tr>' +
+      '<tr style="border-bottom:1px solid var(--border-glass)"><td style="padding:0.4rem;font-weight:600">Claude 4</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">$20/m</td></tr>' +
+      '<tr style="border-bottom:1px solid var(--border-glass)"><td style="padding:0.4rem;font-weight:600">Gemini 2.5</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">Gratuit</td></tr>' +
+      '<tr><td style="padding:0.4rem;font-weight:600">Mistral Large</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">&#11088;&#11088;&#11088;&#11088;</td><td style="padding:0.4rem;text-align:center">Gratuit</td></tr>' +
+      '</table></div></div>';
+
+    markDemoComplete('demo-chatbot');
+    if (window.AIA.submitActivity) {
+      window.AIA.submitActivity('demo-chatbot', { type: 'chatbot-explored', timestamp: new Date().toISOString() });
+    }
+  }
+
+  /* ======== DEMO 5: A/B TESTING SIMULATOR ======== */
+  function renderDemoABTest(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>A/B Testing <span class="gradient-text">Simulator</span></h1>' +
+      '<p class="page-subtitle">Simulez un test A/B et analysez la significativite statistique</p></div>';
+
+    main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
       '<h3>Choisissez un element a tester</h3>' +
       '<div class="ab-tabs">' +
       '<button class="ab-tab active" data-abtab="cta">CTA (Bouton)</button>' +
       '<button class="ab-tab" data-abtab="headline">Titre</button>' +
       '<button class="ab-tab" data-abtab="color">Couleur</button>' +
+      '<button class="ab-tab" data-abtab="email">Objet Email</button>' +
       '</div>' +
       '<div id="ab-config"></div>' +
-      '<button class="btn-primary" id="btn-ab-run" style="margin-top:1rem">Lancer la simulation (1000 visiteurs)</button>' +
-      '<div id="ab-results" class="demo-results"></div></div>';
+      '<div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem">' +
+      '<label style="font-size:0.82rem;color:var(--text-secondary)">Visiteurs :</label>' +
+      '<select id="ab-visitors" style="padding:0.3rem;background:var(--bg-secondary);border:1px solid var(--border-glass);border-radius:var(--radius-xs);color:var(--text-primary);font-size:0.82rem">' +
+      '<option value="500">500</option><option value="1000" selected>1 000</option><option value="5000">5 000</option><option value="10000">10 000</option></select>' +
+      '</div>' +
+      '<button class="btn-primary" id="btn-ab-run" style="margin-top:1rem">&#9889; Lancer la simulation</button>' +
+      '<div id="ab-results" class="demo-results"></div>' +
+      '<div style="margin-top:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--cyan);margin-bottom:0.5rem">&#128218; Regles du A/B Testing</h4>' +
+      '<ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;list-style:none;padding:0">' +
+      '<li>&#9989; Tester UNE seule variable a la fois</li>' +
+      '<li>&#9989; Minimum 1000 visiteurs par variante pour la significativite</li>' +
+      '<li>&#9989; Duree minimum : 1 semaine (cycles hebdomadaires)</li>' +
+      '<li>&#9989; Confiance >95% avant de declarer un gagnant</li>' +
+      '<li>&#10060; Ne PAS arreter le test des les premiers resultats</li>' +
+      '</ul></div></div>';
 
     var tabType = 'cta';
     var configs = {
       cta: { a: 'Acheter maintenant', b: 'Decouvrir l\'offre' },
       headline: { a: 'La revolution IA pour votre marketing', b: 'Boostez vos ventes avec l\'intelligence artificielle' },
-      color: { a: '#A71F28 (Rouge IDRAC)', b: '#2ecc71 (Vert)' }
+      color: { a: '#A71F28 (Rouge IDRAC)', b: '#2ecc71 (Vert)' },
+      email: { a: 'Votre offre exclusive vous attend', b: '[Prenom], ne manquez pas -30% aujourd\'hui' }
     };
 
     function renderConfig() {
       var cfg = configs[tabType];
       document.getElementById('ab-config').innerHTML =
         '<div class="demo-split" style="margin-top:1rem">' +
-        '<div class="ab-variant"><div class="ab-label">Variante A</div>' +
+        '<div class="ab-variant"><div class="ab-label">Variante A (Controle)</div>' +
         '<input type="text" class="demo-input" id="ab-val-a" value="' + cfg.a + '"></div>' +
-        '<div class="ab-variant"><div class="ab-label">Variante B</div>' +
+        '<div class="ab-variant"><div class="ab-label">Variante B (Test)</div>' +
         '<input type="text" class="demo-input" id="ab-val-b" value="' + cfg.b + '"></div></div>';
     }
 
@@ -397,38 +452,62 @@
 
     document.getElementById('btn-ab-run').addEventListener('click', function () {
       var res = document.getElementById('ab-results');
-      res.innerHTML = '<div class="loading-pulse">Simulation en cours... 1000 visiteurs</div>';
+      var totalVisitors = parseInt(document.getElementById('ab-visitors').value);
+      var half = Math.floor(totalVisitors / 2);
+      res.innerHTML = '<div class="loading-pulse">Simulation en cours... ' + totalVisitors.toLocaleString() + ' visiteurs</div>';
 
       setTimeout(function () {
-        var crA = (3 + Math.random() * 8).toFixed(1);
-        var crB = (3 + Math.random() * 8).toFixed(1);
-        var convA = Math.round(500 * crA / 100);
-        var convB = Math.round(500 * crB / 100);
+        var baseRate = tabType === 'email' ? 20 + Math.random() * 15 : 3 + Math.random() * 5;
+        var crA = baseRate + (Math.random() - 0.5) * 3;
+        var crB = baseRate + (Math.random() - 0.3) * 4;
+        crA = Math.max(0.5, crA).toFixed(2);
+        crB = Math.max(0.5, crB).toFixed(2);
+        var convA = Math.round(half * crA / 100);
+        var convB = Math.round(half * crB / 100);
         var winner = parseFloat(crA) >= parseFloat(crB) ? 'A' : 'B';
-        var confidence = (85 + Math.random() * 14).toFixed(1);
-        var lift = Math.abs(parseFloat(crA) - parseFloat(crB)).toFixed(1);
+        var lift = ((Math.abs(parseFloat(crA) - parseFloat(crB)) / Math.min(parseFloat(crA), parseFloat(crB))) * 100).toFixed(1);
+
+        var pA = convA / half, pB = convB / half;
+        var pPool = (convA + convB) / totalVisitors;
+        var se = Math.sqrt(pPool * (1 - pPool) * (2 / half));
+        var zScore = se > 0 ? Math.abs(pA - pB) / se : 0;
+        var confidence = zScore > 2.576 ? 99 : zScore > 1.96 ? 95 : zScore > 1.645 ? 90 : Math.round(zScore / 1.96 * 95);
+        confidence = Math.min(99.9, confidence);
+        var significant = confidence >= 95;
 
         res.innerHTML = '<div class="ab-results-grid">' +
           '<div class="ab-result-card ' + (winner === 'A' ? 'winner' : '') + '">' +
           '<h4>Variante A</h4><div class="ab-metric">' + crA + '%</div><div>Taux de conversion</div>' +
-          '<div class="ab-detail">' + convA + ' / 500 visiteurs</div></div>' +
+          '<div class="ab-detail">' + convA.toLocaleString() + ' / ' + half.toLocaleString() + ' visiteurs</div></div>' +
           '<div class="ab-result-card ' + (winner === 'B' ? 'winner' : '') + '">' +
           '<h4>Variante B</h4><div class="ab-metric">' + crB + '%</div><div>Taux de conversion</div>' +
-          '<div class="ab-detail">' + convB + ' / 500 visiteurs</div></div></div>' +
+          '<div class="ab-detail">' + convB.toLocaleString() + ' / ' + half.toLocaleString() + ' visiteurs</div></div></div>' +
           '<div class="ab-conclusion">' +
-          '<div class="ab-winner">Gagnant : Variante ' + winner + '</div>' +
-          '<div>Uplift : +' + lift + '% | Confiance : ' + confidence + '%</div>' +
-          '<p style="margin-top:0.8rem;color:var(--text-muted);font-size:0.82rem">En production, utilisez Google Optimize, VWO ou Evolv AI pour des tests automatises.</p></div>';
+          '<div class="ab-winner" style="color:' + (significant ? 'var(--green)' : 'var(--gold)') + '">' +
+          (significant ? 'Gagnant : Variante ' + winner : 'Resultat non significatif') + '</div>' +
+          '<div>Uplift : +' + lift + '% | Confiance : ' + confidence + '% | Z-score : ' + zScore.toFixed(2) + '</div>' +
+          (significant ? '' : '<p style="margin-top:0.5rem;color:var(--gold);font-size:0.82rem">&#9888;&#65039; Confiance < 95%. Continuez le test avec plus de visiteurs avant de conclure.</p>') +
+          '<p style="margin-top:0.8rem;color:var(--text-muted);font-size:0.82rem">Outils pro : Google Optimize, VWO, Evolv AI, Eppo, LaunchDarkly</p></div>';
+
+        if (window.AIA.submitActivity) {
+          window.AIA.submitActivity('demo-abtest', {
+            type: 'ab-test-simulation', element: tabType,
+            crA: crA, crB: crB, winner: winner, confidence: confidence,
+            visitors: totalVisitors
+          });
+        }
         markDemoComplete('demo-abtest');
       }, 2500);
     });
   }
 
   /* ======== DEMO 6: SEO ANALYZER ======== */
-  function renderDemoSEO(main) {
-    main.innerHTML = '<div class="page-header">' + backBtn() +
+  function renderDemoSEO(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
       '<h1>SEO <span class="gradient-text">Analyzer</span></h1>' +
-      '<p class="page-subtitle">Analysez et optimisez votre contenu pour le referencement</p></div>' +
+      '<p class="page-subtitle">Analysez et optimisez votre contenu pour le referencement Google</p></div>';
+
+    main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
       '<div class="seo-form">' +
       '<label>URL ou titre de la page :</label>' +
@@ -440,8 +519,17 @@
       '<label style="margin-top:0.8rem">Contenu de la page :</label>' +
       '<textarea id="seo-content" class="demo-textarea" rows="5" placeholder="Collez ou ecrivez votre contenu ici..."></textarea>' +
       '</div>' +
-      '<button class="btn-primary" id="btn-seo-go" style="margin-top:1rem">Analyser le SEO</button>' +
-      '<div id="seo-results" class="demo-results"></div></div>';
+      '<button class="btn-primary" id="btn-seo-go" style="margin-top:1rem">&#128269; Analyser le SEO</button>' +
+      '<div id="seo-results" class="demo-results"></div>' +
+      '<div style="margin-top:1.5rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius-xs)">' +
+      '<h4 style="color:var(--cyan);margin-bottom:0.5rem">&#128218; Checklist SEO 2026</h4>' +
+      '<ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;list-style:none;padding:0">' +
+      '<li>&#9989; E-E-A-T : Experience, Expertise, Autorite, Confiance</li>' +
+      '<li>&#9989; Core Web Vitals : LCP < 2.5s, FID < 100ms, CLS < 0.1</li>' +
+      '<li>&#9989; Contenu original et expertise demontree</li>' +
+      '<li>&#9989; Schema markup (FAQ, Product, HowTo, Review)</li>' +
+      '<li>&#9989; Optimisation pour SGE (Search Generative Experience)</li>' +
+      '</ul></div></div>';
 
     document.getElementById('btn-seo-go').addEventListener('click', function () {
       var url = document.getElementById('seo-url').value.trim();
@@ -458,28 +546,39 @@
         var checks = [];
         var score = 0, maxScore = 0;
 
-        function addCheck(label, ok, detail) {
-          maxScore += 10;
-          if (ok) score += 10;
+        function addCheck(label, ok, detail, weight) {
+          weight = weight || 10;
+          maxScore += weight;
+          if (ok) score += weight;
           checks.push({ label: label, ok: ok, detail: detail });
         }
 
-        var kwFirst = keyword.split(' ')[0].toLowerCase();
-        addCheck('Mot-cle dans l\'URL', url.toLowerCase().indexOf(kwFirst) !== -1,
-          url ? 'URL: ' + escapeHtml(url) : 'URL non renseignee');
-        addCheck('Meta description presente', meta.length > 0, meta.length + ' caracteres');
-        addCheck('Meta description < 160 car.', meta.length > 0 && meta.length <= 160, meta.length + '/160');
-        addCheck('Mot-cle dans la meta', meta.toLowerCase().indexOf(kwFirst) !== -1, 'Recherche de "' + escapeHtml(kwFirst) + '"');
+        var kwLower = keyword.toLowerCase();
+        var kwFirst = kwLower.split(' ')[0];
+        var contentLower = content.toLowerCase();
         var wordCount = content.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
-        addCheck('Contenu > 300 mots', wordCount >= 300, wordCount + ' mots');
-        addCheck('Contenu > 100 mots', wordCount >= 100, wordCount + ' mots');
-        addCheck('Mot-cle dans le contenu', content.toLowerCase().indexOf(kwFirst) !== -1, 'Presence du mot-cle');
+
+        addCheck('Mot-cle dans l\'URL', url.toLowerCase().indexOf(kwFirst) !== -1, url ? 'URL: ' + escapeHtml(url) : 'URL non renseignee', 10);
+        addCheck('Meta description presente', meta.length > 0, meta.length + ' caracteres', 10);
+        addCheck('Meta description optimale (120-155 car.)', meta.length >= 120 && meta.length <= 155, meta.length + '/155 caracteres', 10);
+        addCheck('Mot-cle dans la meta', meta.toLowerCase().indexOf(kwFirst) !== -1, 'Recherche de "' + escapeHtml(kwFirst) + '"', 10);
+        addCheck('Contenu > 300 mots', wordCount >= 300, wordCount + ' mots', 15);
+        addCheck('Mot-cle en debut de contenu', contentLower.indexOf(kwFirst) !== -1 && contentLower.indexOf(kwFirst) < 200, 'Position dans les 200 premiers caracteres', 10);
 
         var kwCount = 0;
-        var words = content.toLowerCase().split(/\s+/);
+        var words = contentLower.split(/\s+/);
         words.forEach(function (w) { if (w.indexOf(kwFirst) !== -1) kwCount++; });
         var density = words.length > 0 ? (kwCount / words.length * 100).toFixed(1) : '0.0';
-        addCheck('Densite mot-cle 1-3%', parseFloat(density) >= 1 && parseFloat(density) <= 3, 'Densite : ' + density + '%');
+        addCheck('Densite mot-cle 1-3%', parseFloat(density) >= 1 && parseFloat(density) <= 3, 'Densite : ' + density + '%', 10);
+
+        var hasHeadings = content.indexOf('##') !== -1 || content.indexOf('H2') !== -1 || content.indexOf('h2') !== -1;
+        addCheck('Structure H2/H3 suggeree', hasHeadings || wordCount > 300, wordCount > 300 ? 'Contenu long = necessaire' : 'Ajoutez des sous-titres', 5);
+
+        var readability = wordCount > 0 ? Math.min(100, Math.round(wordCount / 5 + (content.match(/\./g) || []).length * 3)) : 0;
+        addCheck('Lisibilite adequate', readability > 30, 'Score lisibilite: ' + readability, 10);
+
+        var hasCTA = contentLower.indexOf('decouvr') !== -1 || contentLower.indexOf('achet') !== -1 || contentLower.indexOf('essaye') !== -1 || contentLower.indexOf('inscri') !== -1;
+        addCheck('Appel a l\'action (CTA)', hasCTA, hasCTA ? 'CTA detecte' : 'Ajoutez un CTA', 10);
 
         var pct = Math.round(score / maxScore * 100);
         var grade = pct >= 80 ? 'A' : pct >= 60 ? 'B' : pct >= 40 ? 'C' : 'D';
@@ -490,24 +589,33 @@
           '<div class="seo-pct">' + pct + '/100</div></div>' +
           '<div class="seo-checks">' + checks.map(function (c) {
             return '<div class="seo-check ' + (c.ok ? 'pass' : 'fail') + '">' +
-              '<span class="check-icon">' + (c.ok ? '✅' : '❌') + '</span>' +
+              '<span class="check-icon">' + (c.ok ? '&#9989;' : '&#10060;') + '</span>' +
               '<span class="check-label">' + c.label + '</span>' +
               '<span class="check-detail">' + c.detail + '</span></div>';
           }).join('') + '</div>' +
           '<div class="seo-recommendations"><h4>Recommandations</h4><ul>' +
-          (!url ? '<li>Ajoutez une URL contenant votre mot-cle principal</li>' : '') +
-          (meta.length === 0 ? '<li>Redigez une meta description de 120-155 caracteres</li>' : '') +
-          (meta.length > 160 ? '<li>Raccourcissez votre meta description (155 car. max)</li>' : '') +
-          (wordCount < 300 ? '<li>Enrichissez votre contenu (objectif : 300+ mots)</li>' : '') +
-          (parseFloat(density) < 1 ? '<li>Integrez davantage votre mot-cle naturellement</li>' : '') +
-          (parseFloat(density) > 3 ? '<li>Reduisez la repetition du mot-cle (sur-optimisation)</li>' : '') +
-          '<li>Structurez avec des H2/H3 contenant des variantes du mot-cle</li>' +
-          '<li>Ajoutez des liens internes et externes pertinents</li></ul></div>';
+          (!url ? '<li>Ajoutez une URL SEO-friendly contenant votre mot-cle principal (ex: <code>cafe-bio-premium-equitable</code>)</li>' : '') +
+          (meta.length === 0 ? '<li>Redigez une meta description de 120-155 caracteres avec votre mot-cle et un CTA</li>' : '') +
+          (meta.length > 155 ? '<li>Raccourcissez votre meta description (Google coupe a 155 caracteres)</li>' : '') +
+          (wordCount < 300 ? '<li>Enrichissez votre contenu (objectif : 800-1500 mots pour un article SEO performant)</li>' : '') +
+          (parseFloat(density) < 1 ? '<li>Integrez davantage votre mot-cle naturellement (objectif : 1-2%)</li>' : '') +
+          (parseFloat(density) > 3 ? '<li>&#9888;&#65039; Sur-optimisation detectee ! Reduisez la repetition du mot-cle</li>' : '') +
+          '<li>Ajoutez des liens internes (3-5 par article) et 1-2 liens externes de qualite</li>' +
+          '<li>Utilisez des variantes semantiques : synonymes, questions, expressions longue traine</li>' +
+          '<li>Ajoutez des images avec des attributs alt contenant le mot-cle</li></ul></div>';
+
+        if (window.AIA.submitActivity) {
+          window.AIA.submitActivity('demo-seo', {
+            type: 'seo-analysis', keyword: keyword, score: pct, grade: grade,
+            wordCount: wordCount, density: density
+          });
+        }
         markDemoComplete('demo-seo');
       }, 1800);
     });
   }
 
+  /* ---------- Expose to AIA ---------- */
   window.AIA = window.AIA || {};
   window.AIA.renderDemoPrompt = renderDemoPrompt;
   window.AIA.renderDemoSentiment = renderDemoSentiment;
@@ -515,4 +623,5 @@
   window.AIA.renderDemoChatbot = renderDemoChatbot;
   window.AIA.renderDemoABTest = renderDemoABTest;
   window.AIA.renderDemoSEO = renderDemoSEO;
+  window.AIA.createHFEmbed = createHFEmbed;
 })();

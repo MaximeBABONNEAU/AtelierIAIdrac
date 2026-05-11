@@ -955,3 +955,112 @@ body {
 .highlight-word.negated { text-decoration: line-through; opacity: 0.7; }
 .sentiment-meta { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.8rem; font-size: 0.75rem; color: var(--text-muted); }
 .sentiment-meta span { display: flex; align-items: center; gap: 0.3rem; }
+
+/* ========== LOCKED ACTIVITIES ========== */
+.activity-item.locked {
+  opacity: 0.45; cursor: not-allowed; pointer-events: none;
+  background: rgba(18,18,32,0.3);
+}
+.activity-item.locked .activity-icon { filter: grayscale(1); }
+.lock-badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.15rem 0.5rem; border-radius: 10px;
+  font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+  background: rgba(255,255,255,0.06); color: var(--text-muted);
+}
+
+/* ========== LEADERBOARD IS-ME HIGHLIGHT ========== */
+.leaderboard-row.is-me {
+  background: rgba(167,31,40,0.12); border-left: 3px solid var(--red);
+}
+.leaderboard-row.is-me td { font-weight: 700; }
+
+/* ========== HUGGINGFACE EMBED ========== */
+.hf-embed-container {
+  position: relative; width: 100%; min-height: 420px;
+  border-radius: var(--radius-sm); overflow: hidden;
+  border: 1px solid var(--border-glass); margin: 1rem 0;
+  background: var(--bg-secondary);
+}
+.hf-embed-container iframe {
+  width: 100%; height: 520px; border: none; border-radius: var(--radius-sm);
+}
+.hf-embed-container.tall iframe { height: 680px; }
+.hf-embed-label {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.5rem 0.8rem; font-size: 0.72rem; font-weight: 600;
+  color: var(--text-muted); background: rgba(18,18,32,0.8);
+  border-bottom: 1px solid var(--border-glass);
+}
+.hf-embed-label img { width: 16px; height: 16px; }
+
+/* ========== INLINE DEMO IN ACTIVITY ========== */
+.activity-demo-inline {
+  margin: 1.5rem 0; padding: 1.5rem;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+}
+.activity-demo-inline h4 {
+  font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem;
+  color: var(--gold); display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* ========== EXERCISE SUBMISSION ========== */
+.exercise-submission {
+  margin: 1.5rem 0; padding: 1.5rem;
+  background: var(--bg-glass); border: 1px solid rgba(52,211,153,0.2);
+  border-radius: var(--radius-sm);
+}
+.exercise-submission h4 {
+  font-size: 0.9rem; font-weight: 700; margin-bottom: 0.8rem;
+  color: var(--green); display: flex; align-items: center; gap: 0.5rem;
+}
+.exercise-submission textarea {
+  width: 100%; min-height: 100px; padding: 0.8rem;
+  background: var(--bg-secondary); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-xs); color: var(--text-primary);
+  font-family: var(--font-body); font-size: 0.85rem; resize: vertical;
+}
+.exercise-submission textarea:focus { border-color: var(--green); outline: none; }
+.exercise-submission .btn-submit {
+  margin-top: 0.8rem; padding: 0.5rem 1.2rem;
+  background: linear-gradient(135deg, var(--green), #059669);
+  border: none; border-radius: var(--radius-xs);
+  color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.exercise-submission .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(52,211,153,0.3); }
+
+/* ========== DAY LOCK ADMIN ========== */
+.day-lock-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.8rem 1rem; margin-bottom: 0.5rem;
+  background: var(--bg-secondary); border-radius: var(--radius-xs);
+  border: 1px solid var(--border-glass);
+}
+.day-lock-row .day-label { font-weight: 700; font-size: 0.88rem; }
+.toggle-switch {
+  position: relative; width: 44px; height: 24px; cursor: pointer;
+}
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+  border-radius: 12px; transition: 0.3s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; left: 2px; top: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; transition: 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--green); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ========== ACTIVITY SUBMISSIONS VIEWER ========== */
+.submission-card {
+  padding: 1rem; margin-bottom: 0.8rem;
+  background: var(--bg-secondary); border-radius: var(--radius-xs);
+  border: 1px solid var(--border-glass);
+}
+.submission-card .student-name { font-weight: 700; font-size: 0.85rem; color: var(--cyan); }
+.submission-card .submission-time { font-size: 0.7rem; color: var(--text-muted); }
+.submission-card .submission-text { margin-top: 0.5rem; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary); }
