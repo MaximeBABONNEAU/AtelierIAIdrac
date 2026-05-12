@@ -401,8 +401,13 @@
       'demo-speech':function(){if(window.AIA&&window.AIA.renderDemoSpeech)window.AIA.renderDemoSpeech(main);},
       'demo-vqa':function(){if(window.AIA&&window.AIA.renderDemoVqa)window.AIA.renderDemoVqa(main);},
       'demo-tts':function(){if(window.AIA&&window.AIA.renderDemoTts)window.AIA.renderDemoTts(main);},
+      'demo-upscale':function(){if(window.AIA&&window.AIA.renderDemoUpscale)window.AIA.renderDemoUpscale(main);},
+      'demo-translate':function(){if(window.AIA&&window.AIA.renderDemoTranslate)window.AIA.renderDemoTranslate(main);},
+      'demo-logo':function(){if(window.AIA&&window.AIA.renderDemoLogo)window.AIA.renderDemoLogo(main);},
+      'demo-avatar':function(){if(window.AIA&&window.AIA.renderDemoAvatar)window.AIA.renderDemoAvatar(main);},
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
+      highlights:function(){if(window.AIA&&window.AIA.renderHighlightsPage)window.AIA.renderHighlightsPage(main);},
       arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -490,9 +495,11 @@
     var tA=0,cA=0;
     ['day1','day2','day3','day4'].forEach(function(d){var p=PROGRAM[d],a=p.matin.concat(p.aprem);tA+=a.length;a.forEach(function(x){if(state.progress[x.id])cA++;});});
     var pct=tA>0?Math.round((cA/tA)*100):0;
+    var highlightsBanner = (window.AIA && window.AIA.renderHighlightsBanner) ? window.AIA.renderHighlightsBanner() : '';
     main.innerHTML=
       '<div class="page-header"><h1>Bienvenue <span class="gradient-text">'+(state.user?state.user.name:'')+'</span> !</h1>'+
       '<p class="page-subtitle">Jour '+getCurrentDay()+' sur 4 &bull; '+CONFIG.school+'</p></div>'+
+      highlightsBanner+
       '<div class="xp-card glass-card"><div class="xp-ring" style="--pct:'+info.progress+'%"><div class="xp-ring-inner">'+info.level+'</div></div>'+
       '<div class="xp-info"><div class="xp-title">'+state.xp.total+' XP</div><div class="xp-level-name">'+info.title+'</div>'+
       '<div class="progress-bar"><div class="progress-fill" style="width:'+info.progress+'%"></div></div>'+
@@ -506,6 +513,7 @@
       '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Programme</h2>'+
       '<div class="days-grid">'+renderDayCards()+'</div>'+
       '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Activite Recente</h2>'+renderActivityFeed();
+    if (window.AIA && window.AIA.wireHighlightCTAs) window.AIA.wireHighlightCTAs(main);
   }
 
   function renderGameSpotlight(){
@@ -652,13 +660,17 @@
       {id:'demo-prompt',icon:'✍️',title:'Prompt Playground',desc:'Comparer un prompt vague vs structure CRAC',tag:'Interactif',day:1,phase:'phase1'},
       {id:'demo-chatbot',icon:'💬',title:'Chatbot Marketing',desc:'Discuter avec un LLM open-source pour personas & strategie',tag:'HuggingFace',day:1,phase:'phase1'},
       {id:'demo-vqa',icon:'👁️',title:'Analyse Visuelle IA',desc:'Decortiquer les pubs concurrentes & generer alt-text SEO',tag:'HuggingFace',day:1,phase:'phase1'},
+      {id:'demo-translate',icon:'🌍',title:'Traduction Multi-langue',desc:'NLLB-200 — internationaliser slogans et descriptions',tag:'HuggingFace',day:1,phase:'phase1'},
       // Day 2 — Contenu visuel & marque
       {id:'demo-image',icon:'🎨',title:'Generation d\'Images',desc:'Stable Diffusion 3 — visuels produit & logos',tag:'HuggingFace',day:2,phase:'phase2'},
+      {id:'demo-logo',icon:'🆎',title:'Generateur de Logos',desc:'FLUX.1 — 50 variantes logo + branding en 5 min',tag:'HuggingFace',day:2,phase:'phase2'},
       {id:'demo-bg-remove',icon:'🖼️',title:'Suppression de Fond',desc:'Detourer photos produits en 1 clic (BRIA RMBG)',tag:'HuggingFace',day:2,phase:'phase2'},
+      {id:'demo-upscale',icon:'🔍',title:'Upscaler d\'Images',desc:'Real-ESRGAN — 4x resolution sur vieux visuels',tag:'HuggingFace',day:2,phase:'phase2'},
       {id:'demo-sentiment',icon:'😊',title:'Analyse de Sentiment',desc:'Mesurer la tonalite emotionnelle de textes marketing',tag:'NLP',day:2,phase:'phase2'},
       // Day 3 — Campagne & creation pub
       {id:'demo-music',icon:'🎵',title:'Generation Musicale',desc:'MusicGen — jingles & bandes-son pour pubs video',tag:'HuggingFace',day:3,phase:'phase3'},
       {id:'demo-tts',icon:'🗣️',title:'Voix Off IA',desc:'Parler-TTS — voix-off broadcast pour videos pub',tag:'HuggingFace',day:3,phase:'phase3'},
+      {id:'demo-avatar',icon:'🎬',title:'Avatar Video Anime',desc:'SadTalker — animer une photo avec audio pour video pitch',tag:'HuggingFace',day:3,phase:'phase3'},
       {id:'demo-abtest',icon:'📊',title:'A/B Testing',desc:'Simulateur statistique pour optimiser CTA & headlines',tag:'Analytics',day:3,phase:'phase3'},
       // Day 4 — Pitch, SEO, lancement
       {id:'demo-seo',icon:'🔍',title:'SEO Analyzer',desc:'Analyser & optimiser le SEO de votre landing page',tag:'SEO',day:4,phase:'phase4'},

@@ -739,6 +739,119 @@
     if (window.AIA.submitActivity) window.AIA.submitActivity('demo-tts', { type: 'tts-explored', timestamp: new Date().toISOString() });
   }
 
+  /* ======== DEMO 12: IMAGE UPSCALE (HuggingFace) ======== */
+  function renderDemoUpscale(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Upscaling <span class="gradient-text">d\'Images</span></h1>' +
+      '<p class="page-subtitle">Augmentez la resolution de vos visuels x4 — sauvez vieilles photos produits</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🔍 Real-ESRGAN — Upscaler IA x4</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une image basse resolution. L\'IA reconstruit les details et la rend 4x plus grande, nette, exploitable en print/web.</p>' +
+      createHFEmbed('https://akhaliq-real-esrgan.hf.space', 'Real-ESRGAN — Image Upscaler', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>💡 Insight pedagogique</h3>' +
+      '<p style="font-size:0.85rem;line-height:1.6">L\'upscaling IA est un cas pratique de <strong>super-resolution</strong> par reseau neuronal convolutionnel. Le modele a appris des millions de paires "petit/grand" et hallucine des details plausibles. Limite : pas de creation d\'info inexistante (texte flou reste illisible). Use cases marketing : recyclage de vieux visuels, conversion 72→300 DPI pour print, restauration de logos historiques.</p>' +
+      '<h3 style="margin-top:1rem">🎯 Use cases marketing</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Print catalogue</strong><br>Reutiliser visuels web en 4K</div>' +
+      '<div class="tip"><strong>Vieilles archives</strong><br>Restaurer photos produits anciennes</div>' +
+      '<div class="tip"><strong>UGC haute def</strong><br>Upscale photos clients</div>' +
+      '<div class="tip"><strong>Affiches</strong><br>Banner 4K depuis screenshot HD</div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Alternatives :</strong> Topaz Gigapixel (pro), Adobe Super Resolution, Let\'s Enhance, Upscayl (open-source)</p>' +
+      '</div>';
+    markDemoComplete('demo-upscale');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-upscale', { type: 'upscale-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 13: TRANSLATION (HuggingFace) ======== */
+  function renderDemoTranslate(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Traduction <span class="gradient-text">Marketing Multi-langue</span></h1>' +
+      '<p class="page-subtitle">Internationalisez votre campagne en 200 langues — NLLB de Meta</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🌍 NLLB-200 — No Language Left Behind</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Traduisez slogans, descriptions produit, emails en 200 langues. Qualite native sur les langues majeures (EN, ES, DE, IT, ZH, AR, JA, PT, NL, RU).</p>' +
+      createHFEmbed('https://facebook-nllb-translation.hf.space', 'NLLB-200 — Translation', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>💡 Insight pedagogique : Traduction vs Transcreation</h3>' +
+      '<p style="font-size:0.85rem;line-height:1.6">Modeles encoder-decoder transformer couvrant 200 langues. Pour le marketing pro : <strong>relisez par un locuteur natif</strong>. Le ton et les references culturelles ne se traduisent jamais parfaitement — c\'est la difference entre <strong>traduction</strong> et <strong>transcreation</strong>.</p>' +
+      '<h3 style="margin-top:1rem">🎯 Workflow professionnel</h3>' +
+      '<ol style="font-size:0.85rem;line-height:1.7;padding-left:1.5rem">' +
+      '<li>Premier jet IA (NLLB / DeepL)</li>' +
+      '<li>Relecture native pour transcreation (idiomes, jeux de mots)</li>' +
+      '<li>A/B test entre 2 versions sur cible reelle</li>' +
+      '<li>Iteration sur la version gagnante</li>' +
+      '</ol>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Outils pro :</strong> DeepL (premium FR/EN/DE), Google Translate (volume), Smartling/Lokalise (gestion projets)</p>' +
+      '</div>';
+    markDemoComplete('demo-translate');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-translate', { type: 'translate-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 14: AI LOGO GENERATOR (HuggingFace FLUX) ======== */
+  function renderDemoLogo(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Generation de <span class="gradient-text">Logos IA</span></h1>' +
+      '<p class="page-subtitle">Creez 50 variantes de logo en 5 minutes — FLUX.1 Black Forest Labs</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🎨 FLUX.1 [schnell] — Logo & branding</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">FLUX excelle sur typographie + visuels vectoriels (probleme classique des autres modeles). Ideal pour logos, icones, picto.</p>' +
+      createHFEmbed('https://black-forest-labs-flux-1-schnell.hf.space', 'FLUX.1 schnell — Image Generator', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>💡 Insight pedagogique</h3>' +
+      '<p style="font-size:0.85rem;line-height:1.6">FLUX.1 (Black Forest Labs) est en 2025 le meilleur modele open-source pour <strong>typographie + coherence iconographique</strong>. Architecture : flow matching. Force : sait dessiner du texte lisible (impossible pour DALL-E 2 / SD 1.5). Limite : ne sort pas du SVG vectoriel — il faut convertir avec Vector Magic ou Illustrator Trace.</p>' +
+      '<h3 style="margin-top:1rem">🎯 Prompts logo magiques</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:0.5rem">' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Minimalist logo design for [BRAND], single bold letter, geometric shape, vector style, flat design, black on white background, professional, modern, simple"><strong>Logo monogramme</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Minimalist logo, single bold letter, geometric, vector flat</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Modern brand logo for eco-friendly startup [BRAND], leaf icon integrated with text, green earth tones, sans-serif typography, flat vector design"><strong>Logo eco</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Eco brand, leaf icon, green earth, flat vector</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Tech startup logo [BRAND], abstract geometric symbol, gradient blue to purple, modern sans-serif font, vector style, isolated on white"><strong>Logo tech SaaS</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Tech logo, gradient blue purple, geometric</code></div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Workflow pro :</strong> FLUX (variantes) → Vector Magic (vectorisation) → Adobe Illustrator (raffinement)</p>' +
+      '</div>';
+    markDemoComplete('demo-logo');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-logo', { type: 'logo-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 15: TALKING HEAD AVATAR VIDEO (HuggingFace) ======== */
+  function renderDemoAvatar(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Avatars Video <span class="gradient-text">Animes IA</span></h1>' +
+      '<p class="page-subtitle">Animez une photo statique avec audio — ideal pitch fondateur, FAQ video</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🗣️ SadTalker — Photo + Audio → Video parlante</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez photo + audio (ou TTS). L\'IA genere une video courte ou la personne semble dire le texte. Workflow accelere x100 vs studio video.</p>' +
+      createHFEmbed('https://vinthony-sadtalker.hf.space', 'SadTalker — Talking Head Generator', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3 style="color:#f5b731">⚠️ Insight pedagogique + ETHIQUE</h3>' +
+      '<p style="font-size:0.85rem;line-height:1.6">Meme techno que les <strong>deepfakes malveillants</strong>. Toujours :</p>' +
+      '<ul style="font-size:0.85rem;line-height:1.7;padding-left:1.5rem">' +
+      '<li><strong>Consentement ecrit</strong> de la personne dont vous utilisez l\'image</li>' +
+      '<li><strong>Mention explicite</strong> qu\'il s\'agit d\'un avatar IA</li>' +
+      '<li>Jamais d\'utilisation pour declarations non approuvees</li>' +
+      '<li>RGPD : l\'image d\'une personne = donnee personnelle</li>' +
+      '</ul>' +
+      '<h3 style="margin-top:1rem">🎯 Use cases marketing ethiques</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Pitch fondateur</strong><br>Animer votre propre photo en video corporate</div>' +
+      '<div class="tip"><strong>FAQ video</strong><br>Reponses pre-enregistrees depuis 1 photo</div>' +
+      '<div class="tip"><strong>Multilingue</strong><br>Meme presentateur en 10 langues</div>' +
+      '<div class="tip"><strong>Avatar de marque</strong><br>Personnage 100% IA evite RGPD</div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Outils pro :</strong> HeyGen ($30/mo broadcast), Synthesia ($30/mo), D-ID (avatars custom)</p>' +
+      '</div>';
+    markDemoComplete('demo-avatar');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-avatar', { type: 'avatar-explored', timestamp: new Date().toISOString() });
+  }
+
   /* ---------- Expose to AIA ---------- */
   window.AIA = window.AIA || {};
   window.AIA.renderDemoPrompt = renderDemoPrompt;
@@ -752,5 +865,9 @@
   window.AIA.renderDemoSpeech = renderDemoSpeech;
   window.AIA.renderDemoVqa = renderDemoVqa;
   window.AIA.renderDemoTts = renderDemoTts;
+  window.AIA.renderDemoUpscale = renderDemoUpscale;
+  window.AIA.renderDemoTranslate = renderDemoTranslate;
+  window.AIA.renderDemoLogo = renderDemoLogo;
+  window.AIA.renderDemoAvatar = renderDemoAvatar;
   window.AIA.createHFEmbed = createHFEmbed;
 })();
