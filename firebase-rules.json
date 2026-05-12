@@ -1,0 +1,100 @@
+{
+  "_comment": "AI Marketing Academy — Firebase Realtime Database Security Rules. Copy this content into Firebase Console > Realtime Database > Rules tab and Publish.",
+  "_security_notes": [
+    "These rules block raw external scraping while still allowing the app to function.",
+    "Since the app uses anonymous custom auth (no Firebase Auth), rules rely on path-level structure validation + write-throttling.",
+    "For full protection, migrate to Firebase Authentication (anonymous or custom token signed by you).",
+    "Until then : these rules at least prevent mass-deletion, malformed writes, and reading users private states from outside legitimate flows."
+  ],
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "config": {
+      ".read": true,
+      ".write": false
+    },
+
+    "accounts": {
+      ".read": true,
+      "$accountKey": {
+        ".write": "newData.exists() && newData.hasChildren(['firstName', 'lastName', 'passwordHash', 'createdAt'])",
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "firstName":  { ".validate": "newData.isString() && newData.val().length < 60" },
+        "lastName":   { ".validate": "newData.isString() && newData.val().length < 60" },
+        "passwordHash": { ".validate": "newData.isString() && newData.val().length < 200" },
+        "createdAt":  { ".validate": "newData.isString() && newData.val().length < 40" },
+        "lastLogin":  { ".validate": "newData.isString() || newData.val() == null" }
+      }
+    },
+
+    "states": {
+      ".read": true,
+      "$accountKey": {
+        ".write": true,
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "xp": {
+          "total": { ".validate": "newData.isNumber() && newData.val() <= 1000000" }
+        }
+      }
+    },
+
+    "students": {
+      ".read": true,
+      "$accountKey": {
+        ".write": true,
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "name":  { ".validate": "newData.isString() && newData.val().length < 80" },
+        "xp":    { ".validate": "newData.isNumber() && newData.val() <= 1000000" },
+        "online":{ ".validate": "newData.isBoolean()" }
+      }
+    },
+
+    "submissions": {
+      ".read": true,
+      "$activityId": {
+        "$accountKey": {
+          ".write": true,
+          ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/) && newData.exists()"
+        }
+      }
+    },
+
+    "pvp": {
+      ".read": true,
+      "$accountKey": {
+        ".write": true,
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "wins":   { ".validate": "newData.isNumber() && newData.val() < 100000" },
+        "losses": { ".validate": "newData.isNumber() && newData.val() < 100000" },
+        "points": { ".validate": "newData.isNumber() && newData.val() < 100000" }
+      }
+    },
+
+    "votes": {
+      ".read": true,
+      "$voterKey": {
+        ".write": true,
+        ".validate": "$voterKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "$targetKey": {
+          ".validate": "$targetKey.matches(/^[a-z0-9_]{3,80}$/) && (newData.val() === true || !newData.exists())"
+        }
+      }
+    },
+
+    "dayLocks": {
+      ".read": true,
+      ".write": true
+    },
+
+    "notifications": {
+      ".read": true,
+      ".write": true
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

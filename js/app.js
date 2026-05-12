@@ -5,9 +5,29 @@
 (function () {
   'use strict';
 
+  // === SECURITY: Domain allowlist (protects against iframe embed / unauthorized hosting) ===
+  var ALLOWED_HOSTS = ['maximebabonneau.github.io', 'localhost', '127.0.0.1', '0.0.0.0'];
+  if (typeof location !== 'undefined' && location.hostname &&
+      ALLOWED_HOSTS.indexOf(location.hostname) === -1 &&
+      location.protocol !== 'file:') {
+    // Refuse to initialize on unauthorized origins
+    try {
+      document.documentElement.innerHTML =
+        '<div style="font-family:sans-serif;text-align:center;padding:3rem;color:#fff;background:#0d1117;height:100vh">' +
+        '<h1 style="color:#f5b731">🔒 Acces restreint</h1>' +
+        '<p>Cette application AI Marketing Academy est reservee aux etudiants de IDRAC Business School.</p>' +
+        '<p style="color:#999;font-size:0.85rem;margin-top:1rem">Origine non autorisee : <code>' + location.hostname + '</code></p>' +
+        '<p style="color:#999;font-size:0.85rem">Acces officiel : <a href="https://maximebabonneau.github.io/AtelierIAIdrac/" style="color:#f5b731">https://maximebabonneau.github.io/AtelierIAIdrac/</a></p>' +
+        '</div>';
+    } catch (e) {}
+    throw new Error('Unauthorized origin: ' + location.hostname);
+  }
+
   var CONFIG = {
     classCode: 'AIMARK2026',
     adminHash: '9d9e119b',
+    disablePublicRegistration: true, // Admin must create accounts via admin panel
+    allowedHosts: ALLOWED_HOSTS,
     storagePrefix: 'aia_',
     dates: ['2026-06-08','2026-06-09','2026-06-10','2026-06-11'],
     dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Jeudi 11 Juin'],
@@ -858,7 +878,28 @@
     document.getElementById('back-role-student').addEventListener('click', resetLoginUI);
     document.getElementById('back-role-admin').addEventListener('click', resetLoginUI);
 
+    // Hide public registration when locked down (admin-only account creation)
+    if (CONFIG.disablePublicRegistration) {
+      var regBtn = document.getElementById('btn-show-register');
+      if (regBtn) {
+        regBtn.style.display = 'none';
+        // Add a helper message in the login form
+        var loginForm = document.getElementById('student-login-form');
+        if (loginForm && !document.getElementById('reg-disabled-msg')) {
+          var msg = document.createElement('div');
+          msg.id = 'reg-disabled-msg';
+          msg.style.cssText = 'margin-top:1rem;padding:0.6rem;background:rgba(245,183,49,0.08);border:1px solid rgba(245,183,49,0.3);border-radius:6px;font-size:0.78rem;color:var(--text-muted);text-align:center';
+          msg.innerHTML = '🔐 Inscription fermee. Demandez vos identifiants au formateur (' + CONFIG.mentorName + ').';
+          loginForm.appendChild(msg);
+        }
+      }
+    }
+
     document.getElementById('btn-show-register').addEventListener('click', function () {
+      if (CONFIG.disablePublicRegistration) {
+        showToast('Inscription fermee — contactez le formateur', 'warning');
+        return;
+      }
       document.getElementById('student-login-form').classList.add('hidden');
       document.getElementById('student-register-form').classList.remove('hidden');
     });
@@ -886,6 +927,10 @@
     });
 
     document.getElementById('btn-student-register').addEventListener('click', function () {
+      if (CONFIG.disablePublicRegistration) {
+        showToast('Inscription publique desactivee. Contactez le formateur pour obtenir un compte.', 'error');
+        return;
+      }
       var ln = document.getElementById('reg-lastname').value.trim();
       var fn = document.getElementById('reg-firstname').value.trim();
       var pw = document.getElementById('reg-password').value;
