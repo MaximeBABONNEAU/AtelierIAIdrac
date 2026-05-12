@@ -368,6 +368,7 @@
       'demo-abtest':function(){if(window.AIA&&window.AIA.renderDemoABTest)window.AIA.renderDemoABTest(main);},
       'demo-seo':function(){if(window.AIA&&window.AIA.renderDemoSEO)window.AIA.renderDemoSEO(main);},
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
+      rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
       arena:renderArena, 'business-game':renderBusinessGame, leaderboard:renderLeaderboard,
       tools:renderTools, profile:renderProfile, admin:renderAdmin
     };
@@ -589,11 +590,14 @@
       '<div class="arena-modes">'+
       '<div class="arena-mode-card glass-card" data-navigate="battle"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Affrontez un autre etudiant : soumettez vos prompts, la classe vote</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
-      '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div></div>';
+      '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div>'+
+      '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe marketing et combattez en tour par tour !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Gagnez des points PvP</div></div></div>';
     var q=document.getElementById('btn-start-quiz');
     if(q) q.addEventListener('click',function(){if(window.AIA&&window.AIA.startQuiz)window.AIA.startQuiz(main);});
     var ch=document.getElementById('btn-start-challenge');
     if(ch) ch.addEventListener('click',function(){if(window.AIA&&window.AIA.startChallenge)window.AIA.startChallenge(main);});
+    var rpg=document.getElementById('btn-start-rpg');
+    if(rpg) rpg.addEventListener('click',function(){navigateTo('rpg');});
   }
 
   function renderRoom(){
@@ -669,15 +673,24 @@
       el.innerHTML='<div class="glass-card" style="text-align:center;padding:3rem"><h3>Soyez le premier au classement !</h3><p style="color:var(--text-muted)">Les XP gagnes pendant les activites apparaitront ici en temps reel.</p></div>';
       return;
     }
+    var ITEM_ICONS={crown:'👑',staff:'🏛️',gold_sword:'🗡️',sword:'⚔️',shield:'🛡️',cape:'🦸',wings:'🪽'};
+    function rankItems(r){
+      if(window.AIA&&window.AIA.getItemsForRank){return window.AIA.getItemsForRank(r,false);}
+      if(r===1)return['gold_sword','crown','wings'];if(r===2)return['sword','shield'];if(r===3)return['shield','cape'];if(r>=4&&r<=10)return['cape'];return[];
+    }
+    function itemBadges(rank){
+      var items=rankItems(rank);if(!items.length)return'';
+      return' <span class="rank-items" title="Items RPG rang '+rank+'">'+items.map(function(it){return ITEM_ICONS[it]||'';}).join('')+'</span>';
+    }
     var medals=['🥈','🥇','🥉'],order=[1,0,2],podH='';
-    order.forEach(function(idx){var s=students[idx];if(!s)return;
+    order.forEach(function(idx){var s=students[idx];if(!s)return;var rk=idx+1;/* rank = sorted position +1 */
       podH+='<div class="podium-item'+(s.isMe?' is-me':'')+'"><div class="rank">'+medals[idx]+'</div>'+
-        '<div class="avatar-small">'+(s.isMe?'⭐':'👤')+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+'</div>'+
+        '<div class="avatar-small">'+(s.isMe?'⭐':'👤')+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div>'+
         '<div class="xp">'+s.xp+' XP</div>'+(s.streak>1?'<div style="font-size:0.7rem">🔥 '+s.streak+'j</div>':'')+
         '<div class="podium-bar"></div></div>';});
-    var tH=students.slice(3).map(function(s,i){
-      return '<tr class="'+(s.isMe?'is-me':'')+'"><td class="rank-cell">'+(i+4)+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.isMe?'⭐':'👤')+'</div>'+
-        s.name+(s.isMe?' (vous)':'')+'</div></td><td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td>'+
+    var tH=students.slice(3).map(function(s,i){var rk=i+4;
+      return '<tr class="'+(s.isMe?'is-me':'')+'"><td class="rank-cell">'+rk+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.isMe?'⭐':'👤')+'</div>'+
+        s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div></td><td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td>'+
         '<td><span class="dot '+(s.online?'online':'idle')+'"></span></td></tr>';}).join('');
     el.innerHTML='<p class="page-subtitle" style="margin-bottom:1rem">'+students.length+' etudiants inscrits</p>'+
       '<div class="podium">'+podH+'</div>'+

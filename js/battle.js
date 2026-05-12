@@ -308,8 +308,241 @@
     });
   }
 
+  /* ======== RPG PvP — MINI JEU DE ROLE ======== */
+
+  var RPG_CLASSES = [
+    { id: 'prompt-mage', name: 'Prompt Mage', icon: '🧙', desc: 'Maitre des prompts — attaques puissantes',
+      baseHP: 100, baseATK: 18, baseDEF: 8,
+      skills: [
+        { name: 'CRAC Attack', icon: '✍️', dmg: 25, cost: 20, desc: 'Prompt structure devastateur' },
+        { name: 'Few-Shot Burst', icon: '⚡', dmg: 18, cost: 12, desc: 'Rafale d\'exemples' },
+        { name: 'Chain-of-Thought', icon: '🔗', heal: 15, cost: 15, desc: 'Raisonnement regeneratif' }
+      ] },
+    { id: 'visual-knight', name: 'Visual Knight', icon: '🎨', desc: 'Createur visuel — defense solide',
+      baseHP: 120, baseATK: 14, baseDEF: 12,
+      skills: [
+        { name: 'Pixel Slash', icon: '⚔️', dmg: 22, cost: 18, desc: 'Attaque creative tranchante' },
+        { name: 'Brand Shield', icon: '🛡️', defBuff: 8, cost: 15, desc: 'Bouclier de marque (+8 DEF)' },
+        { name: 'Color Heal', icon: '🌈', heal: 20, cost: 18, desc: 'Regeneration chromatique' }
+      ] },
+    { id: 'data-ranger', name: 'Data Ranger', icon: '📊', desc: 'Analyste — equilibre et precision',
+      baseHP: 110, baseATK: 16, baseDEF: 10,
+      skills: [
+        { name: 'A/B Strike', icon: '📈', dmg: 20, cost: 15, desc: 'Attaque test statistique' },
+        { name: 'SEO Snipe', icon: '🎯', dmg: 28, cost: 22, desc: 'Tir SEO de precision' },
+        { name: 'Analytics Regen', icon: '💚', heal: 18, cost: 16, desc: 'Regeneration par les data' }
+      ] },
+    { id: 'content-bard', name: 'Content Bard', icon: '📝', desc: 'Copywriter — heal puissant',
+      baseHP: 95, baseATK: 15, baseDEF: 9,
+      skills: [
+        { name: 'Viral Hook', icon: '🪝', dmg: 24, cost: 18, desc: 'Accroche virale devastatrice' },
+        { name: 'Story Shield', icon: '📖', defBuff: 6, heal: 10, cost: 16, desc: 'Storytelling protecteur' },
+        { name: 'UGC Surge', icon: '💬', heal: 25, cost: 20, desc: 'Vague de contenu generatif' }
+      ] }
+  ];
+
+  var MAX_BATTLES_PER_DAY = 5;
+  var PVP_WIN_POINTS = 30;
+  var PVP_LOSE_POINTS = 5;
+  var MANA_PER_TURN = 8;
+
+  function getPvpStats(callback) {
+    var AIA = window.AIA, st = AIA.getState();
+    if (!AIA.db || !st.user || !st.user.accountKey) { callback({ wins: 0, losses: 0, points: 0, battlesToday: 0, lastBattleDate: '' }); return; }
+    AIA.db.ref('pvp/' + st.user.accountKey).once('value', function (snap) {
+      callback(snap.val() || { wins: 0, losses: 0, points: 0, battlesToday: 0, lastBattleDate: '' });
+    });
+  }
+
+  function savePvpStats(stats) {
+    var AIA = window.AIA, st = AIA.getState();
+    if (!AIA.db || !st.user || !st.user.accountKey) return;
+    AIA.db.ref('pvp/' + st.user.accountKey).set(stats);
+  }
+
+  function renderRPG(main) {
+    var AIA = window.AIA;
+    main.innerHTML = '<div class="page-header">' + backBtn() +
+      '<h1>RPG <span class="gradient-text">PvP Arena</span></h1>' +
+      '<p class="page-subtitle">Combats tour par tour — 5 combats/jour max</p></div>' +
+      '<div id="rpg-root" class="glass-card" style="padding:1.5rem"><div class="loading-pulse">Chargement...</div></div>';
+
+    getPvpStats(function (pvp) {
+      var today = new Date().toISOString().split('T')[0];
+      if (pvp.lastBattleDate !== today) { pvp.battlesToday = 0; pvp.lastBattleDate = today; }
+      var remaining = MAX_BATTLES_PER_DAY - pvp.battlesToday;
+      var root = document.getElementById('rpg-root');
+      if (!root) return;
+
+      root.innerHTML =
+        '<div class="rpg-stats-bar">' +
+        '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.points + '</span><span class="rpg-stat-lbl">PvP Points</span></div>' +
+        '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.wins + '</span><span class="rpg-stat-lbl">Victoires</span></div>' +
+        '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.losses + '</span><span class="rpg-stat-lbl">Defaites</span></div>' +
+        '<div class="rpg-stat"><span class="rpg-stat-val">' + remaining + '/' + MAX_BATTLES_PER_DAY + '</span><span class="rpg-stat-lbl">Combats restants</span></div></div>' +
+        (remaining <= 0 ?
+          '<div class="rpg-limit-msg"><h3>Limite atteinte</h3><p>Revenez demain pour 5 nouveaux combats !</p></div>' :
+          '<h3 style="margin:1.5rem 0 1rem;font-size:1rem">Choisissez votre classe</h3>' +
+          '<div class="rpg-class-grid">' + RPG_CLASSES.map(function (cls) {
+            return '<div class="rpg-class-card glass-card" data-class="' + cls.id + '">' +
+              '<div class="rpg-class-icon">' + cls.icon + '</div>' +
+              '<h4>' + cls.name + '</h4><p>' + cls.desc + '</p>' +
+              '<div class="rpg-class-stats"><span>HP ' + cls.baseHP + '</span><span>ATK ' + cls.baseATK + '</span><span>DEF ' + cls.baseDEF + '</span></div>' +
+              '<div class="rpg-skills-preview">' + cls.skills.map(function (sk) {
+                return '<span title="' + escapeHtml(sk.desc) + '">' + sk.icon + ' ' + sk.name + '</span>';
+              }).join('') + '</div></div>';
+          }).join('') + '</div>');
+
+      document.querySelectorAll('.rpg-class-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+          var classId = this.getAttribute('data-class');
+          var cls = RPG_CLASSES.find(function (c) { return c.id === classId; });
+          if (cls) startRPGBattle(main, cls, pvp);
+        });
+      });
+    });
+  }
+
+  function startRPGBattle(main, playerClass, pvp) {
+    var AIA = window.AIA, st = AIA.getState();
+    var lvl = AIA.getLevelInfo ? AIA.getLevelInfo(st.xp.total) : { level: 1 };
+
+    var oppClass = RPG_CLASSES[Math.floor(Math.random() * RPG_CLASSES.length)];
+    var oppNames = ['Alice','Bob','Clara','David','Emma','Felix','Grace','Hugo','Iris','Jules','Kenza','Leo'];
+    var oppName = oppNames[Math.floor(Math.random() * oppNames.length)];
+    var sf = 0.85 + Math.random() * 0.3;
+
+    var player = { name: st.user ? st.user.name : 'Vous', cls: playerClass, icon: playerClass.icon,
+      hp: playerClass.baseHP + lvl.level * 5, maxHP: playerClass.baseHP + lvl.level * 5,
+      atk: playerClass.baseATK + Math.floor(lvl.level * 1.5), def: playerClass.baseDEF + lvl.level,
+      mana: 50, maxMana: 50, tempDef: 0 };
+    var enemy = { name: oppName, cls: oppClass, icon: oppClass.icon,
+      hp: Math.round((oppClass.baseHP + lvl.level * 5) * sf), maxHP: Math.round((oppClass.baseHP + lvl.level * 5) * sf),
+      atk: Math.round((oppClass.baseATK + lvl.level * 1.5) * sf), def: Math.round((oppClass.baseDEF + lvl.level) * sf),
+      mana: 50, maxMana: 50, tempDef: 0 };
+
+    var log = [], turn = 1, battleOver = false;
+
+    function renderUI() {
+      var root = document.getElementById('rpg-root'); if (!root) return;
+      root.innerHTML =
+        '<div class="rpg-battle-header">Tour ' + turn + '</div>' +
+        '<div class="rpg-arena">' + renderFighter(player, 'left') + '<div class="rpg-vs">VS</div>' + renderFighter(enemy, 'right') + '</div>' +
+        (!battleOver ? '<div class="rpg-actions">' +
+          '<button class="rpg-btn attack" id="rpg-attack">Attaque<span class="rpg-btn-sub">(' + player.atk + ' ATK)</span></button>' +
+          '<button class="rpg-btn defend" id="rpg-defend">Defense<span class="rpg-btn-sub">(+50% DEF)</span></button>' +
+          player.cls.skills.map(function (sk, i) {
+            var dis = player.mana < sk.cost;
+            return '<button class="rpg-btn skill' + (dis ? ' disabled' : '') + '" data-skill="' + i + '"' + (dis ? ' disabled' : '') + '>' +
+              sk.icon + ' ' + sk.name + '<span class="rpg-btn-sub">(' + sk.cost + ' MP)</span></button>';
+          }).join('') + '</div>' : '') +
+        '<div class="rpg-log">' + log.slice(-6).map(function (l) { return '<div class="rpg-log-entry">' + l + '</div>'; }).join('') + '</div>';
+
+      if (!battleOver) {
+        document.getElementById('rpg-attack').addEventListener('click', function () { doTurn('attack'); });
+        document.getElementById('rpg-defend').addEventListener('click', function () { doTurn('defend'); });
+        document.querySelectorAll('.rpg-btn.skill:not(.disabled)').forEach(function (b) {
+          b.addEventListener('click', function () { doTurn('skill', parseInt(this.getAttribute('data-skill'))); });
+        });
+      }
+    }
+
+    function renderFighter(f, side) {
+      var hpPct = Math.max(0, Math.round(f.hp / f.maxHP * 100));
+      var mpPct = Math.round(f.mana / f.maxMana * 100);
+      var hpC = hpPct > 50 ? '#2ecc71' : hpPct > 25 ? '#f5b731' : '#e74c3c';
+      return '<div class="rpg-fighter ' + side + '">' +
+        '<div class="rpg-fighter-icon">' + f.icon + '</div>' +
+        '<div class="rpg-fighter-name">' + escapeHtml(f.name) + '</div>' +
+        '<div class="rpg-fighter-class">' + f.cls.name + '</div>' +
+        '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + hpPct + '%;background:' + hpC + '"></div></div>' +
+        '<div class="rpg-bar-label">HP ' + Math.max(0, f.hp) + '/' + f.maxHP + '</div>' +
+        '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + mpPct + '%;background:#3498db"></div></div>' +
+        '<div class="rpg-bar-label">MP ' + f.mana + '/' + f.maxMana + '</div>' +
+        '<div class="rpg-fighter-stats">ATK ' + f.atk + ' DEF ' + (f.def + f.tempDef) + '</div></div>';
+    }
+
+    function calcDmg(a, d) { return Math.max(1, Math.round((a - Math.floor(d * 0.6)) * (0.85 + Math.random() * 0.3))); }
+
+    function doTurn(action, si) {
+      if (battleOver) return;
+      player.tempDef = 0;
+      if (action === 'attack') {
+        var d = calcDmg(player.atk, enemy.def + enemy.tempDef);
+        enemy.hp -= d; log.push('<strong>' + escapeHtml(player.name) + '</strong> attaque — ' + d + ' dmg');
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN);
+      } else if (action === 'defend') {
+        player.tempDef = Math.floor(player.def * 0.5);
+        log.push('<strong>' + escapeHtml(player.name) + '</strong> se defend (+' + player.tempDef + ' DEF)');
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN + 5);
+      } else {
+        var sk = player.cls.skills[si]; if (!sk || player.mana < sk.cost) return;
+        player.mana -= sk.cost;
+        if (sk.dmg) { var sd = calcDmg(sk.dmg, enemy.def + enemy.tempDef); enemy.hp -= sd; log.push(sk.icon + ' <strong>' + escapeHtml(player.name) + '</strong> lance ' + sk.name + ' — ' + sd + ' dmg'); }
+        if (sk.heal) { player.hp = Math.min(player.maxHP, player.hp + sk.heal); log.push(escapeHtml(player.name) + ' recupere ' + sk.heal + ' HP'); }
+        if (sk.defBuff) { player.tempDef += sk.defBuff; }
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN);
+      }
+      if (enemy.hp <= 0) { endBattle(true); return; }
+
+      /* Enemy AI */
+      enemy.tempDef = 0;
+      var hpRatio = enemy.hp / enemy.maxHP;
+      var aiAct = 'attack', aiSi = -1;
+      if (hpRatio < 0.35) { var hi = enemy.cls.skills.findIndex(function (s) { return s.heal && enemy.mana >= s.cost; }); if (hi >= 0) { aiAct = 'skill'; aiSi = hi; } }
+      if (aiAct === 'attack' && Math.random() < 0.15) aiAct = 'defend';
+      if (aiAct === 'attack') { var us = []; enemy.cls.skills.forEach(function (s, i) { if (s.dmg && enemy.mana >= s.cost) us.push(i); }); if (us.length && Math.random() < 0.5) { aiAct = 'skill'; aiSi = us[Math.floor(Math.random() * us.length)]; } }
+
+      if (aiAct === 'attack') {
+        var ed = calcDmg(enemy.atk, player.def + player.tempDef);
+        player.hp -= ed; log.push('<strong>' + escapeHtml(enemy.name) + '</strong> attaque — ' + ed + ' dmg');
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + MANA_PER_TURN);
+      } else if (aiAct === 'defend') {
+        enemy.tempDef = Math.floor(enemy.def * 0.5);
+        log.push('<strong>' + escapeHtml(enemy.name) + '</strong> se defend');
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + MANA_PER_TURN + 5);
+      } else {
+        var esk = enemy.cls.skills[aiSi]; enemy.mana -= esk.cost;
+        if (esk.dmg) { var esd = calcDmg(esk.dmg, player.def + player.tempDef); player.hp -= esd; log.push(esk.icon + ' <strong>' + escapeHtml(enemy.name) + '</strong> lance ' + esk.name + ' — ' + esd + ' dmg'); }
+        if (esk.heal) { enemy.hp = Math.min(enemy.maxHP, enemy.hp + esk.heal); log.push(escapeHtml(enemy.name) + ' recupere ' + esk.heal + ' HP'); }
+        if (esk.defBuff) enemy.tempDef += esk.defBuff;
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + MANA_PER_TURN);
+      }
+      if (player.hp <= 0) { endBattle(false); return; }
+      turn++; if (turn > 30) { endBattle(player.hp > enemy.hp); return; }
+      renderUI();
+    }
+
+    function endBattle(won) {
+      battleOver = true;
+      var xpGain = won ? 50 : 15, ptsGain = won ? PVP_WIN_POINTS : PVP_LOSE_POINTS;
+      pvp.battlesToday++; if (won) pvp.wins++; else pvp.losses++;
+      pvp.points += ptsGain; pvp.lastBattleDate = new Date().toISOString().split('T')[0];
+      savePvpStats(pvp);
+      AIA.addXP(xpGain, won ? 'Victoire PvP' : 'Combat PvP');
+      if (won && pvp.wins === 1) AIA.awardBadge('battle-win');
+      log.push(won ? '<strong>VICTOIRE !</strong> +' + ptsGain + ' PvP, +' + xpGain + ' XP' : '<strong>DEFAITE</strong> +' + ptsGain + ' PvP, +' + xpGain + ' XP');
+      renderUI();
+      var root = document.getElementById('rpg-root'); if (!root) return;
+      var rem = MAX_BATTLES_PER_DAY - pvp.battlesToday;
+      root.innerHTML += '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
+        '<div class="rpg-result-icon">' + (won ? '🏆' : '💪') + '</div>' +
+        '<h3>' + (won ? 'Victoire !' : 'Defaite') + '</h3>' +
+        '<p>+' + ptsGain + ' PvP &bull; +' + xpGain + ' XP</p>' +
+        '<div class="rpg-result-stats"><span>Total: ' + pvp.points + ' pts</span><span>W/L: ' + pvp.wins + '/' + pvp.losses + '</span><span>Restants: ' + rem + '/' + MAX_BATTLES_PER_DAY + '</span></div>' +
+        (rem > 0 ? '<button class="btn-primary" id="rpg-rematch">Nouveau combat</button>' : '') +
+        '<button class="btn-outline" data-navigate="arena" style="margin-left:0.5rem">Retour Arena</button></div>';
+      var rm = document.getElementById('rpg-rematch');
+      if (rm) rm.addEventListener('click', function () { renderRPG(main); });
+    }
+
+    renderUI();
+  }
+
   window.AIA = window.AIA || {};
   window.AIA.renderBattle = renderBattle;
   window.AIA.startQuiz = startQuiz;
   window.AIA.startChallenge = startChallenge;
+  window.AIA.renderRPG = renderRPG;
+  window.AIA.RPG_CLASSES = RPG_CLASSES;
 })();

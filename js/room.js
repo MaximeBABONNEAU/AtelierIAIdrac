@@ -116,6 +116,19 @@
       ctx.fillRect(pos.x, pos.y + bounce, spriteSize * SPRITE_SCALE, spriteSize * SPRITE_SCALE);
     }
 
+    // Render RPG item overlays (admin crown/staff, top-ranked items)
+    if (AIA.renderItemOverlay && AIA.getItemsForRank) {
+      var items = [];
+      if (student.isAdmin) {
+        items = AIA.getItemsForRank(0, true);
+      } else if (typeof student.rank === 'number' && student.rank > 0) {
+        items = AIA.getItemsForRank(student.rank, false);
+      }
+      for (var ii = 0; ii < items.length; ii++) {
+        AIA.renderItemOverlay(ctx, items[ii], SPRITE_SCALE, pos.x, pos.y + bounce);
+      }
+    }
+
     var status = getStudentStatus(student);
     var dotX = pos.x + spriteSize * SPRITE_SCALE + 2;
     var dotY = pos.y + bounce;
