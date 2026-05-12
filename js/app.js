@@ -53,7 +53,14 @@
     { id: 'battle-win', icon: '⚔️', name: 'Champion', desc: 'Gagner une battle' },
     { id: 'quiz-perfect', icon: '🧠', name: 'Genie', desc: 'Quiz parfait' },
     { id: 'avatar-custom', icon: '👾', name: 'Pixel Artist', desc: 'Customiser son avatar' },
-    { id: 'demo-all', icon: '🔬', name: 'Scientifique', desc: 'Tester toutes les demos' }
+    { id: 'demo-all', icon: '🔬', name: 'Scientifique', desc: 'Tester toutes les demos' },
+    { id: 'phase1-done', icon: '💡', name: 'Stratege', desc: 'Phase 1 du Business Game completee' },
+    { id: 'phase2-done', icon: '🎨', name: 'Brand Builder', desc: 'Phase 2 du Business Game completee' },
+    { id: 'phase3-done', icon: '📢', name: 'Campaigner', desc: 'Phase 3 du Business Game completee' },
+    { id: 'phase4-done', icon: '🚀', name: 'Pitcher', desc: 'Phase 4 du Business Game completee' },
+    { id: 'asset-collector', icon: '📎', name: 'Asset Collector', desc: '10+ assets attaches a votre campagne' },
+    { id: 'top-voted', icon: '👑', name: 'Top Voted', desc: 'Recevoir 3+ votes pour votre campagne' },
+    { id: 'voter', icon: '♥️', name: 'Supporteur', desc: 'Voter pour 3 campagnes' }
   ];
 
   var PROGRAM = {
@@ -376,7 +383,9 @@
       'demo-tts':function(){if(window.AIA&&window.AIA.renderDemoTts)window.AIA.renderDemoTts(main);},
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
-      arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}}, leaderboard:renderLeaderboard,
+      arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
+      showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
+      leaderboard:renderLeaderboard,
       tools:renderTools, profile:renderProfile, admin:renderAdmin
     };
     var fn=pages[page]; if(fn) fn();

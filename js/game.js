@@ -502,6 +502,7 @@
               }
             }).join('') +
             '</div>' +
+            renderAssetsBlock(step.id, data.assets || []) +
             '<div class="game-step-actions">' +
             '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">' + (done ? '✏️ Sauvegarder modifications' : '✅ Valider cette etape (+15 XP)') + '</button>' +
             '<button class="btn-ghost btn-sm btn-save-draft" data-step-id="' + step.id + '">💾 Sauvegarder brouillon</button>' +
@@ -529,6 +530,9 @@
         body.style.display = body.style.display === 'none' ? 'block' : 'none';
       });
     });
+
+    // Asset attachments handlers (URL add, file upload, remove)
+    attachAssetHandlers(main);
 
     // Timing widget: jump to step button
     main.querySelectorAll('[data-jump-step]').forEach(function (btn) {
@@ -572,6 +576,18 @@
         st.gameDeliverables[stepId] = true;
         if (!wasDone) { AIA.addXP(15); AIA.showToast('Etape validee ! +15 XP', 'success'); }
         else { AIA.showToast('Modifications sauvegardees', 'success'); }
+        // Phase-completion badge check
+        Object.keys(PHASES_GUIDE).forEach(function (pk) {
+          var allDone = PHASES_GUIDE[pk].steps.every(function (s) { return st.gameDeliverables[s.id]; });
+          if (allDone && AIA.awardBadge) AIA.awardBadge(pk + '-done');
+        });
+        // Asset collector badge
+        var totalAssets = 0;
+        Object.keys(st.campaignData || {}).forEach(function (sid) {
+          var arr = st.campaignData[sid] && st.campaignData[sid].assets;
+          if (Array.isArray(arr)) totalAssets += arr.length;
+        });
+        if (totalAssets >= 10 && AIA.awardBadge) AIA.awardBadge('asset-collector');
         if (AIA.saveState) AIA.saveState();
         renderBusinessGame(main);
       });
@@ -599,6 +615,108 @@
     });
   }
 
+  /* ============ ASSETS BLOCK (per step) ============ */
+  function renderAssetsBlock(stepId, assets) {
+    assets = Array.isArray(assets) ? assets : [];
+    var thumbsHtml = assets.map(function (a, i) {
+      var label = escapeHtml(a.label || '');
+      var url = escapeHtml(a.url || '');
+      if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(a.url))) {
+        return '<div class="asset-chip image-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '">' +
+          '<img src="' + url + '" alt="' + label + '" loading="lazy" />' +
+          '<div class="asset-chip-label">' + label + '</div>' +
+          '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
+          '</div>';
+      } else if (a.type === 'file') {
+        return '<div class="asset-chip file-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '">' +
+          '<div class="asset-file-icon">📎</div>' +
+          '<div class="asset-chip-label">' + label + '</div>' +
+          '<a href="' + url + '" target="_blank" class="asset-chip-link">Ouvrir ↗</a>' +
+          '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
+          '</div>';
+      } else {
+        return '<div class="asset-chip link-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '">' +
+          '<div class="asset-link-icon">🔗</div>' +
+          '<div class="asset-chip-label">' + label + '</div>' +
+          '<a href="' + url + '" target="_blank" class="asset-chip-link">Ouvrir ↗</a>' +
+          '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
+          '</div>';
+      }
+    }).join('');
+    return '<div class="assets-block" data-step-id="' + stepId + '">' +
+      '<div class="assets-block-header">' +
+      '<strong>📎 Assets generes par l\'IA (' + assets.length + ')</strong>' +
+      '<span class="assets-block-hint">Joignez ici vos images, audio, urls Gamma/Figma generes via les demos IA</span>' +
+      '</div>' +
+      '<div class="assets-list">' + (assets.length === 0 ? '<div class="assets-empty">Aucun asset attache pour le moment</div>' : thumbsHtml) + '</div>' +
+      '<div class="asset-add-controls">' +
+      '<input type="text" class="asset-url-input" placeholder="URL image / Gamma / Figma..." data-asset-url="' + stepId + '" />' +
+      '<input type="text" class="asset-label-input" placeholder="Nom (ex: Logo v2)" data-asset-label="' + stepId + '" />' +
+      '<button class="btn-outline btn-sm btn-add-asset-url" data-step-id="' + stepId + '">+ Ajouter</button>' +
+      '<label class="btn-ghost btn-sm asset-file-label">📁 Fichier' +
+      '<input type="file" accept="image/*" data-asset-file="' + stepId + '" style="display:none" />' +
+      '</label>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function attachAssetHandlers(main) {
+    var st = window.AIA.getState();
+
+    main.querySelectorAll('.btn-add-asset-url').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stepId = this.getAttribute('data-step-id');
+        var urlInput = main.querySelector('[data-asset-url="' + stepId + '"]');
+        var labelInput = main.querySelector('[data-asset-label="' + stepId + '"]');
+        var url = (urlInput.value || '').trim();
+        var label = (labelInput.value || '').trim() || 'Asset';
+        if (!url) { window.AIA.showToast('URL requise', 'warning'); return; }
+        var type = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ? 'image' : 'link';
+        addAsset(stepId, { type: type, url: url, label: label, addedAt: new Date().toISOString() });
+        urlInput.value = ''; labelInput.value = '';
+        window.AIA.renderBusinessGameNew(main);
+      });
+    });
+
+    main.querySelectorAll('[data-asset-file]').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var stepId = this.getAttribute('data-asset-file');
+        var file = this.files[0];
+        if (!file) return;
+        if (file.size > 800000) { window.AIA.showToast('Fichier trop gros (max 800 Ko). Compressez ou utilisez une URL.', 'warning'); return; }
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          addAsset(stepId, { type: 'image', url: e.target.result, label: file.name, addedAt: new Date().toISOString() });
+          window.AIA.renderBusinessGameNew(main);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    main.querySelectorAll('[data-remove-asset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stepId = this.getAttribute('data-step');
+        var idx = parseInt(this.getAttribute('data-remove-asset'));
+        if (!st.campaignData || !st.campaignData[stepId] || !st.campaignData[stepId].assets) return;
+        if (!confirm('Supprimer cet asset ?')) return;
+        st.campaignData[stepId].assets.splice(idx, 1);
+        if (window.AIA.saveState) window.AIA.saveState();
+        window.AIA.renderBusinessGameNew(main);
+      });
+    });
+
+    function addAsset(stepId, asset) {
+      st.campaignData = st.campaignData || {};
+      st.campaignData[stepId] = st.campaignData[stepId] || {};
+      st.campaignData[stepId].assets = st.campaignData[stepId].assets || [];
+      st.campaignData[stepId].assets.push(asset);
+      if (window.AIA.saveState) window.AIA.saveState();
+      window.AIA.showToast('Asset ajoute !', 'success');
+      // XP bonus first asset of the step
+      if (st.campaignData[stepId].assets.length === 1 && window.AIA.addXP) window.AIA.addXP(5, 'Premier asset ajoute');
+    }
+  }
+
   function saveStepData(stepId, main, requireOne) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -623,6 +741,231 @@
     return div.innerHTML;
   }
 
+  /* ============ CAMPAIGN SHOWCASE (Competition + Voting) ============ */
+  function renderCampaignShowcase(main) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var myKey = st.user && st.user.accountKey;
+
+    main.innerHTML = '<div class="page-header">' +
+      '<h1>🏆 Showcase des <span class="gradient-text">Campagnes</span></h1>' +
+      '<p class="page-subtitle">Decouvrez les campagnes de toute la classe et votez pour vos preferees</p></div>' +
+      '<div id="showcase-content"><div class="loading-pulse" style="padding:2rem;text-align:center">Chargement des campagnes...</div></div>';
+
+    if (!AIA.db) {
+      document.getElementById('showcase-content').innerHTML = '<div class="glass-card" style="text-align:center;padding:2rem"><p>Firebase non connecte — showcase indisponible.</p></div>';
+      return;
+    }
+
+    AIA.db.ref('states').once('value', function (snap) {
+      var allStates = snap.val() || {};
+      AIA.db.ref('votes').once('value', function (vsnap) {
+        var allVotes = vsnap.val() || {};
+        renderShowcaseGrid(allStates, allVotes, myKey, main);
+      });
+    });
+  }
+
+  function computeCampaignStats(s) {
+    var total = 0, done = 0, assetCount = 0;
+    Object.keys(PHASES_GUIDE).forEach(function (pk) {
+      PHASES_GUIDE[pk].steps.forEach(function (step) {
+        total++;
+        if (s.gameDeliverables && s.gameDeliverables[step.id]) done++;
+        if (s.campaignData && s.campaignData[step.id] && Array.isArray(s.campaignData[step.id].assets)) {
+          assetCount += s.campaignData[step.id].assets.length;
+        }
+      });
+    });
+    return { total: total, done: done, pct: total > 0 ? Math.round(done * 100 / total) : 0, assetCount: assetCount };
+  }
+
+  function countVotesFor(targetKey, allVotes) {
+    var count = 0;
+    for (var voter in allVotes) {
+      if (allVotes[voter] && allVotes[voter][targetKey]) count++;
+    }
+    return count;
+  }
+
+  function renderShowcaseGrid(allStates, allVotes, myKey, main) {
+    var campaigns = [];
+    Object.keys(allStates).forEach(function (k) {
+      var s = allStates[k];
+      if (!s || !s.productTheme) return; // only show campaigns with a chosen theme
+      var stats = computeCampaignStats(s);
+      var votes = countVotesFor(k, allVotes);
+      campaigns.push({
+        key: k,
+        name: s.user && s.user.name ? s.user.name : k,
+        theme: s.productTheme,
+        stats: stats,
+        votes: votes,
+        isMe: k === myKey
+      });
+    });
+
+    if (campaigns.length === 0) {
+      document.getElementById('showcase-content').innerHTML =
+        '<div class="glass-card" style="text-align:center;padding:3rem">' +
+        '<div style="font-size:3rem;margin-bottom:1rem">🎯</div>' +
+        '<h3>Aucune campagne pour le moment</h3>' +
+        '<p style="color:var(--text-muted)">Les campagnes apparaitront ici des qu\'un etudiant choisit son projet d\'atelier.</p>' +
+        '</div>';
+      return;
+    }
+
+    // Sort by votes desc, then by pct desc, then by name
+    campaigns.sort(function (a, b) {
+      if (b.votes !== a.votes) return b.votes - a.votes;
+      if (b.stats.pct !== a.stats.pct) return b.stats.pct - a.stats.pct;
+      return a.name.localeCompare(b.name);
+    });
+
+    var myVotes = (allVotes[myKey] || {});
+    var myVoteCount = Object.keys(myVotes).filter(function (k) { return myVotes[k]; }).length;
+    var MAX_VOTES = 3;
+
+    var html = '<div class="showcase-stats glass-card">' +
+      '<div><strong>' + campaigns.length + '</strong> campagnes actives</div>' +
+      '<div><strong>' + myVoteCount + '/' + MAX_VOTES + '</strong> de vos votes utilises</div>' +
+      '<div>Cliquez sur ♥ pour soutenir les meilleures campagnes !</div>' +
+      '</div>' +
+      '<div class="showcase-grid">';
+
+    campaigns.forEach(function (c, idx) {
+      var medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '';
+      var hasVoted = !!myVotes[c.key];
+      var canVote = !c.isMe && (hasVoted || myVoteCount < MAX_VOTES);
+      html += '<div class="showcase-card glass-card' + (c.isMe ? ' is-me' : '') + (idx < 3 ? ' top-rank' : '') + '" data-campaign-key="' + c.key + '">' +
+        (medal ? '<div class="showcase-medal">' + medal + '</div>' : '') +
+        '<div class="showcase-emoji">' + c.theme.emoji + '</div>' +
+        '<div class="showcase-category">' + c.theme.category + '</div>' +
+        '<h3 class="showcase-name">' + c.theme.name + '</h3>' +
+        '<p class="showcase-tagline">' + c.theme.tagline + '</p>' +
+        '<div class="showcase-author">par <strong>' + escapeHtml(c.name) + (c.isMe ? ' (vous)' : '') + '</strong></div>' +
+        '<div class="showcase-progress">' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + c.stats.pct + '%"></div></div>' +
+        '<div class="showcase-progress-meta"><span>' + c.stats.pct + '% &bull; ' + c.stats.done + '/' + c.stats.total + ' etapes</span><span>📎 ' + c.stats.assetCount + ' assets</span></div>' +
+        '</div>' +
+        '<div class="showcase-actions">' +
+        '<button class="btn-ghost btn-sm btn-view-campaign" data-campaign-key="' + c.key + '">👀 Voir</button>' +
+        (c.isMe ? '<span class="showcase-self-tag">Votre campagne</span>' :
+          '<button class="btn-vote-campaign' + (hasVoted ? ' voted' : '') + (canVote ? '' : ' disabled') + '" data-campaign-key="' + c.key + '" data-voted="' + hasVoted + '">' +
+          (hasVoted ? '♥' : '♡') + ' ' + c.votes + '</button>') +
+        '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    document.getElementById('showcase-content').innerHTML = html;
+
+    // Vote handlers
+    main.querySelectorAll('.btn-vote-campaign').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (this.classList.contains('disabled') && !this.classList.contains('voted')) {
+          window.AIA.showToast('Limite : ' + MAX_VOTES + ' votes max. Retirez un vote pour en ajouter un autre.', 'warning');
+          return;
+        }
+        var targetKey = this.getAttribute('data-campaign-key');
+        var hasVoted = this.getAttribute('data-voted') === 'true';
+        if (!window.AIA.db || !myKey) return;
+        var ref = window.AIA.db.ref('votes/' + myKey + '/' + targetKey);
+        if (hasVoted) {
+          ref.remove(function () {
+            window.AIA.showToast('Vote retire', 'info');
+            renderCampaignShowcase(main);
+          });
+        } else {
+          ref.set(true, function () {
+            window.AIA.showToast('Vote enregistre ! ♥', 'success');
+            if (window.AIA.addXP) window.AIA.addXP(2, 'Vote campagne');
+            // Voter badge when 3 votes used
+            window.AIA.db.ref('votes/' + myKey).once('value', function (vs) {
+              var vv = vs.val() || {};
+              var count = Object.keys(vv).filter(function (k) { return vv[k]; }).length;
+              if (count >= 3 && window.AIA.awardBadge) window.AIA.awardBadge('voter');
+            });
+            // Top-voted badge for target if they hit 3 votes
+            window.AIA.db.ref('votes').once('value', function (allVS) {
+              var avs = allVS.val() || {};
+              var cnt = 0;
+              for (var v in avs) { if (avs[v] && avs[v][targetKey]) cnt++; }
+              if (cnt >= 3 && window.AIA.db) {
+                window.AIA.db.ref('states/' + targetKey + '/badges').once('value', function (bs) {
+                  var badges = bs.val() || [];
+                  if (Array.isArray(badges) && badges.indexOf('top-voted') === -1) {
+                    badges.push('top-voted');
+                    window.AIA.db.ref('states/' + targetKey + '/badges').set(badges);
+                  }
+                });
+              }
+            });
+            renderCampaignShowcase(main);
+          });
+        }
+      });
+    });
+
+    // View campaign handlers (read-only)
+    main.querySelectorAll('.btn-view-campaign').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var key = this.getAttribute('data-campaign-key');
+        renderCampaignDetail(key, allStates[key], main);
+      });
+    });
+  }
+
+  function renderCampaignDetail(key, s, main) {
+    if (!s || !s.productTheme) return;
+    var stats = computeCampaignStats(s);
+    var html = '<div class="page-header">' +
+      '<a href="#" class="back-to-showcase" style="color:var(--text-muted);font-size:0.78rem;text-decoration:none">← Retour au showcase</a>' +
+      '<h1>' + s.productTheme.emoji + ' ' + s.productTheme.name + '</h1>' +
+      '<p class="page-subtitle">par ' + escapeHtml(s.user && s.user.name ? s.user.name : key) + ' &bull; ' + stats.pct + '% complete &bull; ' + stats.assetCount + ' assets</p></div>' +
+      '<div class="glass-card" style="padding:1.2rem;margin-bottom:1rem">' +
+      '<p style="font-size:0.92rem">' + escapeHtml(s.productTheme.tagline) + '</p>' +
+      '<p style="font-size:0.82rem;color:var(--text-muted);margin-top:0.4rem">' + escapeHtml(s.productTheme.description) + '</p>' +
+      '</div>';
+
+    Object.keys(PHASES_GUIDE).forEach(function (pk, pIdx) {
+      var phase = PHASES_GUIDE[pk];
+      html += '<div class="glass-card phase-color-' + phase.color + '" style="padding:1.2rem;margin-bottom:1rem;border-left:4px solid">' +
+        '<h2>' + phase.icon + ' ' + phase.title + '</h2>';
+      phase.steps.forEach(function (step) {
+        var data = (s.campaignData && s.campaignData[step.id]) || {};
+        var done = s.gameDeliverables && s.gameDeliverables[step.id];
+        var assets = data.assets || [];
+        var hasContent = Object.keys(data).some(function (k) { return k !== 'assets' && data[k]; });
+        if (!hasContent && assets.length === 0) return;
+        html += '<div class="showcase-step ' + (done ? 'done' : '') + '">' +
+          '<h4>' + (done ? '✅ ' : '⬜ ') + step.title + '</h4>';
+        step.fields.forEach(function (f) {
+          if (data[f.name]) {
+            html += '<div class="showcase-field"><strong>' + f.label + ' :</strong> <div class="showcase-field-val">' + escapeHtml(data[f.name]).replace(/\n/g, '<br>') + '</div></div>';
+          }
+        });
+        if (assets.length > 0) {
+          html += '<div class="showcase-assets-row">';
+          assets.forEach(function (a) {
+            if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)/i.test(a.url))) {
+              html += '<a href="' + escapeHtml(a.url) + '" target="_blank" class="showcase-asset-thumb"><img src="' + escapeHtml(a.url) + '" alt="' + escapeHtml(a.label || '') + '" /></a>';
+            } else {
+              html += '<a href="' + escapeHtml(a.url) + '" target="_blank" class="showcase-asset-link">🔗 ' + escapeHtml(a.label || a.url) + '</a>';
+            }
+          });
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+      html += '</div>';
+    });
+
+    main.innerHTML = html;
+    var back = main.querySelector('.back-to-showcase');
+    if (back) back.addEventListener('click', function (e) { e.preventDefault(); renderCampaignShowcase(main); });
+  }
+
   window.AIA = window.AIA || {};
   window.AIA.PRODUCT_THEMES = PRODUCT_THEMES;
   window.AIA.PHASES_GUIDE = PHASES_GUIDE;
@@ -631,5 +974,7 @@
   window.AIA.pickRandomThemes = pickRandomThemes;
   window.AIA.getCurrentTiming = getCurrentTiming;
   window.AIA.renderTimingWidget = renderTimingWidget;
+  window.AIA.renderCampaignShowcase = renderCampaignShowcase;
+  window.AIA.computeCampaignStats = computeCampaignStats;
   window.AIA.TIMING_MAP = TIMING_MAP;
 })();
