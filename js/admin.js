@@ -495,6 +495,22 @@
 
           el.innerHTML =
             '<div class="admin-section glass-card">' +
+            '<h3>➕ Creer un compte etudiant</h3>' +
+            '<p style="color:var(--text-muted);margin-bottom:1rem">Creez un compte directement. Mot de passe par defaut : <code>idrac2026</code>.</p>' +
+            '<div class="create-account-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.6rem;align-items:end">' +
+            '<div class="form-group" style="margin:0"><label>Nom</label><input type="text" id="new-acct-lastname" placeholder="Dupont"></div>' +
+            '<div class="form-group" style="margin:0"><label>Prenom</label><input type="text" id="new-acct-firstname" placeholder="Jean"></div>' +
+            '<div class="form-group" style="margin:0"><label>Mot de passe</label><input type="text" id="new-acct-password" placeholder="idrac2026" value="idrac2026"></div>' +
+            '<button class="btn-primary" id="btn-create-account">Creer le compte</button>' +
+            '</div>' +
+            '<details style="margin-top:0.8rem"><summary style="cursor:pointer;color:var(--cyan);font-size:0.78rem">📋 Creation par lot (CSV)</summary>' +
+            '<p style="font-size:0.75rem;color:var(--text-muted);margin:0.5rem 0">Format : <code>NOM;Prenom;motdepasse</code> (un par ligne). Mot de passe optionnel (defaut : idrac2026).</p>' +
+            '<textarea id="batch-accounts" rows="5" placeholder="DUPONT;Jean;jean123\nMARTIN;Marie\nDURAND;Paul;paul2026"></textarea>' +
+            '<button class="btn-outline" id="btn-batch-create" style="margin-top:0.5rem">Importer le lot</button>' +
+            '</details>' +
+            '</div>' +
+
+            '<div class="admin-section glass-card">' +
             '<h3>Gestion des comptes etudiants (' + keys.length + ')</h3>' +
             '<p style="color:var(--text-muted);margin-bottom:1rem">Gerez les comptes, reinitialiser les mots de passe et supprimez les sessions</p>' +
             (rows.length === 0 ? '<p style="color:var(--text-muted);text-align:center;padding:2rem">Aucun compte etudiant enregistre</p>' :
@@ -594,6 +610,52 @@
               AIA.saveAccountsToFirebase({});
               AIA.showToast('Tous les comptes supprimes', 'info');
               renderAccounts(el);
+            });
+          }
+
+          /* ======== CREATE NEW ACCOUNT ======== */
+          var btnCreate = document.getElementById('btn-create-account');
+          if (btnCreate) {
+            btnCreate.addEventListener('click', function () {
+              var ln = document.getElementById('new-acct-lastname').value.trim();
+              var fn = document.getElementById('new-acct-firstname').value.trim();
+              var pw = document.getElementById('new-acct-password').value.trim() || 'idrac2026';
+              if (!ln || !fn) return AIA.showToast('Nom et prenom requis', 'warning');
+              if (pw.length < 4) return AIA.showToast('Mot de passe trop court (4 car. min)', 'warning');
+              AIA.createAccount(ln, fn, AIA.hashPass(pw), function (result) {
+                if (result.error) return AIA.showToast(result.error, 'error');
+                AIA.showToast('Compte cree : ' + fn + ' ' + ln + ' (MDP: ' + pw + ')', 'success');
+                document.getElementById('new-acct-lastname').value = '';
+                document.getElementById('new-acct-firstname').value = '';
+                document.getElementById('new-acct-password').value = 'idrac2026';
+                renderAccounts(el);
+              });
+            });
+          }
+
+          var btnBatch = document.getElementById('btn-batch-create');
+          if (btnBatch) {
+            btnBatch.addEventListener('click', function () {
+              var raw = document.getElementById('batch-accounts').value.trim();
+              if (!raw) return AIA.showToast('Collez des lignes CSV d\'abord', 'warning');
+              var lines = raw.split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+              var ok = 0, fail = 0, pending = lines.length;
+              if (!pending) return;
+              lines.forEach(function (line) {
+                var parts = line.split(';').map(function (p) { return p.trim(); });
+                var ln = parts[0], fn = parts[1], pw = parts[2] || 'idrac2026';
+                if (!ln || !fn) { fail++; pending--; if (!pending) finishBatch(); return; }
+                AIA.createAccount(ln, fn, AIA.hashPass(pw), function (res) {
+                  if (res.error) fail++; else ok++;
+                  pending--;
+                  if (!pending) finishBatch();
+                });
+              });
+              function finishBatch() {
+                AIA.showToast('Import : ' + ok + ' crees, ' + fail + ' echecs', ok ? 'success' : 'warning');
+                document.getElementById('batch-accounts').value = '';
+                renderAccounts(el);
+              }
             });
           }
         });

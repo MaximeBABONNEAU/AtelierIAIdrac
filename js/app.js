@@ -369,7 +369,7 @@
       'demo-seo':function(){if(window.AIA&&window.AIA.renderDemoSEO)window.AIA.renderDemoSEO(main);},
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
-      arena:renderArena, 'business-game':renderBusinessGame, leaderboard:renderLeaderboard,
+      arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}}, leaderboard:renderLeaderboard,
       tools:renderTools, profile:renderProfile, admin:renderAdmin
     };
     var fn=pages[page]; if(fn) fn();
@@ -466,9 +466,54 @@
       '<div class="stat-card glass-card"><div class="stat-value gold">'+state.badges.length+'</div><div class="stat-label">Badges</div></div>'+
       '<div class="stat-card glass-card"><div class="stat-value cyan">'+state.streak.count+'</div><div class="stat-label">Streak</div></div>'+
       '<div class="stat-card glass-card"><div class="stat-value green">'+cA+'/'+tA+'</div><div class="stat-label">Activites</div></div></div>'+
+      renderGameSpotlight()+
       '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Programme</h2>'+
       '<div class="days-grid">'+renderDayCards()+'</div>'+
       '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Activite Recente</h2>'+renderActivityFeed();
+  }
+
+  function renderGameSpotlight(){
+    var theme = state.productTheme;
+    var PHASES = (window.AIA && window.AIA.PHASES_GUIDE) ? window.AIA.PHASES_GUIDE : null;
+    var allSteps = 0, doneSteps = 0;
+    if (PHASES && state.gameDeliverables) {
+      Object.keys(PHASES).forEach(function(pk){
+        PHASES[pk].steps.forEach(function(s){
+          allSteps++;
+          if (state.gameDeliverables[s.id]) doneSteps++;
+        });
+      });
+    }
+    var pct = allSteps>0 ? Math.round((doneSteps/allSteps)*100) : 0;
+    if (theme) {
+      return '<div class="game-spotlight glass-card" data-navigate="business-game">'+
+        '<div class="game-spotlight-badge">🎯 Fil rouge atelier</div>'+
+        '<div class="game-spotlight-content">'+
+        '<div class="game-spotlight-emoji">'+theme.emoji+'</div>'+
+        '<div class="game-spotlight-info">'+
+        '<div class="game-spotlight-label">Votre projet :</div>'+
+        '<h2 class="game-spotlight-name">'+theme.name+'</h2>'+
+        '<p class="game-spotlight-tagline">'+theme.tagline+'</p>'+
+        '<div class="game-spotlight-progress">'+
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+        '<span class="game-spotlight-pct">'+pct+'% &bull; '+doneSteps+'/'+allSteps+' etapes</span>'+
+        '</div>'+
+        '</div>'+
+        '<div class="game-spotlight-cta">Continuer →</div>'+
+        '</div>'+
+        '</div>';
+    }
+    return '<div class="game-spotlight glass-card no-theme" data-navigate="business-game">'+
+      '<div class="game-spotlight-badge">🎯 Fil rouge atelier</div>'+
+      '<div class="game-spotlight-content">'+
+      '<div class="game-spotlight-emoji">🎲</div>'+
+      '<div class="game-spotlight-info">'+
+      '<h2 class="game-spotlight-name">Business Game</h2>'+
+      '<p class="game-spotlight-tagline">Choisissez votre produit fictif et construisez sa campagne marketing complete en 4 phases</p>'+
+      '</div>'+
+      '<div class="game-spotlight-cta">Commencer →</div>'+
+      '</div>'+
+      '</div>';
   }
 
   function renderDayCards(){
@@ -817,7 +862,15 @@
         var displayName = fn + ' ' + ln;
         state.user = { name: displayName, firstName: fn, lastName: ln, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
         enterApp(fn, false, result.key);
-        showToast('Compte cree avec succes !', 'success');
+        showToast('Compte cree ! Choisissez maintenant votre projet d\'atelier.', 'success');
+        // Trigger product theme selection (mandatory first step for new accounts)
+        setTimeout(function () {
+          if (window.AIA && window.AIA.showThemeSelection && !state.productTheme) {
+            window.AIA.showThemeSelection(function () {
+              if (state.currentPage !== 'business-game') navigateTo('business-game');
+            });
+          }
+        }, 600);
       });
     });
 
@@ -875,6 +928,7 @@
   window.AIA.getAccountsFromFirebase=getAccountsFromFirebase; window.AIA.saveAccountsToFirebase=saveAccountsToFirebase;
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
+  window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
   window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
   window.AIA.dayLocks=dayLocks; window.AIA.db=null;
 

@@ -42,87 +42,289 @@
     { title: 'Pitch elevator', brief: 'Presentez votre startup IA en 30 secondes (3-4 phrases). Probleme, solution, marche, differenciateur.' }
   ];
 
-  /* ======== BATTLE DE PROMPTS ======== */
+  /* ======== BATTLE DE PROMPTS — Real Evaluator + Curated Briefs ======== */
+  var PROMPT_BRIEFS = [
+    {
+      id: 'slogan-sneakers',
+      title: 'Slogan sneakers eco-responsables',
+      brief: 'Generer un slogan memorable pour "GreenStride", marque de sneakers fabriquees a partir de plastique recycle des oceans. Cible : urbains 25-40 ans, conscients de leur impact ecologique. Ton : optimiste, moderne, engage.',
+      criteria: {
+        role: ['copywriter', 'expert', 'specialiste', 'createur', 'redacteur'],
+        context: ['greenstride', 'sneakers', 'eco', 'recycle', 'plastique', 'oceans', 'cible', 'urbains'],
+        action: ['genere', 'cree', 'redige', 'propose', 'invente'],
+        format: ['slogan', 'court', 'mots', 'phrase', 'baseline', 'maximum', 'punchy'],
+        tone: ['optimiste', 'moderne', 'engage', 'ton'],
+        constraints: ['nombre', 'variantes', 'caracteres', 'syllabes']
+      },
+      modelAnswer: 'En tant que copywriter senior specialise en marques engagees, cree 5 slogans pour "GreenStride", sneakers fabriquees a partir de plastique recycle des oceans. Cible : urbains 25-40 ans eco-conscients. Ton : optimiste, moderne, engage. Contraintes : max 6 mots, vocabulaire positif, evite les cliches ("ecolo", "vert", "nature"). Format : 5 slogans + justification de 10 mots pour chaque.',
+      tips: ['Donnez un role expert', 'Specifiez le nombre exact de variantes', 'Ajoutez des contraintes negatives (mots a eviter)', 'Demandez une justification pour chaque proposition']
+    },
+    {
+      id: 'desc-serum',
+      title: 'Description produit serum anti-age',
+      brief: 'Rediger la description d\'un serum anti-age "AgeLess" pour un site e-commerce. Cible : femmes 45-65 ans, recherchent efficacite prouvee. Doit convertir le visiteur en client.',
+      criteria: {
+        role: ['copywriter', 'redacteur', 'expert', 'specialiste'],
+        context: ['ageless', 'serum', 'anti-age', 'e-commerce', 'femmes', 'cible'],
+        action: ['redige', 'cree', 'ecris'],
+        format: ['description', 'mots', 'paragraphes', 'sections', 'benefices', 'caracteristiques'],
+        tone: ['premium', 'rassurant', 'expert', 'professionnel'],
+        constraints: ['ingredients', 'preuves', 'resultats', 'sans']
+      },
+      modelAnswer: 'En tant que copywriter beaute specialise e-commerce premium, redige la fiche produit du serum AgeLess (150-200 mots). Cible : femmes 45-65 ans. Structure : (1) accroche emotionnelle 15 mots, (2) 3 benefices cles formules en "resultats" (pas en caracteristiques), (3) 3 ingredients actifs et leur fonction, (4) preuve sociale chiffree, (5) CTA. Ton : premium, rassurant, expert. Evite : "miracle", "anti-rides", "magique". Mots-cles SEO : serum anti-age, raffermissant, fermete.',
+      tips: ['Structurez votre prompt en sections claires', 'Demandez benefices > caracteristiques', 'Ajoutez des contraintes SEO', 'Specifiez la longueur en mots']
+    },
+    {
+      id: 'instagram-cafe',
+      title: '5 idees posts Instagram cafe artisanal',
+      brief: 'Generer 5 idees de posts Instagram pour "L\'Atelier du Cafe", torrefacteur artisanal a Lyon. Objectif : faire grandir la communaute et faire connaitre le savoir-faire.',
+      criteria: {
+        role: ['community manager', 'social media', 'expert', 'createur', 'specialiste'],
+        context: ['atelier', 'cafe', 'torrefacteur', 'artisanal', 'lyon', 'communaute'],
+        action: ['genere', 'propose', 'cree', 'suggere'],
+        format: ['idees', 'posts', 'instagram', 'reel', 'carrousel', 'story', 'caption', 'hashtags'],
+        tone: ['authentique', 'engageant', 'artisanal'],
+        constraints: ['format', 'cta', 'objectif', 'engagement']
+      },
+      modelAnswer: 'En tant que community manager specialise dans les marques artisanales, propose 5 idees de posts Instagram pour "L\'Atelier du Cafe" (torrefacteur Lyon). Pour chaque post : (1) format (reel / carrousel / single image / story), (2) angle storytelling, (3) caption complete avec CTA, (4) 5 hashtags pertinents (mix tres / peu utilises). Objectif : engagement + decouverte. Ton : authentique, expert, chaleureux. Varier les formats.',
+      tips: ['Demandez plusieurs formats (reel, carrousel, story)', 'Exigez la caption complete avec CTA', 'Demandez des hashtags strategiques', 'Variez les angles narratifs']
+    },
+    {
+      id: 'video-fitness',
+      title: 'Script publicite video appli fitness',
+      brief: 'Ecrire un script de publicite video de 30 secondes pour "FitPulse", appli de fitness personnalisee avec coach IA. Cible : 25-45 ans, sportifs amateurs presses.',
+      criteria: {
+        role: ['scenariste', 'concepteur', 'redacteur', 'expert', 'createur'],
+        context: ['fitpulse', 'appli', 'fitness', 'coach', 'ia', 'cible', 'sportifs'],
+        action: ['ecris', 'redige', 'cree'],
+        format: ['script', 'secondes', 'scenes', 'plans', 'voix off', 'visuel', 'cta'],
+        tone: ['dynamique', 'motivant', 'energique', 'inspirant'],
+        constraints: ['duree', 'plans', 'hook', 'budget']
+      },
+      modelAnswer: 'En tant que concepteur-redacteur publicitaire, ecris un script video 30 secondes pour "FitPulse" (appli fitness avec coach IA personnalise). Cible : 25-45 ans, sportifs amateurs presses. Structure : hook 3s (probleme) / 12s solution-produit / 10s preuve sociale / 5s CTA. Format : colonne 1 = visuel (descr.), colonne 2 = voix off, colonne 3 = timing. Ton : dynamique, motivant. Eviter cliches gym ("no pain no gain"). Inclure 1 effet visuel signature.',
+      tips: ['Structurez le script en timing precis (hook/solution/preuve/CTA)', 'Format en colonnes : visuel + voix + timing', 'Specifiez les contraintes negatives', 'Pensez a un effet signature reconnaissable']
+    },
+    {
+      id: 'email-box',
+      title: 'Email de bienvenue box mensuelle',
+      brief: 'Rediger un email de bienvenue pour les nouveaux abonnes a "GoutBox", box mensuelle de produits gastronomiques francais. Doit convertir au premier achat additionnel.',
+      criteria: {
+        role: ['copywriter', 'email marketer', 'specialiste', 'expert'],
+        context: ['goutbox', 'box', 'bienvenue', 'abonnes', 'gastronomique', 'francais'],
+        action: ['redige', 'ecris', 'cree'],
+        format: ['email', 'objet', 'preheader', 'corps', 'cta', 'signature', 'mots'],
+        tone: ['chaleureux', 'gourmand', 'authentique', 'premium'],
+        constraints: ['variables', 'longueur', 'sections', 'a/b']
+      },
+      modelAnswer: 'En tant qu\'email marketer specialise lifestyle premium, redige l\'email de bienvenue de "GoutBox" (box gastronomique francaise mensuelle). Format complet : (1) 3 objets A/B-testables max 50 car., (2) preheader 80 car., (3) corps 150 mots structure en hero + 3 sections + CTA, (4) variables personnalisees {{firstName}}, (5) signature humanisee. Objectif : convertir au premier achat additionnel (e-shop). Ton : chaleureux, gourmand, authentique. Inclure 1 offre exclusive limitee.',
+      tips: ['Demandez objet + preheader (souvent oublies)', 'Specifiez la structure de l\'email', 'Demandez plusieurs objets A/B-testables', 'Ajoutez variables et CTA mesurables']
+    },
+    {
+      id: 'landing-saas',
+      title: 'Hero section landing page SaaS B2B',
+      brief: 'Creer le hero d\'une landing page pour "Synaptik", SaaS de gestion de projets pour agences creatives. Cible : directeurs d\'agence 30-50 ans qui perdent du temps avec Excel.',
+      criteria: {
+        role: ['copywriter', 'expert', 'specialiste', 'redacteur'],
+        context: ['synaptik', 'saas', 'b2b', 'agences', 'cible', 'directeurs'],
+        action: ['cree', 'redige', 'ecris'],
+        format: ['hero', 'h1', 'sous-titre', 'cta', 'bullets', 'social proof'],
+        tone: ['professionnel', 'rassurant', 'expert'],
+        constraints: ['benefices', 'longueur', 'mots-cles']
+      },
+      modelAnswer: 'En tant que copywriter SaaS B2B, cree le hero d\'une landing page pour Synaptik (gestion de projets pour agences creatives). Cible : directeurs d\'agence 30-50 ans, frustres par Excel. Format : (1) H1 12 mots max axe sur le benefice principal, (2) sous-titre 25 mots qui clarifie le quoi/pour qui, (3) 3 bullets benefices chiffres, (4) CTA principal + CTA secondaire, (5) social proof (logos clients ou metrique). Ton : professionnel mais punchy. Eviter "revolutionnaire", "leader", "best-in-class".',
+      tips: ['Hero = H1 + sous-titre + bullets + CTA + social proof', 'Limitez le nombre de mots du H1', 'Demandez des benefices chiffres', 'Specifiez le CTA principal ET secondaire']
+    }
+  ];
+
+  function evaluatePrompt(text, brief) {
+    if (!text) return { total: 0, breakdown: {}, hits: {}, missing: [], wordCount: 0 };
+    var lower = text.toLowerCase();
+    var words = text.split(/\s+/).filter(Boolean);
+    var hits = {};
+    var breakdown = {};
+    var maxPerCat = { role: 18, context: 18, action: 12, format: 18, tone: 12, constraints: 12 };
+
+    Object.keys(brief.criteria).forEach(function (cat) {
+      var keywords = brief.criteria[cat];
+      var found = keywords.filter(function (kw) { return lower.indexOf(kw) !== -1; });
+      hits[cat] = found;
+      var pct = found.length / keywords.length;
+      breakdown[cat] = Math.round(pct * (maxPerCat[cat] || 10));
+    });
+
+    // Length bonus
+    var lengthBonus = words.length > 60 ? 8 : words.length > 40 ? 6 : words.length > 25 ? 4 : words.length > 15 ? 2 : 0;
+    breakdown.length = lengthBonus;
+
+    // Structure bonus (numbered lists, sections, colons)
+    var structureSignals = 0;
+    if (/\b\d+[\.\)]/g.test(text)) structureSignals += 2;
+    if (text.indexOf(':') !== -1) structureSignals += 1;
+    if (/\n/.test(text) || /\([1-9]\)/.test(text)) structureSignals += 2;
+    breakdown.structure = Math.min(structureSignals, 5);
+
+    var total = Object.keys(breakdown).reduce(function (s, k) { return s + breakdown[k]; }, 0);
+    total = Math.min(100, total);
+
+    // Missing categories suggestions
+    var missing = [];
+    Object.keys(brief.criteria).forEach(function (cat) {
+      if (!hits[cat] || hits[cat].length === 0) {
+        var labels = { role: 'Role expert', context: 'Contexte (marque/cible)', action: 'Verbe d\'action', format: 'Format de sortie', tone: 'Ton de communication', constraints: 'Contraintes/quantites' };
+        missing.push(labels[cat] || cat);
+      }
+    });
+
+    return { total: total, breakdown: breakdown, hits: hits, missing: missing, wordCount: words.length };
+  }
+
   function renderBattle(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
+    var currentBriefIdx = Math.floor(Math.random() * PROMPT_BRIEFS.length);
 
-    main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>Battle de <span class="gradient-text">Prompts</span></h1>' +
-      '<p class="page-subtitle">Soumettez votre prompt, comparez et votez</p></div>' +
-      '<div class="battle-zone glass-card">' +
-      '<div class="battle-brief">' +
-      '<h3>Brief du duel</h3>' +
-      '<p id="battle-brief-text">Ecrivez le meilleur prompt possible pour generer un slogan pour une marque de sneakers eco-responsables.</p>' +
-      '<button class="btn-ghost btn-sm" id="btn-new-brief">Nouveau brief</button>' +
-      '</div>' +
-      '<div class="battle-submit">' +
-      '<h3>Votre prompt</h3>' +
-      '<textarea id="battle-prompt" class="demo-textarea" rows="4" placeholder="Tapez votre meilleur prompt ici..."></textarea>' +
-      '<button class="btn-primary" id="btn-battle-submit">Soumettre</button>' +
-      '</div>' +
-      '<div id="battle-arena" class="battle-arena-result"></div></div>';
+    function renderUI() {
+      var brief = PROMPT_BRIEFS[currentBriefIdx];
+      main.innerHTML = '<div class="page-header">' + backBtn() +
+        '<h1>Battle de <span class="gradient-text">Prompts</span></h1>' +
+        '<p class="page-subtitle">Sujet impose, evaluation objective, correction de reference</p></div>' +
 
-    var briefs = [
-      'Ecrivez le meilleur prompt pour generer un slogan pour une marque de sneakers eco-responsables.',
-      'Formulez un prompt pour creer une description produit irresistible pour un serum anti-age.',
-      'Creez le prompt ideal pour generer 5 idees de posts Instagram pour un cafe artisanal.',
-      'Ecrivez un prompt pour obtenir un script de publicite video de 30 secondes pour une appli fitness.',
-      'Formulez un prompt pour creer un email de bienvenue personalise pour un service de box mensuelle.'
-    ];
+        '<div class="battle-zone glass-card">' +
+        '<div class="battle-brief enhanced">' +
+        '<div class="battle-brief-header">' +
+        '<span class="battle-brief-num">Brief ' + (currentBriefIdx + 1) + '/' + PROMPT_BRIEFS.length + '</span>' +
+        '<h3>' + escapeHtml(brief.title) + '</h3>' +
+        '</div>' +
+        '<p class="battle-brief-text">' + escapeHtml(brief.brief) + '</p>' +
+        '<div class="battle-brief-meta">' +
+        '<details><summary>💡 4 tips pour un excellent prompt sur ce sujet</summary>' +
+        '<ul>' + brief.tips.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>' +
+        '</details>' +
+        '</div>' +
+        '<button class="btn-ghost btn-sm" id="btn-new-brief">🎲 Autre sujet</button>' +
+        '</div>' +
 
-    document.getElementById('btn-new-brief').addEventListener('click', function () {
-      document.getElementById('battle-brief-text').textContent = briefs[Math.floor(Math.random() * briefs.length)];
-    });
+        '<div class="battle-submit">' +
+        '<h3>Votre prompt (objectif : score &gt; 75/100)</h3>' +
+        '<textarea id="battle-prompt" class="demo-textarea" rows="6" placeholder="En tant que [role], pour [contexte/marque/cible], [action] [format]. Ton : [ton]. Contraintes : [nombre, longueur, eviter]..."></textarea>' +
+        '<div class="battle-submit-actions">' +
+        '<button class="btn-primary" id="btn-battle-submit">⚔️ Soumettre & Evaluer</button>' +
+        '<span class="battle-counter" id="battle-counter">0 mots</span>' +
+        '</div>' +
+        '</div>' +
+        '<div id="battle-arena" class="battle-arena-result"></div></div>';
 
-    document.getElementById('btn-battle-submit').addEventListener('click', function () {
-      var prompt = document.getElementById('battle-prompt').value.trim();
-      if (!prompt) { AIA.showToast('Ecrivez votre prompt d\'abord', 'error'); return; }
+      var ta = document.getElementById('battle-prompt');
+      var counter = document.getElementById('battle-counter');
+      if (ta && counter) {
+        ta.addEventListener('input', function () {
+          var n = ta.value.trim().split(/\s+/).filter(Boolean).length;
+          counter.textContent = n + ' mots';
+        });
+      }
 
-      var arena = document.getElementById('battle-arena');
-      arena.innerHTML = '<div class="loading-pulse">Recherche d\'un adversaire...</div>';
+      document.getElementById('btn-new-brief').addEventListener('click', function () {
+        currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length;
+        renderUI();
+      });
 
-      setTimeout(function () {
-        var opponents = ['Alice','Bob','Clara','David','Emma','Felix','Grace','Hugo'];
-        var opp = opponents[Math.floor(Math.random() * opponents.length)];
-        var oppPrompt = 'En tant que copywriter senior specialise ' + (prompt.length > 30 ? 'dans le branding' : 'en marketing digital') +
-          ', cree un message percutant et memorable qui capture l\'essence de la marque.';
+      document.getElementById('btn-battle-submit').addEventListener('click', function () {
+        var prompt = ta.value.trim();
+        if (!prompt) { AIA.showToast('Ecrivez votre prompt d\'abord', 'error'); return; }
+        if (prompt.length < 15) { AIA.showToast('Trop court — minimum 15 caracteres', 'warning'); return; }
+        var arena = document.getElementById('battle-arena');
+        arena.innerHTML = '<div class="loading-pulse">Evaluation en cours par notre IA d\'analyse...</div>';
 
-        var scoreA = Math.min(98, 35 + prompt.length + Math.floor(Math.random() * 15));
-        var scoreB = 50 + Math.floor(Math.random() * 40);
-        var userWins = scoreA >= scoreB;
+        setTimeout(function () { showResult(prompt, brief, arena); }, 1200);
+      });
+    }
 
-        arena.innerHTML = '<div class="battle-versus">' +
-          '<div class="battle-player">' +
-          '<div class="player-name">' + escapeHtml(st.user || 'Vous') + '</div>' +
-          '<div class="player-prompt">' + escapeHtml(prompt.substring(0, 120)) + (prompt.length > 120 ? '...' : '') + '</div>' +
-          '<div class="player-score" style="color:' + (userWins ? '#2ecc71' : '#e74c3c') + '">' + scoreA + ' pts</div>' +
-          '</div>' +
-          '<div class="battle-vs">VS</div>' +
-          '<div class="battle-player">' +
-          '<div class="player-name">' + escapeHtml(opp) + '</div>' +
-          '<div class="player-prompt">' + escapeHtml(oppPrompt) + '</div>' +
-          '<div class="player-score" style="color:' + (!userWins ? '#2ecc71' : '#e74c3c') + '">' + scoreB + ' pts</div>' +
-          '</div></div>' +
-          '<div class="battle-result">' +
-          '<div class="result-icon">' + (userWins ? '🏆' : '💪') + '</div>' +
-          '<div class="result-text">' + (userWins ? 'Victoire ! Votre prompt est plus detaille et precis.' : 'Defaite — mais un bon prompt est un prompt ameliore !') + '</div>' +
-          '</div>' +
-          '<div class="battle-feedback glass-card" style="margin-top:1rem">' +
-          '<h4>Analyse du prompt</h4>' +
-          '<div class="feedback-item"><strong>Longueur :</strong> ' + prompt.split(/\s+/).length + ' mots ' + (prompt.split(/\s+/).length > 15 ? '(bon)' : '(court — ajoutez des details)') + '</div>' +
-          '<div class="feedback-item"><strong>Role :</strong> ' + (prompt.toLowerCase().indexOf('en tant que') !== -1 ? 'Present (bien !)' : 'Absent — essayez "En tant que..."') + '</div>' +
-          '<div class="feedback-item"><strong>Contraintes :</strong> ' + (prompt.match(/\d/) ? 'Presentes' : 'Absentes — ajoutez format, longueur, ton') + '</div>' +
-          '</div>';
+    function showResult(prompt, brief, arena) {
+      var evalResult = evaluatePrompt(prompt, brief);
+      var modelEval = evaluatePrompt(brief.modelAnswer, brief);
+      var grade = evalResult.total >= 80 ? 'A' : evalResult.total >= 65 ? 'B' : evalResult.total >= 50 ? 'C' : evalResult.total >= 35 ? 'D' : 'E';
+      var gradeColor = evalResult.total >= 80 ? '#2ecc71' : evalResult.total >= 65 ? '#3498db' : evalResult.total >= 50 ? '#f5b731' : evalResult.total >= 35 ? '#e67e22' : '#e74c3c';
+      var userWins = evalResult.total >= modelEval.total - 15; // win if within 15 pts of model
 
-        if (userWins) {
-          AIA.awardBadge('battle-win');
-          AIA.addXP(50);
-        } else {
-          AIA.addXP(20);
-        }
-      }, 2000);
-    });
+      var labels = { role: 'Role expert', context: 'Contexte', action: 'Action', format: 'Format', tone: 'Ton', constraints: 'Contraintes', length: 'Longueur', structure: 'Structure' };
+
+      var html = '<div class="battle-result-card glass-card">' +
+        '<div class="battle-score-block">' +
+        '<div class="battle-grade" style="color:' + gradeColor + '">' + grade + '</div>' +
+        '<div class="battle-score-num">' + evalResult.total + '<span>/100</span></div>' +
+        '<div class="battle-score-meta">vs modele : ' + modelEval.total + '/100 &bull; ' + evalResult.wordCount + ' mots</div>' +
+        '</div>' +
+        '<div class="battle-breakdown">' +
+        Object.keys(evalResult.breakdown).map(function (k) {
+          var v = evalResult.breakdown[k];
+          var max = ({ role: 18, context: 18, action: 12, format: 18, tone: 12, constraints: 12, length: 8, structure: 5 })[k] || 10;
+          var pct = Math.round((v / max) * 100);
+          var color = pct >= 70 ? '#2ecc71' : pct >= 40 ? '#f5b731' : '#e74c3c';
+          return '<div class="bar-row"><span style="min-width:90px;font-size:0.75rem">' + (labels[k] || k) + '</span>' +
+            '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+            '<span style="font-size:0.75rem;color:var(--text-muted)">' + v + '/' + max + '</span></div>';
+        }).join('') +
+        '</div>' +
+        '</div>' +
+
+        '<div class="battle-feedback glass-card">' +
+        '<h4>📊 Analyse detaillee</h4>' +
+        (evalResult.missing.length > 0 ?
+          '<div class="feedback-section warning"><strong>⚠️ Manques detectes :</strong><ul>' +
+          evalResult.missing.map(function (m) { return '<li>' + m + '</li>'; }).join('') +
+          '</ul></div>' :
+          '<div class="feedback-section success"><strong>✅ Toutes les categories couvertes !</strong></div>') +
+        (evalResult.wordCount < 25 ? '<div class="feedback-section warning"><strong>⚠️ Prompt court (' + evalResult.wordCount + ' mots) :</strong> un bon prompt detaille fait 40-80 mots</div>' : '') +
+        '<div class="feedback-section success"><strong>✓ Categories detectees :</strong> ' +
+        Object.keys(evalResult.hits).filter(function (k) { return evalResult.hits[k].length > 0; })
+          .map(function (k) { return (labels[k] || k) + ' (' + evalResult.hits[k].length + ')'; }).join(' &bull; ') +
+        '</div>' +
+        '</div>' +
+
+        '<div class="battle-model-answer glass-card">' +
+        '<h4>🎯 Correction de reference (' + modelEval.total + '/100)</h4>' +
+        '<p style="color:var(--text-muted);font-size:0.78rem;margin-bottom:0.6rem">Voici un prompt expert pour ce sujet. Comparez avec le votre et identifiez les techniques manquantes.</p>' +
+        '<div class="model-prompt-box">' + escapeHtml(brief.modelAnswer) + '</div>' +
+        '<details style="margin-top:0.6rem"><summary style="cursor:pointer;color:var(--cyan)">💡 Techniques mobilisees dans la correction</summary>' +
+        '<ul>' + brief.tips.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>' +
+        '</details>' +
+        '</div>' +
+
+        '<div class="battle-result">' +
+        '<div class="result-icon">' + (userWins ? '🏆' : '💪') + '</div>' +
+        '<div class="result-text">' +
+        (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+' + Math.max(0, evalResult.total - 50) + ' XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+' + Math.max(10, Math.round(evalResult.total / 3)) + ' XP)') +
+        '</div>' +
+        '<button class="btn-outline" id="btn-battle-retry">🔄 Reessayer avec ce sujet</button>' +
+        '<button class="btn-primary" id="btn-battle-next">➡️ Sujet suivant</button>' +
+        '</div>';
+
+      arena.innerHTML = html;
+
+      // XP & badge
+      var xpEarned = userWins ? Math.max(0, evalResult.total - 50) + 50 : Math.max(10, Math.round(evalResult.total / 3));
+      AIA.addXP(xpEarned);
+      if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
+
+      if (AIA.submitActivity) {
+        AIA.submitActivity('battle-prompt', {
+          briefId: brief.id, briefTitle: brief.title,
+          promptLength: prompt.length, score: evalResult.total,
+          grade: grade, missing: evalResult.missing.join(', ')
+        });
+      }
+
+      document.getElementById('btn-battle-retry').addEventListener('click', function () {
+        renderUI();
+        setTimeout(function () { var ta = document.getElementById('battle-prompt'); if (ta) { ta.value = prompt; ta.focus(); } }, 50);
+      });
+      document.getElementById('btn-battle-next').addEventListener('click', function () {
+        currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length;
+        renderUI();
+      });
+    }
+
+    renderUI();
   }
 
   /* ======== QUIZ INTERACTIF ======== */

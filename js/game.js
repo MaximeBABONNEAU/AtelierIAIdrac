@@ -1,0 +1,515 @@
+/* ==============================================
+   GAME.JS — Business Game (Campaign Builder)
+   Product theme selection + Guided 4-phase workflow
+   IDRAC Business School — Maxime BABONNEAU
+   ============================================== */
+(function () {
+  'use strict';
+
+  /* ============ PRODUCT THEMES DATABASE ============ */
+  var PRODUCT_THEMES = [
+    { id: 'ecomush', name: 'EcoMush', emoji: '🍄', category: 'Food / Eco', tagline: 'Kits de culture de champignons bio',
+      description: 'Kits domestiques pour cultiver des champignons gourmets bio en 14 jours. Eco-emballage compostable.',
+      target: 'Urbains 25-40 ans, eco-conscients, fans de cuisine maison', price: '29-49 EUR', usp: 'Bio, ludique, pedagogique' },
+    { id: 'neurofit', name: 'NeuroFit', emoji: '🧠', category: 'Health / Tech', tagline: 'App de meditation & neurofeedback',
+      description: 'Application mobile qui combine meditation guidee, biofeedback cardiaque et exercices cognitifs.',
+      target: 'Cadres stresses 30-50 ans, sportifs, professions a forte charge mentale', price: '12,99 EUR/mois', usp: 'Science + IA personnalisee' },
+    { id: 'pawmatch', name: 'PawMatch', emoji: '🐾', category: 'Pets / Service', tagline: 'Concierge IA pour animaux',
+      description: 'Service premium qui combine garde, soins, alimentation personnalisee et IA de detection comportementale.',
+      target: 'Proprietaires d\'animaux CSP+, urbains 30-55 ans', price: '49 EUR/mois', usp: 'Sante predictive et concierge 24/7' },
+    { id: 'verdoo', name: 'Verdoo', emoji: '🌱', category: 'Garden / Tech', tagline: 'Jardin connecte intelligent',
+      description: 'Capteurs IoT + app qui transforme balcon ou terrasse en potager auto-gere. Recommandations IA.',
+      target: 'Citadins 28-45 ans avec balcon, eco-conscients debutants', price: '149 EUR + 4,99/mois', usp: 'Zero perte, recoltes 365j/an' },
+    { id: 'lumio', name: 'Lumio', emoji: '💡', category: 'Education / Kids', tagline: 'Plateforme d\'eveil enfants 6-12',
+      description: 'Cours en ligne ludiques sur les sciences, l\'art et l\'IA — animes par des avatars personnalises.',
+      target: 'Parents CSP+ avec enfants 6-12 ans, sensibles a l\'education alternative', price: '19,99 EUR/mois', usp: 'IA pedagogique adaptative' },
+    { id: 'nomadcup', name: 'NomadCup', emoji: '☕', category: 'Food / Lifestyle', tagline: 'Cafe de specialite en kit nomade',
+      description: 'Kit barista portable + cafe single-origin livre chaque mois. Pour digital nomads et voyageurs.',
+      target: 'Telecommuteurs 25-40 ans, freelances, voyageurs', price: '24,90 EUR/mois', usp: 'Cafe haut de gamme partout' },
+    { id: 'mythik', name: 'Mythik', emoji: '⚔️', category: 'Gaming / Tabletop', tagline: 'JdR narratif genere par IA',
+      description: 'Jeu de role en boite avec une IA qui genere quetes, PNJs et histoires uniques a chaque partie.',
+      target: 'Geeks 18-35 ans, joueurs occasionnels, communautes Discord', price: '59 EUR + 9,99 EUR/extension', usp: 'Infinies aventures, jamais 2 fois la meme partie' },
+    { id: 'zenra', name: 'Zenra', emoji: '🧘', category: 'Wellness / Cosmetic', tagline: 'Cosmetique adaptogenique',
+      description: 'Gamme de soins visage formules avec des plantes adaptogenes (ashwagandha, ginseng, rhodiola).',
+      target: 'Femmes 28-50 ans, sensibles au naturel, anti-stress', price: '34-79 EUR', usp: 'Beaute holistique stress-tested' },
+    { id: 'urbeat', name: 'Urbeat', emoji: '🎧', category: 'Lifestyle / Audio', tagline: 'Casque a annulation contextuelle',
+      description: 'Casque audio premium avec IA contextuelle : laisse passer la voix d\'un proche, bloque tout le reste.',
+      target: 'Cadres urbains 25-45 ans, parents, voyageurs', price: '349 EUR', usp: 'IA qui apprend votre entourage' },
+    { id: 'kookoo', name: 'Kookoo', emoji: '🍔', category: 'Food / Quick', tagline: 'Robot de cuisine IA familial',
+      description: 'Petit robot connecte qui propose des recettes en fonction du contenu du frigo (scan + IA).',
+      target: 'Familles 30-45 ans, cuisiniers presses, anti-gaspi', price: '299 EUR + 6,99 EUR/mois', usp: 'Zero gaspillage, recettes hyper-personnalisees' },
+    { id: 'orbi', name: 'Orbi', emoji: '🪐', category: 'Travel / Tech', tagline: 'Travel planner IA premium',
+      description: 'App qui planifie des voyages sur-mesure (vols + hotels + activites) selon votre profil et budget.',
+      target: 'Voyageurs CSP+ 30-55 ans, couples, familles', price: '12,99 EUR/mois ou 1% du budget voyage', usp: 'Voyages sur-mesure en 5 minutes' },
+    { id: 'fablab', name: 'FabLab Home', emoji: '🛠️', category: 'DIY / Tech', tagline: 'Mini-imprimante 3D salon',
+      description: 'Imprimante 3D ultra-compacte + app IA qui transforme une photo en modele 3D imprimable.',
+      target: 'Geeks creatifs 25-50 ans, parents, makers debutants', price: '249 EUR + 19 EUR/mois (filaments)', usp: 'Imprimer une idee en 5 minutes' },
+    { id: 'glowup', name: 'GlowUp', emoji: '✨', category: 'Cosmetic / GenZ', tagline: 'Skincare Gen Z personnalise',
+      description: 'Routine skincare creee par IA a partir d\'un selfie + questionnaire. Livre tous les 2 mois.',
+      target: 'Gen Z 16-25 ans, sensibles aux reseaux sociaux', price: '29,90 EUR/box bimestrielle', usp: 'Diagnostic IA + ingredients K-Beauty' },
+    { id: 'kintech', name: 'Kintech', emoji: '👨‍👩‍👧', category: 'FamTech / IoT', tagline: 'Hub familial intelligent',
+      description: 'Ecran connecte salon qui centralise calendrier famille, courses, IA conversationnelle pour les enfants.',
+      target: 'Familles avec enfants 4-15 ans, classes moyennes/sup', price: '249 EUR + 7,99 EUR/mois', usp: 'L\'IA familiale qui simplifie la vie' },
+    { id: 'sportia', name: 'SportIA', emoji: '⚽', category: 'Sport / Coach', tagline: 'Coach sportif IA video',
+      description: 'App qui analyse vos mouvements en video (squat, course, yoga) et donne des feedbacks en temps reel.',
+      target: 'Sportifs amateurs 20-45 ans, debutants au gym', price: '14,99 EUR/mois', usp: 'Coach 24/7 a prix abordable' }
+  ];
+
+  /* ============ PHASES STRUCTURE (Guided Workflow) ============ */
+  var PHASES_GUIDE = {
+    phase1: {
+      title: 'Phase 1 : Ideation & Marche',
+      icon: '💡',
+      color: 'cyan',
+      desc: 'Validez votre idee produit, definissez votre persona cible et analysez le marche',
+      steps: [
+        {
+          id: 'product-idea',
+          title: 'Concept produit affine',
+          desc: 'Reformulez le concept dans VOS mots, ajoutez votre touche unique',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'En tant que strategiste produit, aide-moi a affiner le concept "{theme}" pour le distinguer de la concurrence. Donne 3 axes de differenciation et un pitch elevator de 30 secondes.',
+          fields: [
+            { name: 'description', label: 'Description produit (50-100 mots)', rows: 4, placeholder: 'Decrivez le produit, sa promesse principale et ce qui le rend unique...' },
+            { name: 'differentiation', label: 'Axes de differenciation (3 points)', rows: 3, placeholder: '1. ...\n2. ...\n3. ...' }
+          ]
+        },
+        {
+          id: 'target-persona',
+          title: 'Persona cible detaille',
+          desc: 'Creez un buyer persona ultra-precis (1 a 2 personas max)',
+          aiTool: 'ChatGPT + DALL-E (portrait)',
+          prompt: 'Cree un persona detaille pour "{theme}". Format : Nom, age, profession, hobbies, freins d\'achat, motivations d\'achat, ou il s\'informe, citations type. Sois realiste et precis.',
+          fields: [
+            { name: 'personaName', label: 'Nom & age du persona', placeholder: 'Ex: Sarah, 32 ans' },
+            { name: 'personaProfil', label: 'Profil et habitudes', rows: 3, placeholder: 'Profession, lieu de vie, hobbies, comportement d\'achat...' },
+            { name: 'personaMotivations', label: 'Motivations et freins', rows: 3, placeholder: 'Ce qui pousse a acheter / ce qui bloque...' }
+          ]
+        },
+        {
+          id: 'market-analysis',
+          title: 'Analyse marche (concurrence + tendances)',
+          desc: 'Identifiez 3 concurrents, leurs forces/faiblesses et les tendances cles',
+          aiTool: 'Perplexity / ChatGPT',
+          prompt: 'Analyse le marche de "{theme}" en France. Donne 3 concurrents principaux avec leurs forces et faiblesses. Quelles sont les 3 tendances cles a surfer ?',
+          fields: [
+            { name: 'competitors', label: 'Top 3 concurrents (forces + faiblesses)', rows: 4, placeholder: '1. Marque X — Forces : ... / Faiblesses : ...\n2. ...\n3. ...' },
+            { name: 'trends', label: '3 tendances marche a exploiter', rows: 3, placeholder: '1. ...\n2. ...\n3. ...' },
+            { name: 'positioning', label: 'Notre positionnement (1 phrase)', placeholder: 'Ex: "Le seul kit de champignons 100% francais, certifie bio et livre sous 24h"' }
+          ]
+        }
+      ]
+    },
+    phase2: {
+      title: 'Phase 2 : Branding & Identite',
+      icon: '🎨',
+      color: 'purple',
+      desc: 'Creez le nom, le logo et la charte graphique de votre marque',
+      steps: [
+        {
+          id: 'brand-name',
+          title: 'Nom de marque & baseline',
+          desc: 'Generez 10 noms candidats avec l\'IA, gardez le meilleur + une baseline',
+          aiTool: 'ChatGPT / Claude / Namelix',
+          prompt: 'Genere 10 noms de marque memorables pour "{theme}". Criteres : court (2-3 syllabes), facile a prononcer, evocateur, domaine .com plausible. Pour chaque nom, donne le sens evoque et une baseline en 5 mots max.',
+          fields: [
+            { name: 'finalName', label: 'Nom final choisi', placeholder: 'Ex: MushiBox' },
+            { name: 'baseline', label: 'Baseline / slogan court (5-8 mots)', placeholder: 'Ex: "Cultivez vos saveurs en 14 jours"' },
+            { name: 'nameRationale', label: 'Pourquoi ce nom ?', rows: 2, placeholder: 'Justifiez votre choix...' }
+          ]
+        },
+        {
+          id: 'logo',
+          title: 'Logo & univers visuel',
+          desc: 'Generez votre logo avec Midjourney/DALL-E et definissez la palette',
+          aiTool: 'Midjourney / DALL-E / Canva',
+          prompt: 'Logo design for "{theme}" brand. Modern, minimal, [3 mots cles]. Style : flat design, vector, single color on white. --ar 1:1 --v 6',
+          fields: [
+            { name: 'logoPrompt', label: 'Prompt Midjourney/DALL-E utilise', rows: 3, placeholder: 'Collez votre prompt final ici...' },
+            { name: 'palette', label: 'Palette de couleurs (3-5 hex)', placeholder: 'Ex: #2D5F3F, #F4E5BC, #D4624A' },
+            { name: 'typography', label: 'Typographie principale', placeholder: 'Ex: Montserrat Bold pour titres, Open Sans pour texte' }
+          ]
+        },
+        {
+          id: 'brand-guide',
+          title: 'Tone of voice & charte',
+          desc: 'Definissez le ton, les valeurs et les do/don\'t de communication',
+          aiTool: 'ChatGPT',
+          prompt: 'Cree une charte de tone of voice pour "{theme}". Format : 3 valeurs cles, 5 adjectifs de ton, 5 mots "yes", 5 mots "no", exemple de phrase type.',
+          fields: [
+            { name: 'values', label: '3 valeurs de marque', rows: 2, placeholder: '1. ... 2. ... 3. ...' },
+            { name: 'tone', label: 'Tone of voice (5 adjectifs)', placeholder: 'Ex: convivial, expert, optimiste, ludique, premium' },
+            { name: 'doDont', label: 'Mots a utiliser / a eviter', rows: 3, placeholder: 'YES : ... / NO : ...' }
+          ]
+        }
+      ]
+    },
+    phase3: {
+      title: 'Phase 3 : Campagne Marketing',
+      icon: '📢',
+      color: 'gold',
+      desc: 'Creez les visuels publicitaires, les textes et le plan media',
+      steps: [
+        {
+          id: 'ad-visuals',
+          title: 'Visuels publicitaires (3 formats)',
+          desc: 'Generez 3 visuels pour Instagram, LinkedIn et display avec l\'IA',
+          aiTool: 'Midjourney / DALL-E / Adobe Firefly',
+          prompt: 'Hero shot for "{theme}" campaign. [Persona] using product in [lieu/contexte]. Mood : [3 adjectifs]. Photography style, natural light, --ar 4:5 (Instagram) / --ar 16:9 (LinkedIn) / --ar 1.91:1 (Display)',
+          fields: [
+            { name: 'visualConcept', label: 'Concept creatif central', rows: 2, placeholder: 'Quelle scene, quelle emotion, quel message principal...' },
+            { name: 'visualPrompt', label: 'Prompts utilises (3 formats)', rows: 4, placeholder: '1. Instagram : ...\n2. LinkedIn : ...\n3. Display : ...' }
+          ]
+        },
+        {
+          id: 'copy',
+          title: 'Textes marketing (headlines + body)',
+          desc: 'Redigez 3 accroches + texte d\'annonce + CTAs',
+          aiTool: 'Copy.ai / ChatGPT / Jasper',
+          prompt: 'Redige 3 headlines accrocheuses pour "{theme}" (cible : [persona]). Pour chaque headline, propose 1 body copy de 50 mots et 2 CTAs. Ton : [adjectifs charte].',
+          fields: [
+            { name: 'headlines', label: '3 headlines candidates', rows: 4, placeholder: '1. ...\n2. ...\n3. ...' },
+            { name: 'bodyCopy', label: 'Texte d\'annonce principal (50-80 mots)', rows: 4, placeholder: 'Le corps de votre annonce...' },
+            { name: 'ctas', label: 'Call-to-action principal & secondaire', placeholder: 'Ex: "Commander maintenant" / "En savoir plus"' }
+          ]
+        },
+        {
+          id: 'media-plan',
+          title: 'Plan media & budget',
+          desc: 'Definissez canaux, budget, KPIs et timing',
+          aiTool: 'ChatGPT (raisonnement) + Meta Ads Library',
+          prompt: 'Construis un plan media pour le lancement de "{theme}" avec un budget de 10 000 EUR. Repartis sur Meta Ads, Google Ads, Influencer, Email. Donne objectifs et KPIs.',
+          fields: [
+            { name: 'channels', label: 'Canaux & repartition budget', rows: 4, placeholder: 'Meta Ads : 4000 EUR (40%) — Objectif ...\nGoogle Ads : 3000 EUR (30%) — ...\nInfluencer : 2000 EUR (20%) — ...\nEmail : 1000 EUR (10%) — ...' },
+            { name: 'kpis', label: 'KPIs cibles', rows: 2, placeholder: 'Ex: 500k impressions, CPM < 8 EUR, 3000 clics, 80 conversions, ROAS > 2.5' },
+            { name: 'timing', label: 'Calendrier (4-6 semaines)', rows: 2, placeholder: 'S1 : teasing / S2-3 : launch peak / S4-5 : retargeting / S6 : repush + UGC' }
+          ]
+        }
+      ]
+    },
+    phase4: {
+      title: 'Phase 4 : Pitch & Lancement',
+      icon: '🚀',
+      color: 'pink',
+      desc: 'Construisez landing page, video pitch et deck final',
+      steps: [
+        {
+          id: 'landing-page',
+          title: 'Landing page mockup',
+          desc: 'Designez la landing page (structure + wireframe + sections)',
+          aiTool: 'Figma + ChatGPT (copy)',
+          prompt: 'Structure d\'une landing page haute conversion pour "{theme}". Liste les sections (hero, social proof, features, pricing, FAQ, CTA final) avec contenu suggere pour chacune.',
+          fields: [
+            { name: 'lpStructure', label: 'Structure de la page (sections)', rows: 5, placeholder: '1. Hero : headline + visuel + CTA\n2. Social proof : 3 logos clients\n3. Features : 3 colonnes\n4. Pricing : 2-3 plans\n5. FAQ : 6 questions\n6. CTA final' },
+            { name: 'lpUrl', label: 'URL ou lien Figma (optionnel)', placeholder: 'https://figma.com/...' }
+          ]
+        },
+        {
+          id: 'pitch-video',
+          title: 'Video pitch (60-90 sec)',
+          desc: 'Creez une video pitch avec HeyGen ou avatar IA',
+          aiTool: 'HeyGen / Synthesia / ElevenLabs',
+          prompt: 'Script video pitch 60 secondes pour "{theme}". Structure : hook 5s, probleme 15s, solution 20s, preuve 10s, CTA 10s. Ton conversationnel.',
+          fields: [
+            { name: 'videoScript', label: 'Script complet (8-10 phrases)', rows: 6, placeholder: 'HOOK : ...\nPROBLEME : ...\nSOLUTION : ...\nPREUVE : ...\nCTA : ...' },
+            { name: 'videoUrl', label: 'URL de la video produite', placeholder: 'https://...' }
+          ]
+        },
+        {
+          id: 'final-deck',
+          title: 'Deck de presentation finale',
+          desc: 'Construisez le pitch deck en 10 slides max',
+          aiTool: 'Gamma / Tome / PowerPoint + IA',
+          prompt: 'Plan d\'un pitch deck en 10 slides pour "{theme}". Slides : couverture, probleme, solution, marche, produit, business model, traction, equipe, demande, contact.',
+          fields: [
+            { name: 'deckPlan', label: 'Plan des 10 slides', rows: 6, placeholder: '1. Couverture : ...\n2. Probleme : ...\n3. Solution : ...\n...\n10. Contact : ...' },
+            { name: 'deckUrl', label: 'URL du deck final', placeholder: 'https://gamma.app/...' }
+          ]
+        }
+      ]
+    }
+  };
+
+  /* ============ THEME SELECTION (At Registration) ============ */
+  function pickRandomThemes(n) {
+    var pool = PRODUCT_THEMES.slice();
+    var picks = [];
+    for (var i = 0; i < n && pool.length > 0; i++) {
+      var idx = Math.floor(Math.random() * pool.length);
+      picks.push(pool[idx]);
+      pool.splice(idx, 1);
+    }
+    return picks;
+  }
+
+  function showThemeSelection(onConfirm) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var choices = st.themeChoices && st.themeChoices.length === 3 ? st.themeChoices : pickRandomThemes(3);
+
+    st.themeChoices = choices;
+    if (AIA.saveState) AIA.saveState();
+
+    var existing = document.querySelector('.theme-selection-overlay');
+    if (existing) existing.remove();
+
+    var overlay = document.createElement('div');
+    overlay.className = 'theme-selection-overlay';
+    overlay.innerHTML =
+      '<div class="theme-selection-modal">' +
+      '<h2>🎯 Choisissez votre projet d\'atelier</h2>' +
+      '<p class="theme-selection-subtitle">3 produits fictifs ont ete generes au hasard. Choisissez celui que vous voulez transformer en campagne marketing complete pendant l\'atelier. <strong>Ce choix est definitif</strong>.</p>' +
+      '<div class="theme-choices">' +
+      choices.map(function (t) {
+        return '<div class="theme-choice-card" data-theme-id="' + t.id + '">' +
+          '<div class="theme-emoji">' + t.emoji + '</div>' +
+          '<div class="theme-category">' + t.category + '</div>' +
+          '<h3>' + t.name + '</h3>' +
+          '<p class="theme-tagline">' + t.tagline + '</p>' +
+          '<p class="theme-desc">' + t.description + '</p>' +
+          '<div class="theme-meta">' +
+          '<div><strong>Cible :</strong> ' + t.target + '</div>' +
+          '<div><strong>Prix :</strong> ' + t.price + '</div>' +
+          '<div><strong>USP :</strong> ' + t.usp + '</div>' +
+          '</div>' +
+          '<button class="btn-primary btn-choose-theme">Je choisis ' + t.name + '</button>' +
+          '</div>';
+      }).join('') +
+      '</div>' +
+      '<p class="theme-selection-hint">💡 Astuce : choisissez celui qui vous inspire le plus — vous allez y passer 4 jours !</p>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelectorAll('.btn-choose-theme').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = btn.closest('.theme-choice-card');
+        var id = card.getAttribute('data-theme-id');
+        var theme = PRODUCT_THEMES.find(function (t) { return t.id === id; });
+        if (!theme) return;
+        if (!confirm('Confirmer le choix : ' + theme.name + ' ? Ce choix sera definitif pour tout l\'atelier.')) return;
+        st.productTheme = theme;
+        st.campaignData = st.campaignData || {};
+        if (AIA.saveState) AIA.saveState();
+        overlay.remove();
+        AIA.showToast('Projet choisi : ' + theme.name + ' ' + theme.emoji + ' — bonne campagne !', 'success');
+        if (typeof onConfirm === 'function') onConfirm(theme);
+      });
+    });
+  }
+
+  /* ============ ENHANCED BUSINESS GAME PAGE ============ */
+  function renderBusinessGame(main) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var theme = st.productTheme;
+
+    if (!theme) {
+      main.innerHTML = '<div class="page-header"><h1>Business <span class="gradient-text">Game</span></h1>' +
+        '<p class="page-subtitle">Construisez la campagne marketing d\'un produit fictif en 4 phases</p></div>' +
+        '<div class="glass-card" style="text-align:center;padding:3rem">' +
+        '<div style="font-size:3rem;margin-bottom:1rem">🎯</div>' +
+        '<h3>Vous n\'avez pas encore choisi votre projet</h3>' +
+        '<p style="color:var(--text-muted);margin-bottom:1.5rem">Selectionnez 1 produit fictif parmi 3 propositions generees au hasard. Ce produit sera votre fil rouge pendant les 4 jours.</p>' +
+        '<button class="btn-primary" id="btn-pick-theme">🎲 Choisir mon projet</button>' +
+        '</div>';
+      var btn = document.getElementById('btn-pick-theme');
+      if (btn) btn.addEventListener('click', function () { showThemeSelection(function () { renderBusinessGame(main); }); });
+      return;
+    }
+
+    st.campaignData = st.campaignData || {};
+    st.gameDeliverables = st.gameDeliverables || {};
+
+    var allSteps = 0, doneSteps = 0;
+    Object.keys(PHASES_GUIDE).forEach(function (pk) {
+      PHASES_GUIDE[pk].steps.forEach(function (s) {
+        allSteps++;
+        if (st.gameDeliverables[s.id]) doneSteps++;
+      });
+    });
+    var globalPct = Math.round((doneSteps / allSteps) * 100);
+
+    var html = '<div class="page-header">' +
+      '<div class="game-header-banner">' +
+      '<div class="game-theme-banner">' +
+      '<div class="game-theme-emoji">' + theme.emoji + '</div>' +
+      '<div class="game-theme-info">' +
+      '<div class="game-theme-category">' + theme.category + ' &bull; Projet choisi</div>' +
+      '<h1 class="game-theme-name">' + theme.name + '</h1>' +
+      '<p class="game-theme-tagline">' + theme.tagline + '</p>' +
+      '</div>' +
+      '<div class="game-theme-progress-block">' +
+      '<div class="game-theme-progress-num">' + globalPct + '%</div>' +
+      '<div class="game-theme-progress-lbl">' + doneSteps + '/' + allSteps + ' etapes</div>' +
+      '</div>' +
+      '</div>' +
+      '<div class="game-progress-master">' +
+      '<div class="game-progress-fill" style="width:' + globalPct + '%"></div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    Object.keys(PHASES_GUIDE).forEach(function (pkey, pIdx) {
+      var phase = PHASES_GUIDE[pkey];
+      var doneInPhase = phase.steps.filter(function (s) { return st.gameDeliverables[s.id]; }).length;
+      var phasePct = Math.round((doneInPhase / phase.steps.length) * 100);
+
+      html += '<div class="game-phase-card glass-card phase-color-' + phase.color + '">' +
+        '<div class="game-phase-header">' +
+        '<div class="game-phase-num">' + (pIdx + 1) + '</div>' +
+        '<div class="game-phase-icon">' + phase.icon + '</div>' +
+        '<div class="game-phase-title-block">' +
+        '<h2>' + phase.title + '</h2>' +
+        '<p>' + phase.desc + '</p>' +
+        '</div>' +
+        '<div class="game-phase-progress">' +
+        '<div class="game-phase-pct">' + phasePct + '%</div>' +
+        '<div class="game-phase-count">' + doneInPhase + '/' + phase.steps.length + '</div>' +
+        '</div>' +
+        '</div>' +
+        '<div class="game-progress-bar"><div class="game-progress-fill" style="width:' + phasePct + '%"></div></div>' +
+        '<div class="game-steps">' +
+        phase.steps.map(function (step, sIdx) {
+          var done = !!st.gameDeliverables[step.id];
+          var data = st.campaignData[step.id] || {};
+          var promptText = step.prompt.replace(/{theme}/g, theme.name + ' (' + theme.description + ')');
+          return '<div class="game-step-card' + (done ? ' done' : '') + '" data-step-id="' + step.id + '">' +
+            '<div class="game-step-header">' +
+            '<div class="game-step-checkbox">' + (done ? '✅' : '⬜') + '</div>' +
+            '<div class="game-step-title">' +
+            '<h4>Etape ' + (sIdx + 1) + ' : ' + step.title + '</h4>' +
+            '<p>' + step.desc + '</p>' +
+            '</div>' +
+            '<button class="btn-ghost btn-xs game-step-toggle" data-step-id="' + step.id + '">' + (done ? 'Modifier' : 'Demarrer') + '</button>' +
+            '</div>' +
+            '<div class="game-step-body" style="display:' + (done ? 'none' : 'block') + '">' +
+            '<div class="game-step-tool">🛠️ <strong>Outil suggere :</strong> ' + step.aiTool + '</div>' +
+            '<div class="game-step-prompt">' +
+            '<div class="game-step-prompt-label">📝 Prompt suggere (a copier dans votre outil IA) :</div>' +
+            '<div class="game-step-prompt-text">' + escapeHtml(promptText) + '</div>' +
+            '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(promptText) + '">📋 Copier le prompt</button>' +
+            '</div>' +
+            '<div class="game-step-fields">' +
+            step.fields.map(function (f) {
+              var val = data[f.name] || '';
+              if (f.rows) {
+                return '<div class="form-group"><label>' + f.label + '</label>' +
+                  '<textarea data-step="' + step.id + '" data-field="' + f.name + '" rows="' + f.rows + '" placeholder="' + (f.placeholder || '') + '">' + escapeHtml(val) + '</textarea></div>';
+              } else {
+                return '<div class="form-group"><label>' + f.label + '</label>' +
+                  '<input type="text" data-step="' + step.id + '" data-field="' + f.name + '" placeholder="' + (f.placeholder || '') + '" value="' + escapeHtml(val) + '"></div>';
+              }
+            }).join('') +
+            '</div>' +
+            '<div class="game-step-actions">' +
+            '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">' + (done ? '✏️ Sauvegarder modifications' : '✅ Valider cette etape (+15 XP)') + '</button>' +
+            '<button class="btn-ghost btn-sm btn-save-draft" data-step-id="' + step.id + '">💾 Sauvegarder brouillon</button>' +
+            '</div>' +
+            '</div>' +
+            '</div>';
+        }).join('') +
+        '</div>' +
+        '</div>';
+    });
+
+    html += '<div class="game-final-cta glass-card">' +
+      '<h3>🏆 Projet final</h3>' +
+      '<p>Quand toutes les etapes sont validees, exportez votre campagne complete et presentez-la au Jour 4 !</p>' +
+      '<button class="btn-primary" id="btn-export-campaign">📤 Exporter ma campagne (JSON)</button>' +
+      '<button class="btn-outline" id="btn-change-theme">🔄 Changer de projet</button>' +
+      '</div>';
+
+    main.innerHTML = html;
+
+    main.querySelectorAll('.game-step-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var card = this.closest('.game-step-card');
+        var body = card.querySelector('.game-step-body');
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+      });
+    });
+
+    main.querySelectorAll('.btn-copy-prompt').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var txt = decodeURIComponent(this.getAttribute('data-prompt'));
+        if (navigator.clipboard) navigator.clipboard.writeText(txt).then(function () { AIA.showToast('Prompt copie !', 'success'); });
+        else AIA.showToast('Copiez manuellement', 'info');
+      });
+    });
+
+    main.querySelectorAll('.btn-save-draft').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stepId = this.getAttribute('data-step-id');
+        saveStepData(stepId, main);
+        AIA.showToast('Brouillon sauvegarde', 'info');
+      });
+    });
+
+    main.querySelectorAll('.btn-validate-step').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stepId = this.getAttribute('data-step-id');
+        var ok = saveStepData(stepId, main, true);
+        if (!ok) { AIA.showToast('Remplissez au moins 1 champ avant de valider', 'warning'); return; }
+        var wasDone = !!st.gameDeliverables[stepId];
+        st.gameDeliverables[stepId] = true;
+        if (!wasDone) { AIA.addXP(15); AIA.showToast('Etape validee ! +15 XP', 'success'); }
+        else { AIA.showToast('Modifications sauvegardees', 'success'); }
+        if (AIA.saveState) AIA.saveState();
+        renderBusinessGame(main);
+      });
+    });
+
+    var btnExport = document.getElementById('btn-export-campaign');
+    if (btnExport) btnExport.addEventListener('click', function () {
+      var data = { theme: theme, campaign: st.campaignData, completed: st.gameDeliverables, exportedAt: new Date().toISOString() };
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'campagne-' + theme.id + '-' + Date.now() + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      AIA.showToast('Campagne exportee !', 'success');
+    });
+
+    var btnChange = document.getElementById('btn-change-theme');
+    if (btnChange) btnChange.addEventListener('click', function () {
+      if (!confirm('Reinitialiser votre projet ? Vous reperdez votre choix (le travail des etapes reste sauvegarde).')) return;
+      st.productTheme = null;
+      st.themeChoices = null;
+      if (AIA.saveState) AIA.saveState();
+      renderBusinessGame(main);
+    });
+  }
+
+  function saveStepData(stepId, main, requireOne) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    st.campaignData = st.campaignData || {};
+    st.campaignData[stepId] = st.campaignData[stepId] || {};
+    var inputs = main.querySelectorAll('[data-step="' + stepId + '"]');
+    var filled = 0;
+    inputs.forEach(function (el) {
+      var f = el.getAttribute('data-field');
+      var v = el.value.trim();
+      st.campaignData[stepId][f] = v;
+      if (v.length > 0) filled++;
+    });
+    if (requireOne && filled === 0) return false;
+    if (AIA.saveState) AIA.saveState();
+    return true;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  window.AIA = window.AIA || {};
+  window.AIA.PRODUCT_THEMES = PRODUCT_THEMES;
+  window.AIA.PHASES_GUIDE = PHASES_GUIDE;
+  window.AIA.showThemeSelection = showThemeSelection;
+  window.AIA.renderBusinessGameNew = renderBusinessGame;
+  window.AIA.pickRandomThemes = pickRandomThemes;
+})();
