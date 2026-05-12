@@ -615,6 +615,130 @@
     });
   }
 
+  /* ======== DEMO 7: BACKGROUND REMOVAL (HuggingFace) ======== */
+  function renderDemoBgRemove(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Suppression de <span class="gradient-text">Fond Auto</span></h1>' +
+      '<p class="page-subtitle">Detourez vos visuels produits en 1 clic — ideal e-commerce et social media</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🖼️ Background Remover — BRIA RMBG 1.4</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une photo produit, l\'IA detoure le sujet automatiquement et retourne un PNG transparent. Parfait pour catalogues, A/B tests visuels, banner ads.</p>' +
+      createHFEmbed('https://briaai-bria-rmbg-1-4.hf.space', 'BRIA RMBG 1.4 — Background Removal', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>💡 Use cases marketing</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>E-commerce</strong><br>Fonds blancs uniformes (Amazon, Shopify, Etsy)</div>' +
+      '<div class="tip"><strong>Social media</strong><br>Coller un produit sur des fonds creatifs</div>' +
+      '<div class="tip"><strong>Banner ads</strong><br>Tester plusieurs arriere-plans rapidement</div>' +
+      '<div class="tip"><strong>Print/Catalogue</strong><br>Workflow accelere x10 vs Photoshop manuel</div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Alternatives pro :</strong> remove.bg, Adobe Express, Canva Pro, PhotoRoom (mobile)</p>' +
+      '</div>';
+    markDemoComplete('demo-bg-remove');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-bg-remove', { type: 'bg-remove-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 8: MUSIC GENERATION (HuggingFace) ======== */
+  function renderDemoMusic(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Generation <span class="gradient-text">Musicale IA</span></h1>' +
+      '<p class="page-subtitle">Composez jingles publicitaires et bandes-son pour vos campagnes</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🎵 MusicGen — Meta AI</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Generez de la musique a partir d\'un prompt texte. Ideal pour jingles, bandes-son video, ambiances podcast. Royalty-free pour usage personnel.</p>' +
+      createHFEmbed('https://facebook-musicgen.hf.space', 'MusicGen — Meta AI', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>🎯 Templates de prompts musicaux</h3>' +
+      '<div id="music-templates" style="display:flex;flex-direction:column;gap:0.5rem">' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Upbeat corporate background music, energetic synth, motivational, 120 BPM, suitable for product launch video"><strong>Pub corporate</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Upbeat corporate, energetic synth, 120 BPM, product launch</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Calm minimalist piano, warm pads, relaxing wellness brand, 70 BPM, spa music"><strong>Brand wellness</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Calm piano, warm pads, wellness, 70 BPM, spa</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Trendy lo-fi hip hop beat, urban, Gen Z vibe, 90 BPM, casual social media ad"><strong>Gen Z social</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Lo-fi hip hop, urban, Gen Z, 90 BPM, social ad</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie !\',\'success\')" data-p="Cinematic orchestral intro, epic strings, premium luxury brand, 110 BPM"><strong>Luxe cinematic</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Cinematic orchestral, strings, luxury, 110 BPM</code></div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Outils pro :</strong> Suno, Udio (chansons completes), AIVA (orchestral), Mubert (royalty-free)</p>' +
+      '</div>';
+    markDemoComplete('demo-music');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-music', { type: 'music-gen-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 9: SPEECH-TO-TEXT (HuggingFace Whisper) ======== */
+  function renderDemoSpeech(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Transcription <span class="gradient-text">Vocale IA</span></h1>' +
+      '<p class="page-subtitle">Transcrivez podcasts, interviews, video clients — Whisper d\'OpenAI</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🎙️ Whisper Large V3 — OpenAI</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez un fichier audio (mp3/wav) ou enregistrez votre voix. Whisper transcrit en 100+ langues avec ponctuation. Precision ~95% sur le francais.</p>' +
+      createHFEmbed('https://openai-whisper.hf.space', 'Whisper Large V3 — Speech to Text', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>💡 Use cases marketing</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Verbatims clients</strong><br>Transcrire interviews UX pour extraire insights</div>' +
+      '<div class="tip"><strong>Podcasts SEO</strong><br>Sous-titrer + reposter le texte sur le blog</div>' +
+      '<div class="tip"><strong>Reels/TikTok</strong><br>Generer les sous-titres SRT automatiquement</div>' +
+      '<div class="tip"><strong>Calls equipe</strong><br>Comptes-rendus auto de reunions Zoom/Meet</div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Outils pro :</strong> Otter.ai (collaboratif), Descript (edition video par texte), Rev (humain premium), Notta</p>' +
+      '</div>';
+    markDemoComplete('demo-speech');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-speech', { type: 'speech-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 10: VISUAL ANALYSIS / CAPTIONING (HuggingFace BLIP) ======== */
+  function renderDemoVqa(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Analyse Visuelle <span class="gradient-text">par IA</span></h1>' +
+      '<p class="page-subtitle">Decortiquez les pubs concurrentes — l\'IA decrit ce qu\'elle voit (alt-text SEO, benchmark)</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">👁️ BLIP — Image Captioning</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une image (capture d\'une pub concurrente, votre visuel, un meme). L\'IA decrit ce qu\'elle voit — utile pour SEO, accessibilite, benchmark visuel.</p>' +
+      createHFEmbed('https://salesforce-blip.hf.space', 'BLIP — Image Captioning', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>🎯 Comment exploiter ces descriptions</h3>' +
+      '<div class="tips-grid">' +
+      '<div class="tip"><strong>Alt-text SEO</strong><br>Generer en masse les ALT de toutes vos images produit</div>' +
+      '<div class="tip"><strong>Veille concurrentielle</strong><br>Analyser les visuels Meta Ads Library</div>' +
+      '<div class="tip"><strong>Accessibilite</strong><br>Conformite RGAA / WCAG pour lecteurs d\'ecran</div>' +
+      '<div class="tip"><strong>Tagging produit</strong><br>Auto-categorisation catalogue e-commerce</div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Modeles avances :</strong> GPT-4 Vision, Claude Vision, Gemini Vision — pour analyses fines avec questions ouvertes</p>' +
+      '</div>';
+    markDemoComplete('demo-vqa');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-vqa', { type: 'vqa-explored', timestamp: new Date().toISOString() });
+  }
+
+  /* ======== DEMO 11: TEXT-TO-SPEECH (HuggingFace) ======== */
+  function renderDemoTts(main, inline) {
+    var header = inline ? '' : '<div class="page-header">' + backBtn() +
+      '<h1>Voix Off <span class="gradient-text">par IA</span></h1>' +
+      '<p class="page-subtitle">Generez voix-off pro pour vos videos publicitaires en secondes</p></div>';
+    main.innerHTML = header +
+      '<div class="demo-workspace glass-card">' +
+      '<h3 style="margin-bottom:0.5rem">🗣️ Parler-TTS — Voix Off Realiste</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Tapez votre script, choisissez le style de voix (genre, ton, vitesse) et generez une voix-off de qualite broadcast. Royalty-free pour usages perso/educatifs.</p>' +
+      createHFEmbed('https://parler-tts-parler-tts-expresso.hf.space', 'Parler-TTS Expresso — Voix Off', { tall: true }) +
+      '</div>' +
+      '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
+      '<h3>🎯 Scripts marketing a tester</h3>' +
+      '<div id="tts-scripts" style="display:flex;flex-direction:column;gap:0.5rem">' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Script copie !\',\'success\')" data-p="Decouvrez le futur du marketing digital. Avec notre solution IA, automatisez vos campagnes et multipliez vos resultats par 3. Essai gratuit 14 jours, sans engagement."><strong>Pub SaaS B2B (15 sec)</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Voix-off video LinkedIn / YouTube preroll</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Script copie !\',\'success\')" data-p="Ah si seulement quelqu un m avait dit ca avant. Imagine pouvoir cuisiner sain en 10 minutes chrono... C est exactement ce que fait Kookoo. Le robot intelligent qui transforme ton frigo en chef etoile."><strong>Pub Instagram Reel (20 sec)</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Ton conversationnel Gen Z + storytelling</code></div>' +
+      '<div class="tip" style="cursor:pointer" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Script copie !\',\'success\')" data-p="Un produit, une histoire. Chaque kit EcoMush est elabore dans notre atelier de Lyon par des passionnes. Cultivez vos saveurs, respectez la planete."><strong>Storytelling marque (15 sec)</strong><br><code style="font-size:0.72rem;color:var(--cyan)">Ton premium, posement</code></div>' +
+      '</div>' +
+      '<p style="margin-top:1rem;font-size:0.8rem;color:var(--text-muted)"><strong>Outils pro :</strong> ElevenLabs (le meilleur), Murf.ai (200+ voix), Play.ht, Resemble.ai (clone vocal)</p>' +
+      '</div>';
+    markDemoComplete('demo-tts');
+    if (window.AIA.submitActivity) window.AIA.submitActivity('demo-tts', { type: 'tts-explored', timestamp: new Date().toISOString() });
+  }
+
   /* ---------- Expose to AIA ---------- */
   window.AIA = window.AIA || {};
   window.AIA.renderDemoPrompt = renderDemoPrompt;
@@ -623,5 +747,10 @@
   window.AIA.renderDemoChatbot = renderDemoChatbot;
   window.AIA.renderDemoABTest = renderDemoABTest;
   window.AIA.renderDemoSEO = renderDemoSEO;
+  window.AIA.renderDemoBgRemove = renderDemoBgRemove;
+  window.AIA.renderDemoMusic = renderDemoMusic;
+  window.AIA.renderDemoSpeech = renderDemoSpeech;
+  window.AIA.renderDemoVqa = renderDemoVqa;
+  window.AIA.renderDemoTts = renderDemoTts;
   window.AIA.createHFEmbed = createHFEmbed;
 })();

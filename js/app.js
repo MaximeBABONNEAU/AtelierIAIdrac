@@ -296,8 +296,10 @@
   }
 
   function addXP(amount, reason) {
-    state.xp.total += amount;
-    state.xp.history.unshift({amount:amount,reason:reason,date:new Date().toISOString()});
+    if (!state.xp) state.xp = { total: 0, history: [] };
+    if (!Array.isArray(state.xp.history)) state.xp.history = [];
+    state.xp.total = (state.xp.total || 0) + amount;
+    state.xp.history.unshift({amount:amount,reason:reason||'',date:new Date().toISOString()});
     if(state.xp.history.length>50) state.xp.history.length=50;
     updateXPDisplay(); showXPPopup(amount,reason);
     if(state.xp.total>=500) awardBadge('xp-500');
@@ -367,6 +369,11 @@
       'demo-chatbot':function(){if(window.AIA&&window.AIA.renderDemoChatbot)window.AIA.renderDemoChatbot(main);},
       'demo-abtest':function(){if(window.AIA&&window.AIA.renderDemoABTest)window.AIA.renderDemoABTest(main);},
       'demo-seo':function(){if(window.AIA&&window.AIA.renderDemoSEO)window.AIA.renderDemoSEO(main);},
+      'demo-bg-remove':function(){if(window.AIA&&window.AIA.renderDemoBgRemove)window.AIA.renderDemoBgRemove(main);},
+      'demo-music':function(){if(window.AIA&&window.AIA.renderDemoMusic)window.AIA.renderDemoMusic(main);},
+      'demo-speech':function(){if(window.AIA&&window.AIA.renderDemoSpeech)window.AIA.renderDemoSpeech(main);},
+      'demo-vqa':function(){if(window.AIA&&window.AIA.renderDemoVqa)window.AIA.renderDemoVqa(main);},
+      'demo-tts':function(){if(window.AIA&&window.AIA.renderDemoTts)window.AIA.renderDemoTts(main);},
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
       arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}}, leaderboard:renderLeaderboard,
@@ -612,20 +619,44 @@
   function renderDemos(){
     var main=document.getElementById('main-content');
     var demos=[
-      {id:'demo-prompt',icon:'✍️',title:'Prompt Playground',desc:'Testez et comparez differents prompts en temps reel',tag:'Interactif'},
-      {id:'demo-sentiment',icon:'😊',title:'Analyse de Sentiment',desc:'Analysez le sentiment de textes marketing',tag:'HuggingFace'},
-      {id:'demo-image',icon:'🎨',title:'Generation d\'Images',desc:'Generez des visuels marketing a partir de texte',tag:'IA Generative'},
-      {id:'demo-chatbot',icon:'💬',title:'Chatbot Marketing',desc:'Testez un chatbot marketing conversationnel',tag:'Conversationnel'},
-      {id:'demo-abtest',icon:'📊',title:'A/B Testing IA',desc:'Simulez des tests A/B automatises',tag:'Analytics'},
-      {id:'demo-seo',icon:'🔍',title:'SEO Analyzer',desc:'Analysez et optimisez votre contenu SEO',tag:'SEO'}
+      // Day 1 — Fondations IA (prompt, comprehension texte)
+      {id:'demo-prompt',icon:'✍️',title:'Prompt Playground',desc:'Comparer un prompt vague vs structure CRAC',tag:'Interactif',day:1,phase:'phase1'},
+      {id:'demo-chatbot',icon:'💬',title:'Chatbot Marketing',desc:'Discuter avec un LLM open-source pour personas & strategie',tag:'HuggingFace',day:1,phase:'phase1'},
+      {id:'demo-vqa',icon:'👁️',title:'Analyse Visuelle IA',desc:'Decortiquer les pubs concurrentes & generer alt-text SEO',tag:'HuggingFace',day:1,phase:'phase1'},
+      // Day 2 — Contenu visuel & marque
+      {id:'demo-image',icon:'🎨',title:'Generation d\'Images',desc:'Stable Diffusion 3 — visuels produit & logos',tag:'HuggingFace',day:2,phase:'phase2'},
+      {id:'demo-bg-remove',icon:'🖼️',title:'Suppression de Fond',desc:'Detourer photos produits en 1 clic (BRIA RMBG)',tag:'HuggingFace',day:2,phase:'phase2'},
+      {id:'demo-sentiment',icon:'😊',title:'Analyse de Sentiment',desc:'Mesurer la tonalite emotionnelle de textes marketing',tag:'NLP',day:2,phase:'phase2'},
+      // Day 3 — Campagne & creation pub
+      {id:'demo-music',icon:'🎵',title:'Generation Musicale',desc:'MusicGen — jingles & bandes-son pour pubs video',tag:'HuggingFace',day:3,phase:'phase3'},
+      {id:'demo-tts',icon:'🗣️',title:'Voix Off IA',desc:'Parler-TTS — voix-off broadcast pour videos pub',tag:'HuggingFace',day:3,phase:'phase3'},
+      {id:'demo-abtest',icon:'📊',title:'A/B Testing',desc:'Simulateur statistique pour optimiser CTA & headlines',tag:'Analytics',day:3,phase:'phase3'},
+      // Day 4 — Pitch, SEO, lancement
+      {id:'demo-seo',icon:'🔍',title:'SEO Analyzer',desc:'Analyser & optimiser le SEO de votre landing page',tag:'SEO',day:4,phase:'phase4'},
+      {id:'demo-speech',icon:'🎙️',title:'Transcription Vocale',desc:'Whisper — transcrire interviews & sous-titres video pitch',tag:'HuggingFace',day:4,phase:'phase4'}
     ];
-    main.innerHTML='<div class="page-header"><h1>Demos <span class="gradient-text">IA Interactives</span></h1>'+
-      '<p class="page-subtitle">6 outils IA en direct — aucune installation requise</p></div>'+
-      '<div class="demos-grid">'+demos.map(function(d){
-        var done=state.demosCompleted.indexOf(d.id)!==-1;
-        return '<div class="demo-card glass-card" data-navigate="'+d.id+'"><div class="demo-tag">'+d.tag+'</div>'+
-          '<div class="demo-icon">'+d.icon+'</div><h3>'+d.title+(done?' ✅':'')+'</h3><p>'+d.desc+'</p></div>';
-      }).join('')+'</div>';
+    var currentDay=getCurrentDay();
+    var DAY_TITLES={1:'Jour 1 — Fondations IA',2:'Jour 2 — Visuel & Marque',3:'Jour 3 — Campagne Pub',4:'Jour 4 — Pitch & Lancement'};
+    var DAY_ICONS={1:'🌱',2:'🎨',3:'📢',4:'🚀'};
+    var html='<div class="page-header"><h1>Demos <span class="gradient-text">IA Interactives</span></h1>'+
+      '<p class="page-subtitle">'+demos.length+' outils IA — '+demos.filter(function(d){return d.tag==='HuggingFace';}).length+' embeds HuggingFace + outils integres. Organises par jour de formation.</p></div>';
+    [1,2,3,4].forEach(function(day){
+      var dayDemos=demos.filter(function(d){return d.day===day;});
+      if(dayDemos.length===0) return;
+      var isCurrent=day===currentDay;
+      html+='<div class="demos-day-section'+(isCurrent?' current-day':'')+'">'+
+        '<div class="demos-day-header"><span class="demos-day-icon">'+DAY_ICONS[day]+'</span>'+
+        '<h2>'+DAY_TITLES[day]+'</h2>'+
+        (isCurrent?'<span class="demos-day-badge">Aujourd\'hui</span>':'')+
+        '</div>'+
+        '<div class="demos-grid">'+dayDemos.map(function(d){
+          var done=state.demosCompleted.indexOf(d.id)!==-1;
+          var hfTag=d.tag==='HuggingFace'?'<span class="demo-hf-badge">🤗 HF</span>':'';
+          return '<div class="demo-card glass-card" data-navigate="'+d.id+'"><div class="demo-tag">'+d.tag+'</div>'+
+            '<div class="demo-icon">'+d.icon+'</div><h3>'+d.title+(done?' ✅':'')+'</h3><p>'+d.desc+'</p>'+hfTag+'</div>';
+        }).join('')+'</div></div>';
+    });
+    main.innerHTML=html;
   }
 
   function renderArena(){

@@ -298,6 +298,105 @@
     });
   }
 
+  /* ============ TIMING CONTEXT (where the cohort should be NOW) ============ */
+  // Maps current day/session to recommended phase + demos
+  var TIMING_MAP = {
+    1: {
+      matin: { phase: 'phase1', step: 'product-idea', label: 'Fondations IA + Ideation produit', demos: ['demo-prompt', 'demo-chatbot'] },
+      aprem: { phase: 'phase1', step: 'target-persona', label: 'Personas & analyse marche', demos: ['demo-chatbot', 'demo-vqa'] }
+    },
+    2: {
+      matin: { phase: 'phase2', step: 'brand-name', label: 'Branding : nom de marque', demos: ['demo-chatbot', 'demo-prompt'] },
+      aprem: { phase: 'phase2', step: 'logo', label: 'Identite visuelle : logo & palette', demos: ['demo-image', 'demo-bg-remove'] }
+    },
+    3: {
+      matin: { phase: 'phase3', step: 'ad-visuals', label: 'Visuels publicitaires', demos: ['demo-image', 'demo-bg-remove'] },
+      aprem: { phase: 'phase3', step: 'copy', label: 'Copywriting & plan media', demos: ['demo-chatbot', 'demo-music', 'demo-tts', 'demo-abtest'] }
+    },
+    4: {
+      matin: { phase: 'phase4', step: 'landing-page', label: 'Landing page & SEO', demos: ['demo-seo', 'demo-image'] },
+      aprem: { phase: 'phase4', step: 'pitch-video', label: 'Pitch video + deck final', demos: ['demo-tts', 'demo-speech'] }
+    }
+  };
+
+  function getCurrentTiming() {
+    var AIA = window.AIA;
+    var CFG = AIA.CONFIG;
+    if (!CFG || !CFG.dates) return null;
+    var today = new Date().toISOString().split('T')[0];
+    var dayIdx = CFG.dates.indexOf(today);
+    if (dayIdx === -1) {
+      // Use simulated current day (first date or based on now)
+      var now = new Date();
+      var firstDate = new Date(CFG.dates[0] + 'T00:00:00');
+      if (now < firstDate) return { dayNum: 1, session: 'matin', isUpcoming: true };
+      // After course: stay on day 4
+      return { dayNum: 4, session: 'aprem', isPast: true };
+    }
+    var hour = new Date().getHours();
+    var session = hour < 13 ? 'matin' : 'aprem';
+    return { dayNum: dayIdx + 1, session: session };
+  }
+
+  function renderTimingWidget() {
+    var t = getCurrentTiming();
+    if (!t) return '';
+    var ctx = TIMING_MAP[t.dayNum] && TIMING_MAP[t.dayNum][t.session];
+    if (!ctx) return '';
+    var st = window.AIA.getState();
+    var phase = PHASES_GUIDE[ctx.phase];
+    var step = phase ? phase.steps.find(function (s) { return s.id === ctx.step; }) : null;
+    var stepDone = st.gameDeliverables && st.gameDeliverables[ctx.step];
+    var DEMOS_META = {
+      'demo-prompt': { icon: '✍️', title: 'Prompt Playground' },
+      'demo-chatbot': { icon: '💬', title: 'Chatbot Marketing' },
+      'demo-vqa': { icon: '👁️', title: 'Analyse Visuelle' },
+      'demo-image': { icon: '🎨', title: 'Generation Images' },
+      'demo-bg-remove': { icon: '🖼️', title: 'Suppression de Fond' },
+      'demo-music': { icon: '🎵', title: 'Generation Musicale' },
+      'demo-tts': { icon: '🗣️', title: 'Voix Off IA' },
+      'demo-speech': { icon: '🎙️', title: 'Transcription Vocale' },
+      'demo-abtest': { icon: '📊', title: 'A/B Testing' },
+      'demo-seo': { icon: '🔍', title: 'SEO Analyzer' },
+      'demo-sentiment': { icon: '😊', title: 'Sentiment' }
+    };
+    var sessionLabel = t.session === 'matin' ? '☀️ Matin' : '🌙 Apres-midi';
+    var statusBadge = t.isUpcoming ? '<span class="timing-badge upcoming">Atelier a venir</span>'
+      : t.isPast ? '<span class="timing-badge past">Atelier termine</span>'
+      : '<span class="timing-badge now">EN COURS</span>';
+    return '<div class="timing-widget glass-card">' +
+      '<div class="timing-header">' +
+      '<div class="timing-pulse"></div>' +
+      '<div class="timing-title">📍 Vous etes ici : <strong>Jour ' + t.dayNum + ' &bull; ' + sessionLabel + '</strong></div>' +
+      statusBadge +
+      '</div>' +
+      '<div class="timing-context">' +
+      '<div class="timing-context-label">' + ctx.label + '</div>' +
+      (step ? '<div class="timing-suggested-step ' + (stepDone ? 'done' : '') + '">' +
+        '<span class="timing-step-icon">' + (stepDone ? '✅' : '🎯') + '</span>' +
+        '<div class="timing-step-info">' +
+        '<div class="timing-step-label">Etape suggeree maintenant :</div>' +
+        '<div class="timing-step-name">' + step.title + (stepDone ? ' (deja validee !)' : '') + '</div>' +
+        '</div>' +
+        '<button class="btn-primary btn-sm timing-step-cta" data-jump-step="' + ctx.step + '">' + (stepDone ? 'Revoir' : 'Demarrer →') + '</button>' +
+        '</div>' : '') +
+      '<div class="timing-demos">' +
+      '<div class="timing-demos-label">🛠️ Demos IA recommandees pour cette session :</div>' +
+      '<div class="timing-demos-list">' +
+      ctx.demos.map(function (did) {
+        var meta = DEMOS_META[did] || { icon: '🤖', title: did };
+        var doneDemo = st.demosCompleted && st.demosCompleted.indexOf(did) !== -1;
+        return '<a href="#" class="timing-demo-chip" data-navigate="' + did + '">' +
+          '<span class="timing-demo-icon">' + meta.icon + '</span>' +
+          '<span>' + meta.title + (doneDemo ? ' ✓' : '') + '</span>' +
+          '</a>';
+      }).join('') +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+  }
+
   /* ============ ENHANCED BUSINESS GAME PAGE ============ */
   function renderBusinessGame(main) {
     var AIA = window.AIA;
@@ -330,7 +429,8 @@
     });
     var globalPct = Math.round((doneSteps / allSteps) * 100);
 
-    var html = '<div class="page-header">' +
+    var html = renderTimingWidget() +
+      '<div class="page-header">' +
       '<div class="game-header-banner">' +
       '<div class="game-theme-banner">' +
       '<div class="game-theme-emoji">' + theme.emoji + '</div>' +
@@ -430,6 +530,23 @@
       });
     });
 
+    // Timing widget: jump to step button
+    main.querySelectorAll('[data-jump-step]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        var sid = this.getAttribute('data-jump-step');
+        var card = main.querySelector('.game-step-card[data-step-id="' + sid + '"]');
+        if (card) {
+          var body = card.querySelector('.game-step-body');
+          if (body) body.style.display = 'block';
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.style.transition = 'box-shadow 0.5s';
+          card.style.boxShadow = '0 0 30px rgba(245,183,49,0.6)';
+          setTimeout(function () { card.style.boxShadow = ''; }, 2000);
+        }
+      });
+    });
+
     main.querySelectorAll('.btn-copy-prompt').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var txt = decodeURIComponent(this.getAttribute('data-prompt'));
@@ -512,4 +629,7 @@
   window.AIA.showThemeSelection = showThemeSelection;
   window.AIA.renderBusinessGameNew = renderBusinessGame;
   window.AIA.pickRandomThemes = pickRandomThemes;
+  window.AIA.getCurrentTiming = getCurrentTiming;
+  window.AIA.renderTimingWidget = renderTimingWidget;
+  window.AIA.TIMING_MAP = TIMING_MAP;
 })();
