@@ -22,6 +22,7 @@
       '<div class="admin-tabs">' +
       '<button class="admin-tab active" data-tab="overview">Vue d\'ensemble</button>' +
       '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
+      '<button class="admin-tab" data-tab="campaigns">🎯 Campagnes</button>' +
       '<button class="admin-tab" data-tab="students">Etudiants</button>' +
       '<button class="admin-tab" data-tab="course">Cours</button>' +
       '<button class="admin-tab" data-tab="submissions">Activites</button>' +
@@ -72,14 +73,149 @@
 
     function renderTab(tab) {
       var content = document.getElementById('admin-content');
+      // Clean up any previous live listener from the campaigns tab
+      if (_campaignsListener && AIA.db) { try { AIA.db.ref('states').off('value', _campaignsListener); } catch(e){} _campaignsListener = null; }
       if (tab === 'overview') renderOverview(content);
       else if (tab === 'accounts') renderAccounts(content);
+      else if (tab === 'campaigns') renderCampaigns(content);
       else if (tab === 'students') renderStudents(content);
       else if (tab === 'course') renderCourse(content);
       else if (tab === 'submissions') renderSubmissions(content);
       else if (tab === 'analytics') renderAnalytics(content);
       else if (tab === 'settings') renderSettings(content);
     }
+
+    var _campaignsListener = null;
+    function renderCampaigns(el) {
+      if (!AIA.db) {
+        el.innerHTML = '<div class="glass-card" style="text-align:center;padding:2rem"><p>Firebase non connecte.</p></div>';
+        return;
+      }
+      el.innerHTML = '<div class="admin-section glass-card"><h3>🎯 Campagnes etudiants (live)</h3>' +
+        '<p style="color:var(--text-muted)">Les selections de produits et la progression apparaissent ici en temps reel</p>' +
+        '<div id="campaigns-live"><div class="loading-pulse" style="padding:2rem;text-align:center">Chargement...</div></div></div>';
+
+      _campaignsListener = AIA.db.ref('states').on('value', function (snap) {
+        renderCampaignsLive(snap.val() || {});
+      });
+    }
+
+    function renderCampaignsLive(allStates) {
+      var liveEl = document.getElementById('campaigns-live');
+      if (!liveEl) return;
+      var PHASES = (AIA.PHASES_GUIDE) || {};
+      var phaseKeys = Object.keys(PHASES);
+      var totalSteps = phaseKeys.reduce(function (n, pk) { return n + PHASES[pk].steps.length; }, 0) || 12;
+
+      // Build rows
+      var rows = [];
+      Object.keys(allStates).forEach(function (k) {
+        var s = allStates[k];
+        if (!s) return;
+        var name = (s.user && s.user.name) || k;
+        var theme = s.productTheme;
+        var done = 0, assetCount = 0;
+        var phaseProgress = {};
+        phaseKeys.forEach(function (pk) {
+          var pdone = 0;
+          PHASES[pk].steps.forEach(function (step) {
+            if (s.gameDeliverables && s.gameDeliverables[step.id]) { pdone++; done++; }
+            if (s.campaignData && s.campaignData[step.id] && Array.isArray(s.campaignData[step.id].assets)) {
+              assetCount += s.campaignData[step.id].assets.length;
+            }
+          });
+          phaseProgress[pk] = { done: pdone, total: PHASES[pk].steps.length, pct: Math.round(pdone * 100 / PHASES[pk].steps.length) };
+        });
+        var pct = totalSteps > 0 ? Math.round(done * 100 / totalSteps) : 0;
+        var lastSeen = (s.user && s.user.lastSeen) || (s.streak && s.streak.lastDate) || null;
+        rows.push({
+          key: k, name: name, theme: theme, done: done, total: totalSteps, pct: pct,
+          assetCount: assetCount, phases: phaseProgress, lastSeen: lastSeen,
+          hasTheme: !!theme
+        });
+      });
+
+      // Categorize : with theme vs without
+      var withTheme = rows.filter(function (r) { return r.hasTheme; });
+      var withoutTheme = rows.filter(function (r) { return !r.hasTheme; });
+
+      // Sort with-theme by progress desc, then by name
+      withTheme.sort(function (a, b) { return b.pct - a.pct || a.name.localeCompare(b.name); });
+
+      // Summary stats
+      var totalStudents = rows.length;
+      var totalWithTheme = withTheme.length;
+      var allCompleted = withTheme.filter(function (r) { return r.pct === 100; }).length;
+      var avgPct = totalWithTheme > 0 ? Math.round(withTheme.reduce(function (s, r) { return s + r.pct; }, 0) / totalWithTheme) : 0;
+      var totalAssets = rows.reduce(function (s, r) { return s + r.assetCount; }, 0);
+
+      var html = '<div class="admin-campaigns-summary">' +
+        '<div class="acs-stat"><div class="acs-num">' + totalStudents + '</div><div class="acs-lbl">Etudiants total</div></div>' +
+        '<div class="acs-stat"><div class="acs-num">' + totalWithTheme + '</div><div class="acs-lbl">Avec projet choisi</div></div>' +
+        '<div class="acs-stat"><div class="acs-num">' + avgPct + '%</div><div class="acs-lbl">Progression moyenne</div></div>' +
+        '<div class="acs-stat"><div class="acs-num">' + allCompleted + '</div><div class="acs-lbl">Campagnes 100%</div></div>' +
+        '<div class="acs-stat"><div class="acs-num">' + totalAssets + '</div><div class="acs-lbl">Assets totaux</div></div>' +
+        '</div>';
+
+      if (withTheme.length === 0) {
+        html += '<div class="glass-card" style="text-align:center;padding:2rem;margin-top:1rem"><p style="color:var(--text-muted)">Aucun etudiant n\'a encore choisi son projet.</p></div>';
+      } else {
+        html += '<table class="admin-table full" style="margin-top:1rem">' +
+          '<thead><tr><th>Etudiant</th><th>Projet</th><th>Phase 1</th><th>Phase 2</th><th>Phase 3</th><th>Phase 4</th><th>Total</th><th>Assets</th></tr></thead><tbody>';
+        withTheme.forEach(function (r) {
+          var t = r.theme;
+          html += '<tr>' +
+            '<td><strong>' + escapeHtml(r.name) + '</strong></td>' +
+            '<td><span class="campaign-cell">' + (t.emoji || '🎯') + ' <strong>' + escapeHtml(t.name || '') + '</strong>' +
+            '<div style="font-size:0.68rem;color:var(--text-muted)">' + escapeHtml(t.category || '') + '</div></span></td>';
+          ['phase1','phase2','phase3','phase4'].forEach(function (pk) {
+            var p = r.phases[pk] || { done: 0, total: 3, pct: 0 };
+            var color = p.pct === 100 ? '#2ecc71' : p.pct > 0 ? 'var(--gold)' : 'var(--text-muted)';
+            html += '<td><div class="phase-progress-cell" style="color:' + color + '">' +
+              '<div class="phase-progress-bar"><div class="phase-progress-fill" style="width:' + p.pct + '%;background:' + color + '"></div></div>' +
+              '<span>' + p.done + '/' + p.total + '</span></div></td>';
+          });
+          html += '<td><div class="total-progress-cell">' +
+            '<div class="phase-progress-bar"><div class="phase-progress-fill" style="width:' + r.pct + '%;background:linear-gradient(90deg,var(--gold),var(--accent))"></div></div>' +
+            '<strong>' + r.pct + '%</strong></div></td>' +
+            '<td>📎 ' + r.assetCount + '</td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+      }
+
+      if (withoutTheme.length > 0) {
+        html += '<div class="glass-card" style="margin-top:1rem;padding:1rem;background:rgba(245,183,49,0.05);border-color:rgba(245,183,49,0.3)">' +
+          '<h4>⚠️ ' + withoutTheme.length + ' etudiant(s) sans projet choisi</h4>' +
+          '<p style="font-size:0.82rem;color:var(--text-muted)">Ils n\'ont pas encore selectionne leur produit fictif :</p>' +
+          '<ul style="font-size:0.85rem">' +
+          withoutTheme.map(function (r) { return '<li>' + escapeHtml(r.name) + ' (' + r.key + ')</li>'; }).join('') +
+          '</ul></div>';
+      }
+
+      // Theme distribution
+      if (withTheme.length > 0) {
+        var themeCount = {};
+        withTheme.forEach(function (r) {
+          var k = r.theme.name + ' ' + r.theme.emoji;
+          themeCount[k] = (themeCount[k] || 0) + 1;
+        });
+        var themeEntries = Object.keys(themeCount).map(function (k) { return { name: k, count: themeCount[k] }; });
+        themeEntries.sort(function (a, b) { return b.count - a.count; });
+        html += '<div class="glass-card" style="margin-top:1rem;padding:1rem">' +
+          '<h4>📊 Distribution des projets choisis</h4>' +
+          '<div class="theme-distribution">' +
+          themeEntries.map(function (e) {
+            return '<div class="theme-dist-row"><span>' + escapeHtml(e.name) + '</span>' +
+              '<div class="theme-dist-bar"><div class="theme-dist-fill" style="width:' + Math.round(e.count * 100 / withTheme.length) + '%"></div></div>' +
+              '<strong>' + e.count + '</strong></div>';
+          }).join('') +
+          '</div></div>';
+      }
+
+      liveEl.innerHTML = html;
+    }
+
 
     function getStudentList() {
       var list = [];

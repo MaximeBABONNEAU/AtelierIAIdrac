@@ -1583,6 +1583,31 @@ body {
   border-radius: 999px;
 }
 
+/* ========== ADMIN CAMPAIGNS TAB ========== */
+.admin-campaigns-summary {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.8rem; margin: 1rem 0;
+}
+.acs-stat {
+  text-align: center; padding: 1rem; background: rgba(245,183,49,0.05);
+  border: 1px solid rgba(245,183,49,0.2); border-radius: var(--radius-xs);
+}
+.acs-num { font-size: 1.8rem; font-weight: 900; color: var(--gold); line-height: 1; }
+.acs-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.campaign-cell { display: flex; flex-direction: column; gap: 0.1rem; }
+.phase-progress-cell { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.72rem; min-width: 70px; }
+.phase-progress-bar { width: 100%; height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.phase-progress-fill { height: 100%; transition: width 0.4s ease; }
+.total-progress-cell { display: flex; align-items: center; gap: 0.4rem; min-width: 100px; }
+.total-progress-cell .phase-progress-bar { flex: 1; height: 7px; }
+
+.theme-distribution { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; }
+.theme-dist-row { display: grid; grid-template-columns: 1fr 2fr 30px; align-items: center; gap: 0.6rem; font-size: 0.8rem; }
+.theme-dist-bar { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.theme-dist-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--gold)); }
+.theme-dist-row strong { text-align: right; color: var(--gold); }
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }
