@@ -502,6 +502,7 @@
       highlights:function(){if(window.AIA&&window.AIA.renderHighlightsPage)window.AIA.renderHighlightsPage(main);},
       resources:function(){if(window.AIA&&window.AIA.renderResources)window.AIA.renderResources(main);},
       journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
+      checkins:function(){if(window.AIA&&window.AIA.renderCheckinsPage)window.AIA.renderCheckinsPage(main);},
       arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -983,6 +984,14 @@
     // Sync admin student-mode banner visibility
     var banner = document.getElementById('admin-as-student-banner');
     if (banner) banner.style.display = (isAdmin && adminAsStudent) ? 'flex' : 'none';
+    // Quick wins: first-time onboarding tour + morning/evening check-in
+    setTimeout(function () {
+      if (window.AIA && window.AIA.maybeStartOnboarding) window.AIA.maybeStartOnboarding();
+      // Defer check-in slightly to avoid clashing with onboarding
+      setTimeout(function () {
+        if (window.AIA && window.AIA.maybeShowCheckin) window.AIA.maybeShowCheckin();
+      }, 800);
+    }, 600);
     if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
     window.addEventListener('beforeunload', function () { saveStateNow(); });
     if (!isAdmin) { setInterval(saveState, 30000); }

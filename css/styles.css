@@ -2007,6 +2007,158 @@ body {
   font-size: 0.75rem; color: var(--text-muted);
 }
 
+/* ========== ONBOARDING TOUR ========== */
+.onboarding-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px); z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem; animation: obFadeIn 0.3s ease;
+}
+@keyframes obFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.onboarding-card {
+  max-width: 520px; width: 100%; background: var(--bg-secondary);
+  border-radius: var(--radius-md); padding: 1.5rem 1.8rem;
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: obSlideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+@keyframes obSlideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.ob-progress {
+  display: flex; justify-content: center; gap: 0.4rem; margin-bottom: 1rem;
+}
+.ob-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transition: all 0.3s;
+}
+.ob-dot.done { background: rgba(46,204,113,0.6); }
+.ob-dot.active {
+  background: var(--gold);
+  width: 28px; border-radius: 4px;
+  box-shadow: 0 0 12px var(--gold);
+}
+
+.ob-title {
+  font-size: 1.3rem; margin-bottom: 0.6rem;
+  background: linear-gradient(135deg, var(--gold), var(--accent));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.ob-body {
+  font-size: 0.92rem; line-height: 1.6;
+  color: var(--text-secondary); margin-bottom: 1.2rem;
+}
+.ob-body strong { color: var(--gold); }
+
+.ob-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.6rem; flex-wrap: wrap;
+}
+.ob-nav { display: flex; gap: 0.5rem; }
+.ob-step-count {
+  position: absolute; top: 0.6rem; right: 0.8rem;
+  font-size: 0.7rem; color: var(--text-muted);
+  padding: 0.2rem 0.5rem; background: rgba(255,255,255,0.05);
+  border-radius: 999px;
+}
+
+.onboarding-highlight {
+  position: relative; z-index: 9999 !important;
+  box-shadow: 0 0 0 4px var(--gold), 0 0 32px var(--gold) !important;
+  border-radius: var(--radius-xs);
+  animation: obPulse 1.8s ease-in-out infinite;
+}
+@keyframes obPulse {
+  0%,100% { box-shadow: 0 0 0 4px var(--gold), 0 0 24px var(--gold) !important; }
+  50%     { box-shadow: 0 0 0 6px var(--gold), 0 0 40px var(--gold) !important; }
+}
+
+/* ========== CHECK-IN / EXIT TICKET MODAL ========== */
+.checkin-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(5px); z-index: 9997;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem; animation: obFadeIn 0.3s ease; overflow-y: auto;
+}
+.checkin-card {
+  max-width: 480px; width: 100%; background: var(--bg-secondary);
+  border-radius: var(--radius-md); padding: 1.4rem 1.6rem;
+  border: 1px solid var(--border-glass);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: obSlideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.checkin-header {
+  display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem;
+}
+.checkin-icon { font-size: 2.6rem; line-height: 1; }
+.checkin-header h2 { font-size: 1.15rem; margin: 0; }
+.checkin-header p { font-size: 0.78rem; color: var(--text-muted); margin: 0.2rem 0 0; }
+
+.checkin-form label {
+  display: block; font-size: 0.82rem; font-weight: 600;
+  margin: 0.8rem 0 0.4rem; color: var(--text-secondary);
+}
+.checkin-form textarea {
+  width: 100%; padding: 0.5rem 0.7rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-glass); border-radius: var(--radius-xs);
+  color: var(--text-primary); font-size: 0.85rem;
+  font-family: inherit; resize: vertical;
+}
+.checkin-form textarea:focus {
+  outline: none; border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(245,183,49,0.15);
+}
+
+.mood-picker {
+  display: flex; gap: 0.5rem; margin-bottom: 0.4rem; flex-wrap: wrap;
+}
+.mood-btn {
+  font-size: 1.6rem; padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid transparent; border-radius: var(--radius-xs);
+  cursor: pointer; transition: all 0.2s;
+  line-height: 1;
+}
+.mood-btn:hover { background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+.mood-btn.selected {
+  border-color: var(--gold);
+  background: rgba(245,183,49,0.15);
+  transform: scale(1.08);
+}
+
+.checkin-actions {
+  display: flex; justify-content: space-between; gap: 0.5rem;
+  margin-top: 1.2rem; flex-wrap: wrap;
+}
+
+/* ========== CHECKINS PAGE LIST ========== */
+.checkins-list {
+  display: flex; flex-direction: column; gap: 0.7rem;
+}
+.checkin-entry { padding: 0.9rem 1rem; }
+.checkin-entry.morning { border-left: 4px solid var(--gold); }
+.checkin-entry.evening { border-left: 4px solid #6c5ce7; }
+.ce-header {
+  display: flex; align-items: center; gap: 0.6rem;
+  margin-bottom: 0.5rem; flex-wrap: wrap;
+}
+.ce-icon { font-size: 1.4rem; }
+.ce-mood { font-size: 1.4rem; }
+.ce-day {
+  font-size: 0.7rem; padding: 0.15rem 0.5rem;
+  background: rgba(245,183,49,0.15); color: var(--gold);
+  border-radius: 999px; font-weight: 700;
+}
+.ce-date { font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+.ce-row {
+  font-size: 0.85rem; line-height: 1.55;
+  color: var(--text-secondary); margin: 0.3rem 0;
+}
+.ce-row strong { color: var(--text-primary); }
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }
