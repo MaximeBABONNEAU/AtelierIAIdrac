@@ -34,6 +34,19 @@
         AIA.awardBadge('demo-all');
       }
     }
+    // Auto-inject reflection block at the bottom of the demo page (if not already there)
+    setTimeout(function () {
+      var main = document.getElementById('main-content');
+      if (!main || !AIA.renderReflection) return;
+      if (main.querySelector('[data-reflection-id="' + demoId + '"]')) return;
+      var reflectionHtml = AIA.renderReflection(demoId);
+      if (reflectionHtml) {
+        var wrap = document.createElement('div');
+        wrap.innerHTML = reflectionHtml;
+        main.appendChild(wrap.firstChild);
+        if (AIA.wireReflections) AIA.wireReflections(main);
+      }
+    }, 50);
   }
 
   function backBtn(label) {

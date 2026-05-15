@@ -80,7 +80,28 @@
     { id: 'phase4-done', icon: '🚀', name: 'Pitcher', desc: 'Phase 4 du Business Game completee' },
     { id: 'asset-collector', icon: '📎', name: 'Asset Collector', desc: '10+ assets attaches a votre campagne' },
     { id: 'top-voted', icon: '👑', name: 'Top Voted', desc: 'Recevoir 3+ votes pour votre campagne' },
-    { id: 'voter', icon: '♥️', name: 'Supporteur', desc: 'Voter pour 3 campagnes' }
+    { id: 'voter', icon: '♥️', name: 'Supporteur', desc: 'Voter pour 3 campagnes' },
+    // === Phase A : 20 nouveaux badges ===
+    { id: 'reflective', icon: '🪞', name: 'Reflechi', desc: 'Premiere reflexion ecrite apres une demo', rarity: 'common' },
+    { id: 'deep-thinker', icon: '🧘', name: 'Penseur Profond', desc: '10 reflexions ecrites', rarity: 'rare' },
+    { id: 'journaler', icon: '📔', name: 'Chroniqueur', desc: 'Premiere entree dans le journal de bord', rarity: 'common' },
+    { id: 'journal-streak', icon: '✒️', name: 'Plume Quotidienne', desc: 'Une entree journal par jour pendant 4 jours', rarity: 'rare' },
+    { id: 'resource-explorer', icon: '📚', name: 'Explorateur', desc: 'Consulter 10 ressources de la bibliotheque', rarity: 'common' },
+    { id: 'hf-master', icon: '🤗', name: 'HF Master', desc: 'Tester les 11 demos HuggingFace', rarity: 'rare' },
+    { id: 'audio-wizard', icon: '🎙️', name: 'Audio Wizard', desc: 'Demos Music + TTS + Speech testees', rarity: 'rare' },
+    { id: 'visual-master', icon: '🖼️', name: 'Visual Master', desc: 'Demos Image + Logo + BgRemove + Upscale testees', rarity: 'rare' },
+    { id: 'first-prompt', icon: '⌨️', name: 'First Prompt', desc: 'Premier prompt soumis dans Battle', rarity: 'common' },
+    { id: 'grade-a', icon: '🏆', name: 'Grade A', desc: 'Obtenir un score A en Battle de Prompts', rarity: 'rare' },
+    { id: 'speed-demon', icon: '⚡', name: 'Speed Demon', desc: 'Completer 3 Lightning Rounds', rarity: 'rare' },
+    { id: 'boss-slayer', icon: '🐉', name: 'Boss Slayer', desc: 'Vaincre 2 Boss Challenges', rarity: 'epic' },
+    { id: 'showcase-star', icon: '🎪', name: 'Showcase Star', desc: 'Participer a 3 Showcases', rarity: 'rare' },
+    { id: 'perfectionist', icon: '💯', name: 'Perfectionniste', desc: 'Valider 12/12 etapes Business Game', rarity: 'epic' },
+    { id: 'early-bird', icon: '🌅', name: 'Early Bird', desc: 'Se connecter avant 9h le jour J', rarity: 'common' },
+    { id: 'night-owl', icon: '🌙', name: 'Night Owl', desc: 'Activite enregistree apres 22h', rarity: 'common' },
+    { id: 'helper', icon: '🤝', name: 'Aidant', desc: 'Commenter / encourager 5 pairs', rarity: 'rare' },
+    { id: 'rpg-winner', icon: '⚔️', name: 'Duelliste', desc: 'Premiere victoire en RPG PvP', rarity: 'common' },
+    { id: 'campaign-shipper', icon: '🚢', name: 'Campaign Shipper', desc: 'Exporter sa campagne en JSON', rarity: 'common' },
+    { id: 'legend', icon: '🦄', name: 'Legende IDRAC', desc: 'Tous les badges epic + 1000 XP', rarity: 'legendary' }
   ];
 
   var PROGRAM = {
@@ -479,6 +500,8 @@
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
       highlights:function(){if(window.AIA&&window.AIA.renderHighlightsPage)window.AIA.renderHighlightsPage(main);},
+      resources:function(){if(window.AIA&&window.AIA.renderResources)window.AIA.renderResources(main);},
+      journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
       arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -490,6 +513,19 @@
       page = 'demos';
     }
     var fn=pages[page]; if(fn) fn();
+    // Inject reflection block after demo pages render
+    if (page && page.indexOf('demo-') === 0 && window.AIA && window.AIA.renderReflection) {
+      setTimeout(function () {
+        if (main.querySelector('[data-reflection-id="' + page + '"]')) return;
+        var html = window.AIA.renderReflection(page);
+        if (html) {
+          var wrap = document.createElement('div');
+          wrap.innerHTML = html;
+          main.appendChild(wrap.firstChild);
+          if (window.AIA.wireReflections) window.AIA.wireReflections(main);
+        }
+      }, 100);
+    }
     updateNavActive(page); window.scrollTo(0,0); saveState();
   }
 
