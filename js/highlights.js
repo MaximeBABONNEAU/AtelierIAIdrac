@@ -157,11 +157,28 @@
   }
 
   /* ============ BANNER WIDGET (Dashboard) ============ */
+  function isHighlightUnlocked(id) {
+    var AIA = window.AIA;
+    return AIA && AIA.isItemUnlocked ? AIA.isItemUnlocked('highlights', id) : true;
+  }
+
   function renderHighlightsBanner() {
     var AIA = window.AIA;
     var dt = nowDayTime();
     if (!dt) return '';
     var next = getNextHighlight(dt);
+    if (next && !isHighlightUnlocked(next.highlight.id)) {
+      var h0 = next.highlight;
+      return '<div class="highlights-banner locked type-' + h0.type + '">' +
+        '<div class="hb-icon">🔒</div>' +
+        '<div class="hb-info">' +
+        '<div class="hb-label">⏸️ TEMPS FORT VERROUILLE</div>' +
+        '<h3>' + escapeHtml(h0.title) + '</h3>' +
+        '<p>L\'admin debloquera ce temps fort le moment venu pendant le cours.</p>' +
+        '</div>' +
+        '<div class="hb-actions"><div class="hb-time">⏰ ' + h0.timeStart + '</div></div>' +
+        '</div>';
+    }
     if (!next) {
       return '<div class="highlights-banner past">' +
         '<div class="hb-icon">🎉</div>' +
@@ -234,8 +251,9 @@
         '<h2>Jour ' + day + (isCurrent ? ' &bull; Aujourd\'hui' : '') + '</h2>' +
         '<div class="highlights-list">' +
         dayHighlights.map(function (h) {
-          var status = doneMap[h.id] ? 'done' : (isHighlightActive(h, dt) ? 'active' : (isHighlightUpcoming(h, dt) ? 'upcoming' : 'past'));
-          var statusIcon = status === 'done' ? '✅' : status === 'active' ? '🔥' : status === 'upcoming' ? '⏳' : '⏸️';
+          var isLocked = !isHighlightUnlocked(h.id);
+          var status = isLocked ? 'locked' : (doneMap[h.id] ? 'done' : (isHighlightActive(h, dt) ? 'active' : (isHighlightUpcoming(h, dt) ? 'upcoming' : 'past')));
+          var statusIcon = status === 'locked' ? '🔒' : status === 'done' ? '✅' : status === 'active' ? '🔥' : status === 'upcoming' ? '⏳' : '⏸️';
           return '<div class="highlight-card type-' + h.type + ' status-' + status + '">' +
             '<div class="hc-time">' + h.timeStart + ' &bull; ' + h.timeEnd + ' <span class="hc-status">' + statusIcon + '</span></div>' +
             '<div class="hc-header">' +
@@ -247,13 +265,15 @@
             '</div>' +
             '<p class="hc-desc">' + escapeHtml(h.desc) + '</p>' +
             (h.brief ? '<p class="hc-brief"><strong>📋 Brief :</strong> ' + escapeHtml(h.brief) + '</p>' : '') +
-            (status === 'active' && !doneMap[h.id]
-              ? '<button class="btn-primary hc-cta" data-highlight-action="' + h.action + '" data-highlight-id="' + h.id + '">Demarrer maintenant →</button>'
-              : status === 'past' && !doneMap[h.id]
-                ? '<div class="hc-missed">Moment passe</div>'
-                : doneMap[h.id]
-                  ? '<div class="hc-done">✅ Valide &bull; +' + h.xp + ' XP gagne</div>'
-                  : '<div class="hc-upcoming">⏳ Demarre a ' + h.timeStart + '</div>') +
+            (status === 'locked'
+              ? '<div class="hc-locked">🔒 Verrouille — debloque par l\'admin pendant le cours</div>'
+              : status === 'active' && !doneMap[h.id]
+                ? '<button class="btn-primary hc-cta" data-highlight-action="' + h.action + '" data-highlight-id="' + h.id + '">Demarrer maintenant →</button>'
+                : status === 'past' && !doneMap[h.id]
+                  ? '<div class="hc-missed">Moment passe</div>'
+                  : doneMap[h.id]
+                    ? '<div class="hc-done">✅ Valide &bull; +' + h.xp + ' XP gagne</div>'
+                    : '<div class="hc-upcoming">⏳ Demarre a ' + h.timeStart + '</div>') +
             '</div>';
         }).join('') +
         '</div></div>';
@@ -270,6 +290,10 @@
         e.preventDefault();
         var action = this.getAttribute('data-highlight-action');
         var hid = this.getAttribute('data-highlight-id');
+        if (!isHighlightUnlocked(hid)) {
+          if (AIA.showToast) AIA.showToast('🔒 Verrouille — l\'admin debloquera bientot', 'warning');
+          return;
+        }
         var h = HIGHLIGHTS.find(function (x) { return x.id === hid; });
         if (h) {
           var st = AIA.getState();

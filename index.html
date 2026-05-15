@@ -13,6 +13,12 @@
 <body>
   <canvas id="particles-canvas"></canvas>
 
+  <!-- Admin "Mode etudiant" banner (shown when admin toggles student view) -->
+  <div id="admin-as-student-banner" style="display:none">
+    <span>👁️ <strong>Mode etudiant active</strong> &mdash; vous voyez l'application comme un etudiant. L'unlock global reste actif.</span>
+    <button id="btn-exit-student-mode" class="btn-outline btn-sm">Revenir admin</button>
+  </div>
+
   <!-- ========== LOGIN ========== -->
   <div id="page-login" class="login-container">
     <div class="login-card glass-card">

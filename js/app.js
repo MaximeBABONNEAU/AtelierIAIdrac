@@ -237,19 +237,90 @@
   var dayLocks = { day1: false, day2: true, day3: true, day4: true };
   var _dayLocksListener = null;
 
+  // === Granular per-item locks managed by admin (Firebase /config/unlocks) ===
+  // Default: EVERYTHING LOCKED. Admin progressively unlocks during the course.
+  var unlocks = {
+    demos: {},
+    highlights: {},
+    phases: {},
+    activities: {}
+  };
+  var _unlocksListener = null;
+
+  // Admin Student Mode — when ON, admin sees student view while keeping admin status
+  var adminAsStudent = (function () {
+    try { return localStorage.getItem('aia_admin_as_student') === '1'; } catch (e) { return false; }
+  })();
+
   function listenDayLocks() {
     if (!db) return;
     _dayLocksListener = db.ref('config/dayLocks').on('value', function (snap) {
       var v = snap.val();
       if (v) dayLocks = v;
     });
+    _unlocksListener = db.ref('config/unlocks').on('value', function (snap) {
+      var v = snap.val();
+      if (v) {
+        unlocks = {
+          demos: v.demos || {},
+          highlights: v.highlights || {},
+          phases: v.phases || {},
+          activities: v.activities || {}
+        };
+      }
+      if (window.AIA && window.AIA.onUnlocksChange) {
+        try { window.AIA.onUnlocksChange(unlocks); } catch (e) {}
+      }
+    });
   }
 
+  function isItemUnlocked(type, id) {
+    if (state.user && state.user.isAdmin && !adminAsStudent) return true;
+    if (!unlocks[type]) return false;
+    return !!unlocks[type][id];
+  }
+
+  function setUnlock(type, id, value, callback) {
+    if (!db) { if (callback) callback({ error: 'Firebase indisponible' }); return; }
+    unlocks[type] = unlocks[type] || {};
+    unlocks[type][id] = !!value;
+    db.ref('config/unlocks/' + type + '/' + id).set(!!value, function (err) {
+      if (callback) callback(err ? { error: String(err) } : { success: true });
+    });
+  }
+
+  function setUnlocksBulk(type, ids, value, callback) {
+    if (!db) { if (callback) callback({ error: 'Firebase indisponible' }); return; }
+    unlocks[type] = unlocks[type] || {};
+    var updates = {};
+    ids.forEach(function (id) {
+      unlocks[type][id] = !!value;
+      updates['config/unlocks/' + type + '/' + id] = !!value;
+    });
+    db.ref().update(updates, function (err) {
+      if (callback) callback(err ? { error: String(err) } : { success: true });
+    });
+  }
+
+  function setAdminAsStudent(on) {
+    adminAsStudent = !!on;
+    try { localStorage.setItem('aia_admin_as_student', adminAsStudent ? '1' : '0'); } catch (e) {}
+    var banner = document.getElementById('admin-as-student-banner');
+    if (banner) banner.style.display = adminAsStudent ? 'flex' : 'none';
+    var toggle = document.getElementById('admin-student-toggle');
+    if (toggle) toggle.checked = adminAsStudent;
+    if (state.currentPage) navigateTo(state.currentPage);
+  }
+  function getAdminAsStudent() { return adminAsStudent; }
+
   function isActivityUnlocked(actId, dayIdx) {
-    if (state.user && state.user.isAdmin) return true;
-    var dayKey = 'day' + (dayIdx + 1);
-    if (dayLocks[dayKey]) return false;
-    var d = PROGRAM[dayKey];
+    if (state.user && state.user.isAdmin && !adminAsStudent) return true;
+    if (unlocks.activities && unlocks.activities[actId] === false) return false;
+    if (!(unlocks.activities && unlocks.activities[actId] === true)) {
+      var dayKey0 = 'day' + (dayIdx + 1);
+      if (dayLocks[dayKey0]) return false;
+    }
+    var d = PROGRAM['day' + (dayIdx + 1)];
     if (!d) return false;
     var all = d.matin.concat(d.aprem);
     var idx = -1;
@@ -413,6 +484,11 @@
       leaderboard:renderLeaderboard,
       tools:renderTools, profile:renderProfile, admin:renderAdmin
     };
+    // Gate: demos & highlights require admin unlock (admin bypasses unless in student mode)
+    if (page && page.indexOf('demo-') === 0 && !isItemUnlocked('demos', page)) {
+      showToast('🔒 Demo verrouillee — l\'admin l\'a pas encore debloquee', 'warning');
+      page = 'demos';
+    }
     var fn=pages[page]; if(fn) fn();
     updateNavActive(page); window.scrollTo(0,0); saveState();
   }
@@ -693,8 +769,11 @@
         '<div class="demos-grid">'+dayDemos.map(function(d){
           var done=state.demosCompleted.indexOf(d.id)!==-1;
           var hfTag=d.tag==='HuggingFace'?'<span class="demo-hf-badge">🤗 HF</span>':'';
-          return '<div class="demo-card glass-card" data-navigate="'+d.id+'"><div class="demo-tag">'+d.tag+'</div>'+
-            '<div class="demo-icon">'+d.icon+'</div><h3>'+d.title+(done?' ✅':'')+'</h3><p>'+d.desc+'</p>'+hfTag+'</div>';
+          var unlocked = isItemUnlocked('demos', d.id);
+          var cardAttrs = unlocked ? ' data-navigate="'+d.id+'"' : '';
+          var lockOverlay = unlocked ? '' : '<div class="demo-lock-overlay"><span class="demo-lock-icon">🔒</span><span class="demo-lock-label">Disponible apres le cours</span></div>';
+          return '<div class="demo-card glass-card'+(unlocked?'':' locked')+'"'+cardAttrs+'><div class="demo-tag">'+d.tag+'</div>'+
+            '<div class="demo-icon">'+d.icon+'</div><h3>'+d.title+(done?' ✅':'')+'</h3><p>'+d.desc+'</p>'+hfTag+lockOverlay+'</div>';
         }).join('')+'</div></div>';
     });
     main.innerHTML=html;
@@ -865,6 +944,9 @@
     saveState(); listenDayLocks(); navigateTo(state.currentPage || 'dashboard');
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
     renderNavAvatar();
+    // Sync admin student-mode banner visibility
+    var banner = document.getElementById('admin-as-student-banner');
+    if (banner) banner.style.display = (isAdmin && adminAsStudent) ? 'flex' : 'none';
     if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
     window.addEventListener('beforeunload', function () { saveStateNow(); });
     if (!isAdmin) { setInterval(saveState, 30000); }
@@ -1001,6 +1083,19 @@
       var el=e.target.closest('[data-navigate]'); if(el){e.preventDefault();navigateTo(el.getAttribute('data-navigate'));}
     });
     document.getElementById('badge-popup-close').addEventListener('click',function(){document.getElementById('badge-popup').classList.add('hidden');});
+
+    // Wire "Revenir admin" button in the student-mode banner
+    var exitBtn = document.getElementById('btn-exit-student-mode');
+    if (exitBtn) {
+      exitBtn.addEventListener('click', function () {
+        setAdminAsStudent(false);
+        showToast('Retour en mode admin', 'success');
+      });
+    }
+
+    // Sync banner visibility on init when an admin reloads with student-mode active
+    var banner = document.getElementById('admin-as-student-banner');
+    if (banner) banner.style.display = (state.user && state.user.isAdmin && adminAsStudent) ? 'flex' : 'none';
   }
 
   window.AIA = window.AIA || {};
@@ -1028,6 +1123,12 @@
   window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
   window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
   window.AIA.dayLocks=dayLocks; window.AIA.db=null;
+  window.AIA.isItemUnlocked=isItemUnlocked;
+  window.AIA.setUnlock=setUnlock;
+  window.AIA.setUnlocksBulk=setUnlocksBulk;
+  window.AIA.setAdminAsStudent=setAdminAsStudent;
+  window.AIA.getAdminAsStudent=getAdminAsStudent;
+  window.AIA.getUnlocks=function(){return unlocks;};
 
   function init(){
     initParticles(); initFirebase(); initAuth(); initNavigation();

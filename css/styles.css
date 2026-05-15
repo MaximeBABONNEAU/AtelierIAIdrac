@@ -1725,6 +1725,104 @@ body {
 .hc-missed { color: var(--text-muted); background: rgba(149,165,166,0.08); }
 .hc-upcoming { color: var(--cyan); background: rgba(52,152,219,0.08); }
 .hc-done { color: #2ecc71; background: rgba(46,204,113,0.08); font-weight: 700; }
+.hc-locked {
+  font-size: 0.78rem; text-align: center; padding: 0.4rem; margin-top: 0.4rem;
+  border-radius: var(--radius-xs); color: #f5b731; background: rgba(245,183,49,0.08);
+  font-weight: 600;
+}
+.highlight-card.status-locked { opacity: 0.55; border-style: dashed; }
+.highlights-banner.locked {
+  background: rgba(149,165,166,0.08); border-color: rgba(149,165,166,0.3);
+  border-style: dashed;
+}
+
+/* ========== ADMIN: Mode Etudiant Toggle & Banner ========== */
+.admin-mode-bar {
+  padding: 0.6rem 1rem; background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border-glass); border-radius: var(--radius-xs);
+  margin-bottom: 0.8rem; display: flex; justify-content: flex-end;
+}
+.admin-student-mode {
+  display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  user-select: none; font-size: 0.85rem;
+}
+.admin-student-mode input { display: none; }
+.admin-toggle-slider {
+  position: relative; display: inline-block; width: 36px; height: 20px;
+  background: rgba(255,255,255,0.15); border-radius: 999px; transition: 0.2s;
+}
+.admin-toggle-slider::before {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: 0.2s;
+}
+.admin-student-mode input:checked + .admin-toggle-slider { background: var(--gold); }
+.admin-student-mode input:checked + .admin-toggle-slider::before { transform: translateX(16px); }
+.admin-toggle-label small { color: var(--text-muted); font-weight: 400; }
+
+#admin-as-student-banner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+  background: linear-gradient(90deg, var(--gold), #ff9933);
+  color: #1a1a2e; padding: 0.5rem 1rem;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; font-size: 0.85rem; font-weight: 600;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+#admin-as-student-banner button {
+  background: rgba(0,0,0,0.85); color: white; border: none; padding: 0.3rem 0.8rem;
+  border-radius: 999px; cursor: pointer; font-weight: 700; font-size: 0.78rem;
+}
+#admin-as-student-banner button:hover { background: #000; }
+
+/* ========== LOCKED demos and phases ========== */
+.demo-card.locked {
+  cursor: not-allowed; opacity: 0.75; position: relative; overflow: hidden;
+  border-style: dashed; border-color: rgba(149,165,166,0.4);
+}
+.demo-card.locked:hover { transform: none; }
+.demo-lock-overlay {
+  position: absolute; inset: 0; background: rgba(13,17,23,0.7);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.4rem; backdrop-filter: blur(2px);
+}
+.demo-lock-icon { font-size: 2.5rem; }
+.demo-lock-label {
+  font-size: 0.75rem; color: var(--gold); font-weight: 700;
+  padding: 0.3rem 0.8rem; background: rgba(0,0,0,0.5); border-radius: 999px;
+  border: 1px solid rgba(245,183,49,0.4);
+}
+
+.game-phase-card.phase-locked {
+  border-style: dashed; opacity: 0.7;
+}
+.game-phase-card.phase-locked .game-phase-num {
+  background: rgba(149,165,166,0.15); color: var(--text-muted);
+}
+
+/* ========== ADMIN: Unlocks Tab ========== */
+.unlocks-bulk { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.6rem 0; }
+.unlock-row {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem;
+  margin: 0.3rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs);
+  border: 1px solid var(--border-glass); cursor: pointer; transition: all 0.15s;
+}
+.unlock-row:hover { background: rgba(255,255,255,0.04); }
+.unlock-row.on { background: rgba(46,204,113,0.06); border-color: rgba(46,204,113,0.3); }
+.unlock-row input { display: none; }
+.unlock-slider {
+  position: relative; display: inline-block; width: 32px; height: 18px;
+  background: rgba(255,255,255,0.15); border-radius: 999px; transition: 0.2s; flex-shrink: 0;
+}
+.unlock-slider::before {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: 0.2s;
+}
+.unlock-row input:checked + .unlock-slider { background: #2ecc71; }
+.unlock-row input:checked + .unlock-slider::before { transform: translateX(14px); }
+.unlock-label { flex: 1; font-size: 0.85rem; }
+.unlock-xp {
+  font-size: 0.7rem; padding: 0.1rem 0.4rem; background: rgba(245,183,49,0.15);
+  color: var(--gold); border-radius: 999px; margin-left: 0.4rem; font-weight: 700;
+}
 
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }

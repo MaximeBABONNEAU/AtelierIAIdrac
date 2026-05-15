@@ -499,6 +499,21 @@
       var phase = PHASES_GUIDE[pkey];
       var doneInPhase = phase.steps.filter(function (s) { return st.gameDeliverables[s.id]; }).length;
       var phasePct = Math.round((doneInPhase / phase.steps.length) * 100);
+      var phaseUnlocked = !AIA.isItemUnlocked || AIA.isItemUnlocked('phases', pkey);
+
+      if (!phaseUnlocked) {
+        html += '<div class="game-phase-card glass-card phase-color-' + phase.color + ' phase-locked">' +
+          '<div class="game-phase-header">' +
+          '<div class="game-phase-num">🔒</div>' +
+          '<div class="game-phase-icon">' + phase.icon + '</div>' +
+          '<div class="game-phase-title-block">' +
+          '<h2>' + phase.title + '</h2>' +
+          '<p style="color:var(--text-muted)">Phase verrouillee — l\'admin la debloquera pendant le cours.</p>' +
+          '</div>' +
+          '</div>' +
+          '</div>';
+        return;
+      }
 
       html += '<div class="game-phase-card glass-card phase-color-' + phase.color + '">' +
         '<div class="game-phase-header">' +

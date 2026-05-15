@@ -18,9 +18,18 @@
     var CONFIG = AIA.CONFIG;
     var PROGRAM = AIA.PROGRAM;
 
+    var adminAsStudent = AIA.getAdminAsStudent ? AIA.getAdminAsStudent() : false;
     root.innerHTML =
+      '<div class="admin-mode-bar">' +
+      '<label class="admin-student-mode">' +
+      '<input type="checkbox" id="admin-student-toggle"' + (adminAsStudent ? ' checked' : '') + '>' +
+      '<span class="admin-toggle-slider"></span>' +
+      '<span class="admin-toggle-label">👁️ Mode etudiant <small>(voir comme un etudiant)</small></span>' +
+      '</label>' +
+      '</div>' +
       '<div class="admin-tabs">' +
       '<button class="admin-tab active" data-tab="overview">Vue d\'ensemble</button>' +
+      '<button class="admin-tab" data-tab="unlocks">🔓 Deverrouillage</button>' +
       '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
       '<button class="admin-tab" data-tab="campaigns">🎯 Campagnes</button>' +
       '<button class="admin-tab" data-tab="students">Etudiants</button>' +
@@ -30,6 +39,13 @@
       '<button class="admin-tab" data-tab="settings">Parametres</button>' +
       '</div>' +
       '<div id="admin-content"></div>';
+
+    var modeToggle = document.getElementById('admin-student-toggle');
+    if (modeToggle) {
+      modeToggle.addEventListener('change', function () {
+        if (AIA.setAdminAsStudent) AIA.setAdminAsStudent(this.checked);
+      });
+    }
 
     var currentTab = 'overview';
     var students = {};
@@ -76,6 +92,7 @@
       // Clean up any previous live listener from the campaigns tab
       if (_campaignsListener && AIA.db) { try { AIA.db.ref('states').off('value', _campaignsListener); } catch(e){} _campaignsListener = null; }
       if (tab === 'overview') renderOverview(content);
+      else if (tab === 'unlocks') renderUnlocks(content);
       else if (tab === 'accounts') renderAccounts(content);
       else if (tab === 'campaigns') renderCampaigns(content);
       else if (tab === 'students') renderStudents(content);
@@ -86,6 +103,156 @@
     }
 
     var _campaignsListener = null;
+    /* ======== UNLOCKS TAB — Admin controls the timeline ======== */
+    var DEMOS_LIST = [
+      // Day 1
+      { id: 'demo-prompt', icon: '✍️', title: 'Prompt Playground', day: 1 },
+      { id: 'demo-chatbot', icon: '💬', title: 'Chatbot Marketing', day: 1 },
+      { id: 'demo-vqa', icon: '👁️', title: 'Analyse Visuelle', day: 1 },
+      { id: 'demo-translate', icon: '🌍', title: 'Traduction', day: 1 },
+      // Day 2
+      { id: 'demo-image', icon: '🎨', title: 'Generation Images', day: 2 },
+      { id: 'demo-logo', icon: '🆎', title: 'Generateur Logos', day: 2 },
+      { id: 'demo-bg-remove', icon: '🖼️', title: 'Suppression Fond', day: 2 },
+      { id: 'demo-upscale', icon: '🔍', title: 'Upscaler', day: 2 },
+      { id: 'demo-sentiment', icon: '😊', title: 'Sentiment', day: 2 },
+      // Day 3
+      { id: 'demo-music', icon: '🎵', title: 'Generation Musicale', day: 3 },
+      { id: 'demo-tts', icon: '🗣️', title: 'Voix Off TTS', day: 3 },
+      { id: 'demo-avatar', icon: '🎬', title: 'Avatar Video', day: 3 },
+      { id: 'demo-abtest', icon: '📊', title: 'A/B Testing', day: 3 },
+      // Day 4
+      { id: 'demo-seo', icon: '🔍', title: 'SEO Analyzer', day: 4 },
+      { id: 'demo-speech', icon: '🎙️', title: 'Transcription Vocale', day: 4 }
+    ];
+
+    function renderUnlocks(el) {
+      var unlocks = (AIA.getUnlocks ? AIA.getUnlocks() : {}) || {};
+      var demosUL = unlocks.demos || {};
+      var hlsUL = unlocks.highlights || {};
+      var phasesUL = unlocks.phases || {};
+      var HIGHLIGHTS = AIA.HIGHLIGHTS || [];
+      var PHASES = AIA.PHASES_GUIDE || {};
+
+      function chip(type, id, label, unlocked) {
+        return '<label class="unlock-row' + (unlocked ? ' on' : '') + '">' +
+          '<input type="checkbox"' + (unlocked ? ' checked' : '') + ' data-unlock-type="' + type + '" data-unlock-id="' + id + '">' +
+          '<span class="unlock-slider"></span>' +
+          '<span class="unlock-label">' + label + '</span>' +
+          '</label>';
+      }
+
+      var html =
+        '<div class="admin-section glass-card">' +
+        '<h3>🔓 Deverrouillage du parcours</h3>' +
+        '<p style="color:var(--text-muted)">Activez chaque element au bon moment du cours. Les etudiants voient les changements en temps reel.</p>' +
+        '<div class="unlocks-bulk">' +
+        '<button class="btn-outline btn-sm" data-bulk-all="on">🔓 Tout deverrouiller</button> ' +
+        '<button class="btn-outline btn-sm" data-bulk-all="off">🔒 Tout verrouiller</button>' +
+        '</div>' +
+        '</div>';
+
+      // BUSINESS GAME PHASES
+      html += '<div class="admin-section glass-card">' +
+        '<h3>🎯 Phases Business Game</h3>';
+      Object.keys(PHASES).forEach(function (pk) {
+        var p = PHASES[pk];
+        html += chip('phases', pk, p.icon + ' ' + p.title, !!phasesUL[pk]);
+      });
+      html += '</div>';
+
+      // HIGHLIGHTS (grouped by day)
+      html += '<div class="admin-section glass-card">' +
+        '<h3>⚡ Temps Forts (' + HIGHLIGHTS.length + ')</h3>' +
+        '<div class="unlocks-bulk">' +
+        [1, 2, 3, 4].map(function (d) {
+          return '<button class="btn-outline btn-sm" data-bulk-day-hl="' + d + '">Tout J' + d + '</button>';
+        }).join(' ') +
+        '</div>';
+      [1, 2, 3, 4].forEach(function (day) {
+        var dayHL = HIGHLIGHTS.filter(function (h) { return h.day === day; });
+        if (!dayHL.length) return;
+        html += '<h4 style="margin-top:1rem">Jour ' + day + '</h4>';
+        dayHL.forEach(function (h) {
+          html += chip('highlights', h.id, h.icon + ' ' + h.timeStart + ' &mdash; ' + h.title + ' <span class="unlock-xp">+' + h.xp + ' XP</span>', !!hlsUL[h.id]);
+        });
+      });
+      html += '</div>';
+
+      // DEMOS (grouped by day)
+      html += '<div class="admin-section glass-card">' +
+        '<h3>🛠️ Demos IA (' + DEMOS_LIST.length + ')</h3>' +
+        '<div class="unlocks-bulk">' +
+        [1, 2, 3, 4].map(function (d) {
+          return '<button class="btn-outline btn-sm" data-bulk-day-demo="' + d + '">Tout J' + d + '</button>';
+        }).join(' ') +
+        '</div>';
+      [1, 2, 3, 4].forEach(function (day) {
+        var dayDemos = DEMOS_LIST.filter(function (d) { return d.day === day; });
+        if (!dayDemos.length) return;
+        html += '<h4 style="margin-top:1rem">Jour ' + day + '</h4>';
+        dayDemos.forEach(function (d) {
+          html += chip('demos', d.id, d.icon + ' ' + d.title, !!demosUL[d.id]);
+        });
+      });
+      html += '</div>';
+
+      el.innerHTML = html;
+
+      // === Wire toggles ===
+      el.querySelectorAll('[data-unlock-type]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          var t = this.getAttribute('data-unlock-type');
+          var id = this.getAttribute('data-unlock-id');
+          var on = this.checked;
+          if (AIA.setUnlock) AIA.setUnlock(t, id, on, function (res) {
+            if (res.error) AIA.showToast(res.error, 'error');
+            else AIA.showToast((on ? '✅ Debloque : ' : '🔒 Verrouille : ') + id, 'success');
+          });
+          var row = input.closest('.unlock-row');
+          if (row) row.classList.toggle('on', on);
+        });
+      });
+
+      // === Bulk all on/off ===
+      el.querySelectorAll('[data-bulk-all]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var on = this.getAttribute('data-bulk-all') === 'on';
+          if (!confirm(on ? 'Deverrouiller TOUT le parcours ?' : 'Verrouiller TOUT le parcours ?')) return;
+          if (AIA.setUnlocksBulk) {
+            AIA.setUnlocksBulk('demos', DEMOS_LIST.map(function (d) { return d.id; }), on);
+            AIA.setUnlocksBulk('highlights', HIGHLIGHTS.map(function (h) { return h.id; }), on);
+            AIA.setUnlocksBulk('phases', Object.keys(PHASES), on);
+          }
+          renderUnlocks(el);
+        });
+      });
+
+      // === Bulk per-day demos ===
+      el.querySelectorAll('[data-bulk-day-demo]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var day = parseInt(this.getAttribute('data-bulk-day-demo'));
+          var ids = DEMOS_LIST.filter(function (d) { return d.day === day; }).map(function (d) { return d.id; });
+          if (AIA.setUnlocksBulk) AIA.setUnlocksBulk('demos', ids, true, function () {
+            AIA.showToast('Demos J' + day + ' debloquees', 'success');
+            renderUnlocks(el);
+          });
+        });
+      });
+
+      // === Bulk per-day highlights ===
+      el.querySelectorAll('[data-bulk-day-hl]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var day = parseInt(this.getAttribute('data-bulk-day-hl'));
+          var ids = HIGHLIGHTS.filter(function (h) { return h.day === day; }).map(function (h) { return h.id; });
+          if (AIA.setUnlocksBulk) AIA.setUnlocksBulk('highlights', ids, true, function () {
+            AIA.showToast('Temps forts J' + day + ' debloques', 'success');
+            renderUnlocks(el);
+          });
+        });
+      });
+    }
+
     function renderCampaigns(el) {
       if (!AIA.db) {
         el.innerHTML = '<div class="glass-card" style="text-align:center;padding:2rem"><p>Firebase non connecte.</p></div>';
