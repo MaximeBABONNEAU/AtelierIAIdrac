@@ -1478,11 +1478,71 @@ body {
 }
 
 /* ========== MOBILE NAV Business Game emphasized ========== */
-.mobile-link-game { position: relative; }
+.mobile-link-game {
+  position: relative; transform: scale(1.18);
+  background: linear-gradient(135deg, rgba(245,183,49,0.18), rgba(212,52,63,0.12));
+  border-radius: 14px; padding: 0.3rem 0.5rem !important;
+  border: 1px solid rgba(245,183,49,0.4);
+  box-shadow: 0 4px 12px rgba(245,183,49,0.15);
+}
+.mobile-link-game svg { width: 26px !important; height: 26px !important; }
+.mobile-link-game span { font-weight: 700; color: var(--gold) !important; }
 .mobile-link-game::after {
-  content: ''; position: absolute; top: 4px; right: 14px;
-  width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
-  box-shadow: 0 0 6px var(--gold);
+  content: ''; position: absolute; top: 2px; right: 10px;
+  width: 8px; height: 8px; border-radius: 50%; background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+  animation: gameMobileDot 2s ease-in-out infinite;
+}
+@keyframes gameMobileDot {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+.mobile-link-game.active {
+  background: linear-gradient(135deg, var(--gold), var(--accent));
+  border-color: var(--accent);
+}
+.mobile-link-game.active span { color: white !important; }
+
+/* ========== DESKTOP NAV Business Game emphasized ========== */
+.nav-link.nav-link-game {
+  background: linear-gradient(135deg, rgba(245,183,49,0.15), rgba(212,52,63,0.1));
+  border: 1px solid rgba(245,183,49,0.4);
+  padding: 0.55rem 1rem !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  color: var(--gold) !important;
+  position: relative; transform: scale(1.05);
+  box-shadow: 0 4px 14px rgba(245,183,49,0.18);
+  transition: all 0.3s ease;
+  margin: 0 0.2rem;
+}
+.nav-link.nav-link-game::before {
+  content: ''; position: absolute; inset: -2px;
+  border-radius: inherit; padding: 2px;
+  background: linear-gradient(135deg, var(--gold), var(--accent), var(--gold));
+  background-size: 200% 200%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 0.3s;
+  animation: gameGradient 3s linear infinite;
+}
+.nav-link.nav-link-game:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(245,183,49,0.3); }
+.nav-link.nav-link-game:hover::before { opacity: 1; }
+.nav-link.nav-link-game.active {
+  background: linear-gradient(135deg, var(--gold), var(--accent));
+  color: white !important;
+  border-color: transparent;
+  box-shadow: 0 6px 24px rgba(245,183,49,0.4);
+}
+.nav-link.nav-link-game.active::before { opacity: 1; }
+@keyframes gameGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.nav-link.nav-link-game svg {
+  width: 22px !important; height: 22px !important;
+  filter: drop-shadow(0 2px 4px rgba(245,183,49,0.4));
 }
 
 /* ========== ASSETS BLOCK (Business Game step) ========== */
