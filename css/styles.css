@@ -2674,6 +2674,108 @@ body {
   border-radius: 999px;
 }
 
+/* ========== ACTIVITY REFERENCE + SHARE LINK + LIVE TIMER ========== */
+.activity-ref-row, .timeline-ref-row {
+  display: flex; align-items: center; gap: 0.5rem;
+  flex-wrap: wrap; margin-bottom: 0.4rem;
+}
+.activity-ref {
+  font-family: 'Courier New', monospace;
+  font-size: 0.68rem; font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  background: rgba(245,183,49,0.12);
+  color: var(--gold);
+  border: 1px solid rgba(245,183,49,0.3);
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.activity-share-btn {
+  font-size: 0.7rem;
+  padding: 0.18rem 0.55rem;
+  background: rgba(52,152,219,0.1);
+  color: var(--cyan);
+  border: 1px solid rgba(52,152,219,0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-weight: 600;
+}
+.activity-share-btn:hover {
+  background: var(--cyan); color: white;
+  transform: translateY(-1px);
+}
+.activity-open-btn {
+  font-size: 0.72rem;
+  padding: 0.18rem 0.55rem;
+  background: rgba(212,52,63,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(212,52,63,0.3);
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.activity-open-btn:hover {
+  background: var(--accent); color: white;
+}
+.activity-locked-tag {
+  font-size: 0.68rem; color: var(--text-muted);
+  padding: 0.15rem 0.5rem;
+  background: rgba(149,165,166,0.08);
+  border-radius: 4px;
+}
+
+/* Live timer */
+.activity-timer {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  border-left: 3px solid var(--gold);
+  font-size: 0.78rem;
+}
+.activity-timer.live {
+  background: linear-gradient(90deg, rgba(231,76,60,0.15), rgba(245,183,49,0.08));
+  border-left-color: #e74c3c;
+  animation: timerPulse 2s ease-in-out infinite;
+}
+@keyframes timerPulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(231,76,60,0); }
+}
+.activity-timer.past {
+  background: rgba(46,204,113,0.06);
+  border-left-color: #2ecc71;
+  opacity: 0.7;
+}
+.activity-timer.upcoming {
+  background: rgba(52,152,219,0.05);
+  border-left-color: var(--cyan);
+}
+.timer-label {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.activity-timer.live .timer-label { color: #e74c3c; }
+.activity-timer.past .timer-label { color: #2ecc71; }
+.activity-timer.upcoming .timer-label { color: var(--cyan); }
+
+.timer-progress {
+  margin-top: 0.4rem;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.timer-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--accent));
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }

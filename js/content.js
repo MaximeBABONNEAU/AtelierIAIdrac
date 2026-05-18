@@ -344,11 +344,24 @@
     var icons = {cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'};
     var status = AIA.getActivityStatus ? AIA.getActivityStatus(activity) : 'upcoming';
 
+    var ref = AIA.getActivityRef ? AIA.getActivityRef(actId) : '';
+    var countdown = AIA.getActivityCountdown ? AIA.getActivityCountdown(activity, dayIdx) : null;
+    var timerBlock = countdown
+      ? '<div class="activity-timer ' + countdown.css + '" data-timer-id="' + actId + '" data-timer-day="' + dayIdx + '" style="margin:0.5rem 0 1rem">' +
+        '<div class="timer-label">' + countdown.label + '</div>' +
+        (countdown.pct !== undefined ? '<div class="timer-progress"><div class="timer-progress-fill" style="width:' + countdown.pct + '%"></div></div>' : '') +
+        '</div>' : '';
+
     var html = '<div class="page-header">' +
       '<a href="#" data-navigate="day' + (dayIdx+1) + '" class="back-link">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Jour ' + (dayIdx+1) + '</a>' +
+      '<div class="activity-ref-row" style="margin-bottom:0.5rem">' +
+        (ref ? '<span class="activity-ref">' + ref + '</span>' : '') +
+        '<button class="activity-share-btn" onclick="window.AIA.copyActivityLink(\'' + actId + '\')">🔗 Copier le lien direct</button>' +
+      '</div>' +
       '<h1>' + (icons[activity.type]||'📌') + ' <span class="gradient-text">' + activity.title + '</span></h1>' +
-      '<p class="page-subtitle">' + AIA.CONFIG.dateLabels[dayIdx] + ' &bull; ' + activity.time + ' &bull; +' + activity.xp + ' XP</p></div>';
+      '<p class="page-subtitle">' + AIA.CONFIG.dateLabels[dayIdx] + ' &bull; ' + activity.time + ' &bull; +' + activity.xp + ' XP</p></div>' +
+      timerBlock;
 
     if (done) {
       html += '<div class="auto-badge done" style="display:inline-flex;margin-bottom:1rem">✓ Termine</div>';

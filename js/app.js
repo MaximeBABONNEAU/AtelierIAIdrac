@@ -576,6 +576,110 @@
     return 'upcoming';
   }
 
+  // === REFERENCE + LIVE TIMER HELPERS ===
+  function getActivityRef(actId){
+    for(var d=1;d<=4;d++){
+      var p=PROGRAM['day'+d]; if(!p) continue;
+      var idxM=p.matin.findIndex(function(a){return a.id===actId;});
+      if(idxM>=0) return 'REF-J'+d+'-AM-'+String(idxM+1).padStart(2,'0');
+      var idxA=p.aprem.findIndex(function(a){return a.id===actId;});
+      if(idxA>=0) return 'REF-J'+d+'-PM-'+String(idxA+1).padStart(2,'0');
+    }
+    return 'REF-?';
+  }
+
+  function getActivityShareUrl(actId){
+    var base = location.origin + location.pathname;
+    return base + '#activity-' + actId;
+  }
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function parseTimes(timeStr){
+    var m = timeStr && timeStr.match(/(\d+)h(\d+)\s*[-–]\s*(\d+)h(\d+)/);
+    if(!m) return null;
+    return { sH:parseInt(m[1]), sM:parseInt(m[2]), eH:parseInt(m[3]), eM:parseInt(m[4]) };
+  }
+
+  function getActivityCountdown(act, dayIdx){
+    var t = parseTimes(act.time);
+    if(!t) return { label:'⏰ '+act.time, css:'upcoming' };
+    var dateStr = CONFIG.dates[dayIdx]; if(!dateStr) return { label:'⏰ '+act.time, css:'upcoming' };
+    var start = new Date(dateStr+'T'+pad2(t.sH)+':'+pad2(t.sM)+':00');
+    var end   = new Date(dateStr+'T'+pad2(t.eH)+':'+pad2(t.eM)+':00');
+    var now = new Date();
+    if(now >= end){
+      var hoursAgo = Math.floor((now-end)/3600000);
+      var d_ago = Math.floor(hoursAgo/24);
+      var lbl = d_ago>0?'il y a '+d_ago+'j':hoursAgo>0?'il y a '+hoursAgo+'h':'a l\'instant';
+      return { label:'✓ Termine '+lbl, css:'past' };
+    }
+    if(now >= start){
+      var remMs = end - now;
+      var remMin = Math.ceil(remMs/60000);
+      var totalMs = end - start;
+      var pct = Math.min(100, Math.round((1 - remMs/totalMs)*100));
+      return { label:'🔴 EN COURS · '+remMin+' min restantes', css:'live', pct:pct };
+    }
+    var diffMs = start - now;
+    var totalMin = Math.floor(diffMs/60000);
+    var days = Math.floor(totalMin/(60*24));
+    var hours = Math.floor((totalMin - days*60*24)/60);
+    var mins = totalMin - days*60*24 - hours*60;
+    var lbl2;
+    if(days>0) lbl2 = 'Dans '+days+'j '+hours+'h';
+    else if(hours>0) lbl2 = 'Dans '+hours+'h '+(mins>0?mins+'min':'');
+    else lbl2 = 'Dans '+mins+' min';
+    return { label:'⏳ '+lbl2.trim(), css:'upcoming' };
+  }
+
+  function renderTimerCell(act, dayIdx){
+    var c = getActivityCountdown(act, dayIdx);
+    var bar = c.pct!==undefined ? '<div class="timer-progress"><div class="timer-progress-fill" style="width:'+c.pct+'%"></div></div>' : '';
+    return '<div class="activity-timer '+c.css+'" data-timer-id="'+act.id+'" data-timer-day="'+dayIdx+'">' +
+      '<div class="timer-label">'+c.label+'</div>' + bar + '</div>';
+  }
+
+  function refreshAllTimers(){
+    document.querySelectorAll('[data-timer-id]').forEach(function(el){
+      var actId = el.getAttribute('data-timer-id');
+      var dayIdx = parseInt(el.getAttribute('data-timer-day'));
+      var act = null;
+      for(var d=1;d<=4;d++){
+        var p=PROGRAM['day'+d]; if(!p) continue;
+        act = p.matin.concat(p.aprem).find(function(a){return a.id===actId;});
+        if(act) break;
+      }
+      if(!act) return;
+      var c = getActivityCountdown(act, dayIdx);
+      el.className = 'activity-timer '+c.css;
+      var lbl = el.querySelector('.timer-label'); if(lbl) lbl.textContent = c.label;
+      var fill = el.querySelector('.timer-progress-fill');
+      if(c.pct!==undefined){
+        if(!fill){
+          var bar = document.createElement('div'); bar.className='timer-progress';
+          bar.innerHTML='<div class="timer-progress-fill" style="width:'+c.pct+'%"></div>';
+          el.appendChild(bar);
+        } else fill.style.width = c.pct+'%';
+      } else if(fill){
+        var par = fill.parentNode; if(par && par.parentNode) par.parentNode.removeChild(par);
+      }
+    });
+  }
+
+  function copyActivityLink(actId){
+    var url = getActivityShareUrl(actId);
+    if(navigator.clipboard) navigator.clipboard.writeText(url).then(function(){
+      showToast('Lien copie : '+url,'success');
+    }); else {
+      try{
+        var ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta);
+        ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        showToast('Lien copie','success');
+      }catch(e){ showToast(url,'info'); }
+    }
+  }
+
   function checkAutoComplete(){
     var changed=false;
     ['day1','day2','day3','day4'].forEach(function(k,i){
@@ -722,8 +826,17 @@
       var d=PROGRAM[k];
       h+='<div class="timeline-item"><h4 style="color:var(--red-light)">'+CONFIG.dateLabels[i]+' — '+d.title+'</h4></div>';
       d.matin.concat(d.aprem).forEach(function(a){
+        var ref=getActivityRef(a.id);
+        var locked=!isActivityUnlocked(a.id, i);
         h+='<div class="timeline-item'+(state.progress[a.id]?' completed':'')+'">'+
-          '<div class="timeline-time">'+a.time+'</div><h4>'+a.title+'</h4><p>'+a.desc+'</p></div>';
+          '<div class="timeline-time">'+a.time+'</div>'+
+          '<div class="timeline-ref-row">'+
+            '<span class="activity-ref" title="Reference unique">'+ref+'</span>'+
+            (!locked?'<button class="activity-share-btn" title="Copier le lien direct" onclick="window.AIA.copyActivityLink(\''+a.id+'\')">🔗</button>':'<span class="activity-locked-tag">🔒 Verrouille</span>')+
+          '</div>'+
+          '<h4>'+a.title+'</h4><p>'+a.desc+'</p>'+
+          (!locked?renderTimerCell(a, i):'')+
+          '</div>';
       });
     });
     return h;
@@ -751,16 +864,24 @@
     var icons={cours:'📖',atelier:'🛠️',defi:'⚡',game:'🎮',demo:'🔬'};
     var statusLabels={done:'Termine',past:'Termine',live:'En cours',upcoming:'A venir'};
     var emojis=['👍','❤️','🔥','💡','🤔'];
+    var di = dayIdx!==undefined?dayIdx:getCurrentDay()-1;
     var h='<div class="activity-list">';
     acts.forEach(function(a){
       var done=state.progress[a.id];
-      var st=getActivityStatus(a, dayIdx!==undefined?dayIdx:getCurrentDay()-1);
+      var st=getActivityStatus(a, di);
       var badgeClass=done||st==='past'?'done':st==='live'?'live':'upcoming';
       var userReaction=state.reactions?state.reactions[a.id]:null;
-      var locked=!isActivityUnlocked(a.id, dayIdx!==undefined?dayIdx:getCurrentDay()-1);
+      var locked=!isActivityUnlocked(a.id, di);
+      var ref=getActivityRef(a.id);
       h+='<div class="activity-item glass-card'+(locked?' locked':' clickable')+(done?' completed':'')+'"'+(locked?'':' data-navigate="activity-'+a.id+'"')+'>'+
         '<div class="activity-icon '+a.type+'">'+(locked?'🔒':(icons[a.type]||'📌'))+'</div>'+
-        '<div class="activity-info"><h4'+(locked?' style="opacity:0.5"':'')+'>'+a.title+'</h4>'+(locked?'<p style="color:var(--text-muted);font-size:0.75rem">Completez l\'activite precedente pour debloquer</p>':'<p>'+a.desc+'</p>')+
+        '<div class="activity-info">'+
+        '<div class="activity-ref-row">'+
+          '<span class="activity-ref" title="Reference unique">'+ref+'</span>'+
+          (!locked?'<button class="activity-share-btn" title="Copier le lien direct" onclick="event.stopPropagation();window.AIA.copyActivityLink(\''+a.id+'\')">🔗 Lien</button>':'')+
+        '</div>'+
+        '<h4'+(locked?' style="opacity:0.5"':'')+'>'+a.title+'</h4>'+(locked?'<p style="color:var(--text-muted);font-size:0.75rem">Completez l\'activite precedente pour debloquer</p>':'<p>'+a.desc+'</p>')+
+        (!locked?renderTimerCell(a, di):'')+
         (!locked?'<div class="reactions-bar" data-act="'+a.id+'">'+
         emojis.map(function(e){return '<button class="reaction-btn'+(userReaction===e?' active':'')+'" data-emoji="'+e+'" onclick="event.stopPropagation();window.AIA.toggleReaction(\''+a.id+'\',\''+e+'\')">'+e+'</button>';}).join('')+
         '</div>':'')+
@@ -1174,6 +1295,11 @@
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
   window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
+  window.AIA.getActivityRef=getActivityRef;
+  window.AIA.getActivityShareUrl=getActivityShareUrl;
+  window.AIA.getActivityCountdown=getActivityCountdown;
+  window.AIA.copyActivityLink=copyActivityLink;
+  window.AIA.refreshAllTimers=refreshAllTimers;
   window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
   window.AIA.dayLocks=dayLocks; window.AIA.db=null;
   window.AIA.isItemUnlocked=isItemUnlocked;
@@ -1185,6 +1311,26 @@
 
   function init(){
     initParticles(); initFirebase(); initAuth(); initNavigation();
+    // Hash deep-link : if URL ends with #activity-foo or #/route, navigate after login
+    function applyHashRoute(){
+      var h = (location.hash || '').replace(/^#\/?/, '');
+      if (!h) return;
+      // Wait for app shell visible (post-login)
+      if (document.getElementById('app-shell') && !document.getElementById('app-shell').classList.contains('hidden')) {
+        navigateTo(h);
+      }
+    }
+    window.addEventListener('hashchange', applyHashRoute);
+    // Initial hash apply once user enters app
+    var hashWatcher = setInterval(function(){
+      if (document.getElementById('app-shell') && !document.getElementById('app-shell').classList.contains('hidden') && location.hash) {
+        applyHashRoute(); clearInterval(hashWatcher);
+      }
+    }, 500);
+    // Live timer refresh every 30s
+    setInterval(function(){
+      if (typeof refreshAllTimers === 'function') refreshAllTimers();
+    }, 30000);
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
