@@ -108,53 +108,53 @@
     day1: {
       title: 'Decouverte de l\'IA Generative', subtitle: 'Introduction et premiers pas avec l\'IA en marketing', xp: 200,
       matin: [
-        { id: 'd1-accueil', type: 'cours', time: '9h00-9h30', title: 'Accueil & Ice Breaker', desc: 'Presentation, objectifs, creation de votre avatar', xp: 15 },
-        { id: 'd1-intro-ia', type: 'cours', time: '9h30-10h30', title: 'L\'IA Generative : Revolution Marketing', desc: 'Comprendre ChatGPT, Claude, Midjourney et leur impact', xp: 25 },
-        { id: 'd1-premier-prompt', type: 'atelier', time: '10h45-12h00', title: 'Premiers Prompts', desc: 'Atelier pratique : ecrire ses premiers prompts efficaces', xp: 40 }
+        { id: 'd1-accueil', type: 'cours', time: '9h00-9h30', title: 'Accueil & Ice Breaker', desc: 'Presentation, objectifs, creation de votre avatar', xp: 15, links: ['avatar','assessment-pre'] },
+        { id: 'd1-intro-ia', type: 'cours', time: '9h30-10h30', title: 'L\'IA Generative : Revolution Marketing', desc: 'Comprendre ChatGPT, Claude, Midjourney et leur impact', xp: 25, links: ['demo-chatbot','resources'] },
+        { id: 'd1-premier-prompt', type: 'atelier', time: '10h45-12h00', title: 'Premiers Prompts', desc: 'Atelier pratique : ecrire ses premiers prompts efficaces', xp: 40, links: ['demo-prompt'] }
       ],
       aprem: [
-        { id: 'd1-prompt-avance', type: 'atelier', time: '13h30-15h00', title: 'Prompt Engineering Avance', desc: 'Chain-of-thought, few-shot, role prompting', xp: 50 },
-        { id: 'd1-defi', type: 'defi', time: '15h15-16h30', title: 'Defi Prompt Battle', desc: 'Battle de prompts entre etudiants avec vote', xp: 50 },
-        { id: 'd1-debrief', type: 'cours', time: '16h30-17h00', title: 'Debrief & Quiz du Jour', desc: 'Retour sur les apprentissages et quiz interactif', xp: 20 }
+        { id: 'd1-prompt-avance', type: 'atelier', time: '13h30-15h00', title: 'Prompt Engineering Avance', desc: 'Chain-of-thought, few-shot, role prompting', xp: 50, links: ['demo-prompt','demo-translate','demo-vqa'] },
+        { id: 'd1-defi', type: 'defi', time: '15h15-16h30', title: 'Defi Prompt Battle', desc: 'Battle de prompts entre etudiants avec vote', xp: 50, links: ['battle'] },
+        { id: 'd1-debrief', type: 'cours', time: '16h30-17h00', title: 'Debrief & Quiz du Jour', desc: 'Retour sur les apprentissages et quiz interactif', xp: 20, links: ['arena','journal'] }
       ]
     },
     day2: {
       title: 'Creation de Contenu IA', subtitle: 'Visuels, copywriting et video avec l\'IA', xp: 250,
       matin: [
-        { id: 'd2-visuel', type: 'cours', time: '9h00-9h45', title: 'Generation Visuelle IA', desc: 'Midjourney, DALL-E, Canva AI : panorama et bonnes pratiques', xp: 20 },
-        { id: 'd2-atelier-image', type: 'atelier', time: '9h45-11h00', title: 'Atelier Creation Visuelle', desc: 'Creer des visuels marketing avec l\'IA generative', xp: 45 },
-        { id: 'd2-copywriting', type: 'atelier', time: '11h15-12h30', title: 'Copywriting IA', desc: 'Rediger des textes marketing percutants avec l\'IA', xp: 45 }
+        { id: 'd2-visuel', type: 'cours', time: '9h00-9h45', title: 'Generation Visuelle IA', desc: 'Midjourney, DALL-E, Canva AI : panorama et bonnes pratiques', xp: 20, links: ['demo-image','resources'] },
+        { id: 'd2-atelier-image', type: 'atelier', time: '9h45-11h00', title: 'Atelier Creation Visuelle', desc: 'Creer des visuels marketing avec l\'IA generative', xp: 45, links: ['demo-image','demo-logo','demo-bg-remove','demo-upscale'] },
+        { id: 'd2-copywriting', type: 'atelier', time: '11h15-12h30', title: 'Copywriting IA', desc: 'Rediger des textes marketing percutants avec l\'IA', xp: 45, links: ['demo-chatbot','demo-translate'] }
       ],
       aprem: [
-        { id: 'd2-video', type: 'atelier', time: '13h30-15h00', title: 'Video & Voix IA', desc: 'HeyGen, ElevenLabs : creer des videos et voix off IA', xp: 50 },
-        { id: 'd2-demo-sentiment', type: 'demo', time: '15h15-16h00', title: 'Demo : Analyse de Sentiment', desc: 'Tester l\'analyse de sentiment sur des avis clients', xp: 40 },
-        { id: 'd2-challenge', type: 'defi', time: '16h00-17h00', title: 'Challenge Creatif', desc: 'Creer une campagne complete en equipe', xp: 50 }
+        { id: 'd2-video', type: 'atelier', time: '13h30-15h00', title: 'Video & Voix IA', desc: 'HeyGen, ElevenLabs : creer des videos et voix off IA', xp: 50, links: ['demo-tts','demo-avatar','demo-music'] },
+        { id: 'd2-demo-sentiment', type: 'demo', time: '15h15-16h00', title: 'Demo : Analyse de Sentiment', desc: 'Tester l\'analyse de sentiment sur des avis clients', xp: 40, links: ['demo-sentiment'] },
+        { id: 'd2-challenge', type: 'defi', time: '16h00-17h00', title: 'Challenge Creatif', desc: 'Creer une campagne complete en equipe', xp: 50, links: ['business-game','arena'] }
       ]
     },
     day3: {
       title: 'Strategie Marketing IA', subtitle: 'SEO, analytics, chatbots et automatisation', xp: 280,
       matin: [
-        { id: 'd3-seo', type: 'cours', time: '9h00-10h00', title: 'SEO & Analytics IA', desc: 'Optimisation SEO avec l\'IA, analyse de donnees marketing', xp: 30 },
-        { id: 'd3-demo-seo', type: 'demo', time: '10h00-11h00', title: 'Demo : SEO Analyzer', desc: 'Analyser et optimiser le SEO d\'une page en temps reel', xp: 40 },
-        { id: 'd3-abtest', type: 'demo', time: '11h15-12h30', title: 'Demo : A/B Testing IA', desc: 'Simuler des tests A/B automatises par l\'IA', xp: 40 }
+        { id: 'd3-seo', type: 'cours', time: '9h00-10h00', title: 'SEO & Analytics IA', desc: 'Optimisation SEO avec l\'IA, analyse de donnees marketing', xp: 30, links: ['demo-seo','resources'] },
+        { id: 'd3-demo-seo', type: 'demo', time: '10h00-11h00', title: 'Demo : SEO Analyzer', desc: 'Analyser et optimiser le SEO d\'une page en temps reel', xp: 40, links: ['demo-seo'] },
+        { id: 'd3-abtest', type: 'demo', time: '11h15-12h30', title: 'Demo : A/B Testing IA', desc: 'Simuler des tests A/B automatises par l\'IA', xp: 40, links: ['demo-abtest'] }
       ],
       aprem: [
-        { id: 'd3-chatbot', type: 'demo', time: '13h30-14h30', title: 'Demo : Chatbot Marketing', desc: 'Construire un chatbot marketing conversationnel', xp: 45 },
-        { id: 'd3-game-launch', type: 'game', time: '14h30-16h00', title: 'Business Game : Lancement', desc: 'Former les equipes et demarrer le Business Game', xp: 50 },
-        { id: 'd3-arena', type: 'defi', time: '16h00-17h00', title: 'Arena : Quiz & Battles', desc: 'Quiz interactif et battles entre equipes', xp: 75 }
+        { id: 'd3-chatbot', type: 'demo', time: '13h30-14h30', title: 'Demo : Chatbot Marketing', desc: 'Construire un chatbot marketing conversationnel', xp: 45, links: ['demo-chatbot'] },
+        { id: 'd3-game-launch', type: 'game', time: '14h30-16h00', title: 'Business Game : Lancement', desc: 'Former les equipes et demarrer le Business Game', xp: 50, links: ['business-game'] },
+        { id: 'd3-arena', type: 'defi', time: '16h00-17h00', title: 'Arena : Quiz & Battles', desc: 'Quiz interactif et battles entre equipes', xp: 75, links: ['arena','rpg'] }
       ]
     },
     day4: {
       title: 'Projet Final & Pitch', subtitle: 'Finalisation, presentations et awards', xp: 300,
       matin: [
-        { id: 'd4-finalize', type: 'game', time: '9h00-11h00', title: 'Business Game : Sprint Final', desc: 'Finaliser les livrables avec l\'aide de l\'IA', xp: 60 },
-        { id: 'd4-demo-playground', type: 'demo', time: '11h00-12h00', title: 'Demo : Playground Libre', desc: 'Experimenter librement avec les modeles IA', xp: 40 },
-        { id: 'd4-prep-pitch', type: 'atelier', time: '12h00-12h30', title: 'Preparation Pitch', desc: 'Preparer sa presentation finale', xp: 20 }
+        { id: 'd4-finalize', type: 'game', time: '9h00-11h00', title: 'Business Game : Sprint Final', desc: 'Finaliser les livrables avec l\'aide de l\'IA', xp: 60, links: ['business-game'] },
+        { id: 'd4-demo-playground', type: 'demo', time: '11h00-12h00', title: 'Demo : Playground Libre', desc: 'Experimenter librement avec les modeles IA', xp: 40, links: ['demo-prompt','demo-speech'] },
+        { id: 'd4-prep-pitch', type: 'atelier', time: '12h00-12h30', title: 'Preparation Pitch', desc: 'Preparer sa presentation finale', xp: 20, links: ['business-game'] }
       ],
       aprem: [
-        { id: 'd4-pitch', type: 'game', time: '14h00-16h00', title: 'Pitchs & Votes', desc: 'Chaque equipe presente, la classe vote', xp: 80 },
-        { id: 'd4-awards', type: 'cours', time: '16h00-16h30', title: 'Ceremonie des Awards', desc: 'Remise des badges, classement final, diplomes', xp: 50 },
-        { id: 'd4-closing', type: 'cours', time: '16h30-17h00', title: 'Cloture & Perspectives', desc: 'Bilan, ressources et prochaines etapes', xp: 50 }
+        { id: 'd4-pitch', type: 'game', time: '14h00-16h00', title: 'Pitchs & Votes', desc: 'Chaque equipe presente, la classe vote', xp: 80, links: ['showcase','wall'] },
+        { id: 'd4-awards', type: 'cours', time: '16h00-16h30', title: 'Ceremonie des Awards', desc: 'Remise des badges, classement final, diplomes', xp: 50, links: ['leaderboard','assessment-post','certificate'] },
+        { id: 'd4-closing', type: 'cours', time: '16h30-17h00', title: 'Cloture & Perspectives', desc: 'Bilan, ressources et prochaines etapes', xp: 50, links: ['skilltree','resources','certificate'] }
       ]
     }
   };
@@ -593,6 +593,53 @@
     return base + '#activity-' + actId;
   }
 
+  // === LINKED ELEMENTS (demos / game / arena / resources...) per activity ===
+  var LINK_LABELS = {
+    'avatar': { icon:'🎨', label:'Creer mon avatar' },
+    'assessment-pre': { icon:'📋', label:'Pre-test' },
+    'assessment-post': { icon:'🎓', label:'Post-test' },
+    'certificate': { icon:'🏆', label:'Mon certificat' },
+    'resources': { icon:'📚', label:'Ressources' },
+    'journal': { icon:'📔', label:'Journal' },
+    'skilltree': { icon:'🌳', label:'Skill Tree' },
+    'battle': { icon:'⚔️', label:'Battle de Prompts' },
+    'arena': { icon:'🏟️', label:'Arena (Quiz/Defis)' },
+    'rpg': { icon:'🎮', label:'RPG PvP' },
+    'business-game': { icon:'🎯', label:'Business Game' },
+    'showcase': { icon:'🖼️', label:'Showcase campagnes' },
+    'wall': { icon:'📡', label:'Mur live' },
+    'leaderboard': { icon:'🏅', label:'Classement' },
+    'demo-prompt': { icon:'✍️', label:'Demo Prompt Playground' },
+    'demo-chatbot': { icon:'💬', label:'Demo Chatbot' },
+    'demo-vqa': { icon:'👁️', label:'Demo Analyse Visuelle' },
+    'demo-translate': { icon:'🌍', label:'Demo Traduction' },
+    'demo-image': { icon:'🎨', label:'Demo Generation Images' },
+    'demo-logo': { icon:'🆎', label:'Demo Generateur Logos' },
+    'demo-bg-remove': { icon:'🖼️', label:'Demo Suppression Fond' },
+    'demo-upscale': { icon:'🔍', label:'Demo Upscaler' },
+    'demo-sentiment': { icon:'😊', label:'Demo Sentiment' },
+    'demo-music': { icon:'🎵', label:'Demo Generation Musicale' },
+    'demo-tts': { icon:'🗣️', label:'Demo Voix Off' },
+    'demo-avatar': { icon:'🎬', label:'Demo Avatar Video' },
+    'demo-abtest': { icon:'📊', label:'Demo A/B Testing' },
+    'demo-seo': { icon:'🔍', label:'Demo SEO Analyzer' },
+    'demo-speech': { icon:'🎙️', label:'Demo Transcription' }
+  };
+
+  function renderActivityLinks(links, unlocked){
+    if(!links || !links.length) return '';
+    var h = '<div class="activity-links">';
+    links.forEach(function(route){
+      var meta = LINK_LABELS[route] || { icon:'▶', label:route };
+      if(unlocked){
+        h += '<a class="activity-link-btn" href="#'+route+'" onclick="event.stopPropagation();window.AIA.navigateTo(\''+route+'\');return false;">'+meta.icon+' '+meta.label+' →</a>';
+      } else {
+        h += '<span class="activity-link-btn disabled" title="Disponible une fois l\'activite debloquee">'+meta.icon+' '+meta.label+'</span>';
+      }
+    });
+    return h + '</div>';
+  }
+
   function pad2(n){ return String(n).padStart(2,'0'); }
 
   function parseTimes(timeStr){
@@ -836,6 +883,7 @@
           '</div>'+
           '<h4>'+a.title+'</h4><p>'+a.desc+'</p>'+
           (!locked?renderTimerCell(a, i):'')+
+          renderActivityLinks(a.links, !locked)+
           '</div>';
       });
     });
@@ -882,6 +930,7 @@
         '</div>'+
         '<h4'+(locked?' style="opacity:0.5"':'')+'>'+a.title+'</h4>'+(locked?'<p style="color:var(--text-muted);font-size:0.75rem">Completez l\'activite precedente pour debloquer</p>':'<p>'+a.desc+'</p>')+
         (!locked?renderTimerCell(a, di):'')+
+        renderActivityLinks(a.links, !locked)+
         (!locked?'<div class="reactions-bar" data-act="'+a.id+'">'+
         emojis.map(function(e){return '<button class="reaction-btn'+(userReaction===e?' active':'')+'" data-emoji="'+e+'" onclick="event.stopPropagation();window.AIA.toggleReaction(\''+a.id+'\',\''+e+'\')">'+e+'</button>';}).join('')+
         '</div>':'')+
@@ -1300,6 +1349,8 @@
   window.AIA.getActivityCountdown=getActivityCountdown;
   window.AIA.copyActivityLink=copyActivityLink;
   window.AIA.refreshAllTimers=refreshAllTimers;
+  window.AIA.renderActivityLinks=renderActivityLinks;
+  window.AIA.LINK_LABELS=LINK_LABELS;
   window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
   window.AIA.dayLocks=dayLocks; window.AIA.db=null;
   window.AIA.isItemUnlocked=isItemUnlocked;

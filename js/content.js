@@ -371,6 +371,14 @@
       html += '<div class="auto-badge upcoming" style="display:inline-flex;margin-bottom:1rem">A venir</div>';
     }
 
+    // Linked interactive elements (demos / game / arena / resources) for this activity
+    if (activity.links && activity.links.length && AIA.renderActivityLinks) {
+      html += '<div class="activity-detail-links glass-card">' +
+        '<h4>🔗 Elements lies a cette session</h4>' +
+        AIA.renderActivityLinks(activity.links, true) +
+        '</div>';
+    }
+
     if (content && content.slides) {
       html += '<div class="course-content">';
       content.slides.forEach(function(slide, idx) {

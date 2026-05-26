@@ -2776,6 +2776,47 @@ body {
   transition: width 1s linear;
 }
 
+/* ========== ACTIVITY LINKED ELEMENTS (demos/game/arena...) ========== */
+.activity-links {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.activity-link-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 0.74rem; font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  background: rgba(212,52,63,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(212,52,63,0.3);
+  border-radius: 999px;
+  text-decoration: none;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+.activity-link-btn:hover {
+  background: var(--accent); color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(212,52,63,0.25);
+}
+.activity-link-btn.disabled {
+  background: rgba(149,165,166,0.08);
+  color: var(--text-muted);
+  border-color: rgba(149,165,166,0.2);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.activity-link-btn.disabled:hover { transform: none; box-shadow: none; background: rgba(149,165,166,0.08); color: var(--text-muted); }
+
+.activity-detail-links {
+  padding: 1rem 1.2rem; margin: 1rem 0;
+  border-left: 4px solid var(--accent);
+}
+.activity-detail-links h4 { margin-bottom: 0.6rem; font-size: 0.95rem; }
+.activity-detail-links .activity-links { margin-top: 0; }
+.activity-detail-links .activity-link-btn {
+  font-size: 0.82rem; padding: 0.45rem 0.9rem;
+}
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }
