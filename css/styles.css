@@ -2817,6 +2817,42 @@ body {
   font-size: 0.82rem; padding: 0.45rem 0.9rem;
 }
 
+/* ========== TEMPS FORTS dans la TIMELINE ========== */
+.timeline-item.temps-fort {
+  background: linear-gradient(135deg, rgba(245,183,49,0.07), rgba(212,52,63,0.04));
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius-xs);
+  padding: 0.7rem 0.9rem;
+  margin: 0.4rem 0 0.4rem 0.5rem;
+}
+.timeline-item.temps-fort.type-lightning { border-left-color: #f5b731; }
+.timeline-item.temps-fort.type-showcase  { border-left-color: #9b59b6; }
+.timeline-item.temps-fort.type-boss      { border-left-color: #e74c3c; background: linear-gradient(135deg, rgba(231,76,60,0.1), rgba(245,183,49,0.05)); }
+.timeline-item.temps-fort.type-wrapup    { border-left-color: #3498db; }
+.tf-badge-row {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin: 0.2rem 0 0.3rem;
+}
+.tf-type-badge {
+  font-size: 0.68rem; font-weight: 800; letter-spacing: 0.04em;
+  padding: 0.15rem 0.55rem; border-radius: 999px;
+  text-transform: uppercase;
+}
+.tf-lightning { background: rgba(245,183,49,0.18); color: #f5b731; border: 1px solid rgba(245,183,49,0.4); }
+.tf-showcase  { background: rgba(155,89,182,0.18); color: #b478d4; border: 1px solid rgba(155,89,182,0.4); }
+.tf-boss      { background: rgba(231,76,60,0.18); color: #e74c3c; border: 1px solid rgba(231,76,60,0.4); }
+.tf-wrapup    { background: rgba(52,152,219,0.18); color: #3498db; border: 1px solid rgba(52,152,219,0.4); }
+.tf-xp {
+  font-size: 0.7rem; font-weight: 700; color: var(--gold);
+  padding: 0.15rem 0.5rem; background: rgba(245,183,49,0.1); border-radius: 999px;
+}
+.tf-brief {
+  font-size: 0.74rem !important; color: var(--text-muted) !important;
+  padding: 0.4rem 0.6rem; background: rgba(0,0,0,0.18);
+  border-radius: var(--radius-xs); margin-top: 0.3rem !important;
+  border-left: 2px solid var(--gold);
+}
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }

@@ -867,12 +867,57 @@
       '<div class="timeline">'+renderTimeline()+'</div>';
   }
 
+  function parseStartMin(timeStr){
+    if(!timeStr) return 9999;
+    var hm = timeStr.match(/(\d+)h(\d+)/);
+    if(hm) return parseInt(hm[1])*60+parseInt(hm[2]);
+    var cm = timeStr.match(/(\d+):(\d+)/);
+    if(cm) return parseInt(cm[1])*60+parseInt(cm[2]);
+    return 9999;
+  }
+
+  function renderTimelineHighlight(hl, dayIdx){
+    var unlocked = !window.AIA.isItemUnlocked || window.AIA.isItemUnlocked('highlights', hl.id);
+    var typeLabels = { lightning:'⚡ Lightning Round', showcase:'🎪 Showcase', boss:'👑 Boss Challenge', wrapup:'📊 Wrap-up' };
+    var actionBtn = '';
+    if(hl.action && LINK_LABELS[hl.action]){
+      var meta = LINK_LABELS[hl.action];
+      actionBtn = unlocked
+        ? '<a class="activity-link-btn" href="#'+hl.action+'" onclick="event.stopPropagation();window.AIA.navigateTo(\''+hl.action+'\');return false;">'+meta.icon+' '+meta.label+' →</a>'
+        : '<span class="activity-link-btn disabled">'+meta.icon+' '+meta.label+'</span>';
+    }
+    return '<div class="timeline-item temps-fort type-'+hl.type+'">'+
+      '<div class="timeline-time">'+hl.timeStart+' - '+hl.timeEnd+'</div>'+
+      '<div class="tf-badge-row"><span class="tf-type-badge tf-'+hl.type+'">'+(typeLabels[hl.type]||'Temps fort')+'</span>'+
+        '<span class="tf-xp">+'+hl.xp+' XP</span>'+
+        (!unlocked?'<span class="activity-locked-tag">🔒 Verrouille</span>':'')+
+      '</div>'+
+      '<h4>'+hl.icon+' '+hl.title+'</h4><p>'+hl.desc+'</p>'+
+      (hl.brief?'<p class="tf-brief">📋 '+hl.brief+'</p>':'')+
+      (actionBtn?'<div class="activity-links">'+actionBtn+'</div>':'')+
+      '</div>';
+  }
+
   function renderTimeline(){
     var h='';
+    var HIGHLIGHTS = (window.AIA && window.AIA.HIGHLIGHTS) || [];
     ['day1','day2','day3','day4'].forEach(function(k,i){
       var d=PROGRAM[k];
       h+='<div class="timeline-item"><h4 style="color:var(--red-light)">'+CONFIG.dateLabels[i]+' — '+d.title+'</h4></div>';
+      var items = [];
       d.matin.concat(d.aprem).forEach(function(a){
+        items.push({ kind:'activity', start: parseStartMin(a.time), data: a });
+      });
+      HIGHLIGHTS.filter(function(hl){ return hl.day === (i+1); }).forEach(function(hl){
+        items.push({ kind:'highlight', start: parseStartMin(hl.timeStart), data: hl });
+      });
+      items.sort(function(a,b){ return a.start - b.start; });
+      items.forEach(function(it){
+        if(it.kind === 'highlight'){
+          h += renderTimelineHighlight(it.data, i);
+          return;
+        }
+        var a = it.data;
         var ref=getActivityRef(a.id);
         var locked=!isActivityUnlocked(a.id, i);
         h+='<div class="timeline-item'+(state.progress[a.id]?' completed':'')+'">'+
