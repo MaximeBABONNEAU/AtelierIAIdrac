@@ -1471,6 +1471,18 @@ body {
 .ltn-rs { font-weight: 800; color: var(--gold); }
 .ltn-rank-foot { font-size: 0.76rem; color: var(--text-muted); text-align: center; margin-top: 0.8rem; }
 
+/* Showcase : bandeau de contexte (temps fort du jour) */
+.showcase-context {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.1rem; margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(212,52,63,0.12), rgba(245,183,49,0.08));
+  border: 1px solid rgba(212,52,63,0.35);
+}
+.sc-ctx-icon { font-size: 1.9rem; line-height: 1; }
+.sc-ctx-body { flex: 1; min-width: 0; }
+.sc-ctx-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; color: var(--gold); }
+.sc-ctx-title { font-size: 1rem; font-weight: 700; margin: 0.1rem 0; }
+.sc-ctx-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
+
 .game-final-cta {
   margin-top: 2rem; padding: 1.5rem; text-align: center;
   background: linear-gradient(135deg, rgba(245,183,49,0.1), rgba(212,52,63,0.08));

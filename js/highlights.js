@@ -331,7 +331,9 @@
             if (AIA.saveState) AIA.saveState();
           }
         }
-        if (AIA.navigateTo) AIA.navigateTo(action);
+        // Showcase : ouvrir la page de vote de classe (au lieu de l'action generique).
+        var dest = (h && h.type === 'showcase') ? 'showcase' : action;
+        if (AIA.navigateTo) AIA.navigateTo(dest);
       });
     });
   }

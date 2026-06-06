@@ -893,6 +893,53 @@
   }
 
   /* ============ CAMPAIGN SHOWCASE (Competition + Voting) ============ */
+  // Temps fort Showcase pertinent pour le jour courant (pour le bandeau de contexte).
+  function currentShowcaseHighlight() {
+    var AIA = window.AIA;
+    var HL = AIA.HIGHLIGHTS || [];
+    var sc = AIA.getSessionContext ? AIA.getSessionContext() : null;
+    var day = sc ? sc.dayNum : 1;
+    var todays = HL.filter(function (h) { return h.type === 'showcase' && h.day === day; });
+    return todays.length ? todays[0] : HL.filter(function (h) { return h.type === 'showcase'; })[0] || null;
+  }
+
+  function showcaseContextBanner() {
+    var h = currentShowcaseHighlight();
+    if (!h) return '';
+    return '<div class="showcase-context glass-card">' +
+      '<div class="sc-ctx-icon">' + (h.icon || '🎪') + '</div>' +
+      '<div class="sc-ctx-body"><div class="sc-ctx-label">🎪 SHOWCASE DU JOUR</div>' +
+      '<div class="sc-ctx-title">' + escapeHtml(h.title) + '</div>' +
+      '<div class="sc-ctx-desc">' + escapeHtml(h.desc || '') + ' Votez (3 max) — le top 3 gagne un bonus automatique.</div>' +
+      '</div></div>';
+  }
+
+  // Recompense AUTO du podium : self-appliquee une seule fois quand je suis dans le top 3.
+  // Seuil : >=3 votes ET >=4 campagnes, pour eviter qu'un seul vote sur un champ a egalite (0-0)
+  // ne donne un faux rang #1 (anti-inflation XP). Garde module = anti double-award cross-onglet.
+  var _podiumAwarded = false;
+  var SHOWCASE_MIN_VOTES = 3;
+  var SHOWCASE_MIN_CAMPAIGNS = 4;
+  function awardShowcasePodium(sortedCampaigns, myKey) {
+    var AIA = window.AIA;
+    if (!myKey || _podiumAwarded) return;
+    var st = AIA.getState();
+    if (st.showcaseRewarded) { _podiumAwarded = true; return; } // deja recompense (etat persiste)
+    if (sortedCampaigns.length < SHOWCASE_MIN_CAMPAIGNS) return;
+    var myIdx = -1;
+    for (var i = 0; i < sortedCampaigns.length; i++) { if (sortedCampaigns[i].key === myKey) { myIdx = i; break; } }
+    if (myIdx < 0 || myIdx > 2) return;
+    if (!sortedCampaigns[myIdx] || sortedCampaigns[myIdx].votes < SHOWCASE_MIN_VOTES) return;
+    _podiumAwarded = true;
+    var rank = myIdx + 1;
+    var bonus = rank === 1 ? 50 : rank === 2 ? 30 : 20;
+    st.showcaseRewarded = { rank: rank, ts: new Date().toISOString() };
+    if (AIA.addXP) AIA.addXP(bonus, 'Podium Showcase (#' + rank + ')');
+    if (AIA.awardBadge) AIA.awardBadge('crowd-favorite');
+    if (AIA.saveState) AIA.saveState();
+    if (AIA.showToast) AIA.showToast('🏆 Tu es #' + rank + ' du Showcase ! +' + bonus + ' XP', 'success');
+  }
+
   function renderCampaignShowcase(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -977,7 +1024,11 @@
     var myVoteCount = Object.keys(myVotes).filter(function (k) { return myVotes[k]; }).length;
     var MAX_VOTES = 3;
 
-    var html = '<div class="showcase-stats glass-card">' +
+    // Recompense podium AUTO (self-appliquee, une seule fois) : si je suis dans le top 3 avec >=1 vote.
+    awardShowcasePodium(campaigns, myKey);
+
+    var html = showcaseContextBanner() +
+      '<div class="showcase-stats glass-card">' +
       '<div><strong>' + campaigns.length + '</strong> campagnes actives</div>' +
       '<div><strong>' + myVoteCount + '/' + MAX_VOTES + '</strong> de vos votes utilises</div>' +
       '<div>Cliquez sur ♥ pour soutenir les meilleures campagnes !</div>' +

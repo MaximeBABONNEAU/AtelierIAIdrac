@@ -95,6 +95,8 @@
     { id: 'speed-demon', icon: '⚡', name: 'Speed Demon', desc: 'Completer 3 Lightning Rounds', rarity: 'rare' },
     { id: 'boss-slayer', icon: '🐉', name: 'Boss Slayer', desc: 'Vaincre 2 Boss Challenges', rarity: 'epic' },
     { id: 'showcase-star', icon: '🎪', name: 'Showcase Star', desc: 'Participer a 3 Showcases', rarity: 'rare' },
+    { id: 'crowd-favorite', icon: '🏆', name: 'Crowd Favorite', desc: 'Top 3 du Showcase de classe', rarity: 'epic' },
+    { id: 'top-voted', icon: '❤️', name: 'Coup de Coeur', desc: 'Recevoir 3 votes sur sa campagne', rarity: 'rare' },
     { id: 'perfectionist', icon: '💯', name: 'Perfectionniste', desc: 'Valider 12/12 etapes Business Game', rarity: 'epic' },
     { id: 'early-bird', icon: '🌅', name: 'Early Bird', desc: 'Se connecter avant 9h le jour J', rarity: 'common' },
     { id: 'night-owl', icon: '🌙', name: 'Night Owl', desc: 'Activite enregistree apres 22h', rarity: 'common' },
