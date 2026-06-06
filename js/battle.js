@@ -299,7 +299,7 @@
           ? (evalResult.total >= BATTLE_BOSS_TARGET
               ? 'BOSS VAINCU ! Score ' + evalResult.total + '/100 — +' + SOLO_BOSS_XP + ' XP + badge 🔥'
               : 'Le boss r&eacute;siste (score ' + evalResult.total + '/100, il en faut ' + BATTLE_BOSS_TARGET + '). +20 XP — r&eacute;essaie !')
-          : (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+' + Math.max(0, evalResult.total - 50) + ' XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+' + Math.max(10, Math.round(evalResult.total / 3)) + ' XP)')) +
+          : (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+12 XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+5 XP)')) +
         '</div>' +
         '<button class="btn-outline" id="btn-battle-retry">🔄 ' + (bossMode ? 'Réessayer le boss' : 'Reessayer avec ce sujet') + '</button>' +
         (bossMode ? '' : '<button class="btn-primary" id="btn-battle-next">➡️ Sujet suivant</button>') +
@@ -315,11 +315,11 @@
           if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
           try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Brief Legendaire' }); } catch (e) {}
         } else {
-          AIA.addXP(20, 'Battle Boss tente');
+          AIA.addXP(5, 'Battle Boss tente');
         }
       } else {
-        var xpEarned = userWins ? Math.max(0, evalResult.total - 50) + 50 : Math.max(10, Math.round(evalResult.total / 3));
-        AIA.addXP(xpEarned);
+        var xpEarned = userWins ? 12 : 5;
+        AIA.addXP(xpEarned, 'Battle de prompts');
         if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
         if (AIA.bumpGameProgress) AIA.bumpGameProgress('battle'); // progression vers le Brief Legendaire
       }
@@ -464,7 +464,7 @@
           if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
           try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Quiz Maitre' }); } catch (e) {}
         } else {
-          AIA.addXP(20, 'Quiz Boss tente');
+          AIA.addXP(5, 'Quiz Boss tente');
         }
         main.innerHTML = '<div class="page-header">' + backBtn() +
           '<h1>Quiz <span class="gradient-text">BOSS</span></h1></div>' +
@@ -499,10 +499,10 @@
       if (AIA.bumpGameProgress) AIA.bumpGameProgress('quiz'); // progression vers le Quiz Maitre
       if (score === questions.length) {
         AIA.awardBadge('quiz-perfect');
-        AIA.addXP(100);
-        AIA.showToast('Quiz parfait ! +100 XP', 'success');
+        AIA.addXP(20, 'Quiz parfait');
+        AIA.showToast('Quiz parfait ! +20 XP', 'success');
       } else {
-        AIA.addXP(10 + score * 5);
+        AIA.addXP(5 + score, 'Quiz termine');
       }
 
       var retry = document.getElementById('btn-quiz-retry');
@@ -549,7 +549,7 @@
             AIA.addXP(SOLO_BOSS_XP, 'Challenge Boss vaincu');
             if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
             try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Defi Piege' }); } catch (e) {}
-          } else { AIA.addXP(20, 'Challenge Boss tente'); }
+          } else { AIA.addXP(5, 'Challenge Boss tente'); }
           res.innerHTML = '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
             '<div class="rpg-result-icon">' + (won ? '🏆' : '💀') + '</div>' +
             '<h3>' + (won ? 'D&eacute;fi Pi&egrave;ge relev&eacute; !' : 'Pas encore...') + '</h3>' +
@@ -596,7 +596,7 @@
           '</div>';
 
         if (AIA.bumpGameProgress) AIA.bumpGameProgress('challenge'); // progression vers le Defi Piege
-        AIA.addXP(20 + (6 - userRank) * 10);
+        AIA.addXP(8 + (6 - userRank) * 2, 'Challenge collectif');
         AIA.showToast('Challenge termine ! Rang #' + userRank, 'success');
       }, 2500);
     });
@@ -823,7 +823,7 @@
 
     function endBattle(won) {
       battleOver = true;
-      var xpGain = won ? 50 : 15, ptsGain = won ? PVP_WIN_POINTS : PVP_LOSE_POINTS;
+      var xpGain = won ? 10 : 3, ptsGain = won ? PVP_WIN_POINTS : PVP_LOSE_POINTS;
       pvp.battlesToday++; if (won) pvp.wins++; else pvp.losses++;
       pvp.points += ptsGain; pvp.lastBattleDate = new Date().toISOString().split('T')[0];
       savePvpStats(pvp);
@@ -852,10 +852,12 @@
      BOSS — moteur generique + Prof (PvP, quasi imbattable) + boss solo (PvE)
      ===================================================================== */
 
-  var BOSS_WIN_XP = 150;                       // x2 (duel seul) => 300 XP si on bat le Prof
-  var BOSS_LOSS_XP = 25;                        // consolation defaite Prof (avant malus)
+  // XP des mini-jeux volontairement MINIME vs le projet (Business Game). La vraie recompense
+  // des boss = les badges (legendaire/epic) + le temps fort Live, pas l'XP.
+  var BOSS_WIN_XP = 25;                         // x2 => 50 XP si on bat le Prof
+  var BOSS_LOSS_XP = 5;                         // consolation defaite Prof (avant malus)
   var BOSS_PENALTY_MS = 2 * 60 * 60 * 1000;     // malus 0,75x pendant 2h si defaite contre le Prof
-  var SOLO_BOSS_XP = 120;                       // recompense boss solo PvE
+  var SOLO_BOSS_XP = 25;                        // recompense boss solo PvE
 
   // Le Prof : IA quasi imbattable (~10% de reussite). En realite un ordinateur tres dur.
   // Tune par simulation Monte-Carlo (cf. tests) : ~10% de victoire pour un bon joueur de haut niveau,
@@ -1136,8 +1138,8 @@
       try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-solo', target: CREATURE_CONF.name }); } catch (e) {}
       return { title: CREATURE_CONF.name + ' terrass&eacute; !', html: '<p>+' + SOLO_BOSS_XP + ' XP + badge <strong>Boss Slayer</strong> 🐲</p>' };
     }
-    AIA.addXP(20, 'Combat boss PvE');
-    return { title: 'Le boss r&eacute;siste...', html: '<p>+20 XP. Reviens plus fort — tu peux le r&eacute;affronter quand tu veux.</p>' };
+    AIA.addXP(5, 'Combat boss PvE');
+    return { title: 'Le boss r&eacute;siste...', html: '<p>+5 XP. Reviens plus fort — tu peux le r&eacute;affronter quand tu veux.</p>' };
   }
 
   window.AIA = window.AIA || {};
