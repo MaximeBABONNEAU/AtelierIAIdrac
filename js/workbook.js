@@ -9,19 +9,26 @@
   // Sections du carnet, dans l'ordre logique d'une campagne.
   var SECTIONS = [
     { id: 'execSummary', icon: '📌', title: 'Resume executif',
-      hint: 'En 4-5 phrases : le produit, la cible, la promesse, l\'objectif de campagne.', phaseKey: null },
+      hint: 'En 4-5 phrases : le produit, la cible, la promesse, l\'objectif de campagne.', phaseKey: null,
+      starter: 'Notre produit [NOM] est un(e) [categorie] qui aide [cible] a [benefice principal].\nA la difference de [concurrents], nous proposons [differenciation].\nObjectif de la campagne : [ex. 5000 telechargements / 200 ventes au lancement].' },
     { id: 'p1', icon: '💡', title: 'Phase 1 — Ideation & Marche', phaseKey: 'phase1',
-      hint: 'Synthetisez votre concept, votre persona et votre analyse de marche en un texte structure.' },
+      hint: 'Synthetisez votre concept, votre persona et votre analyse de marche en un texte structure.',
+      starter: 'CONCEPT : ...\nPERSONA CIBLE : [nom, age, profession], motive par ..., freine par ...\nMARCHE : 3 concurrents = ... ; tendances a surfer = ... ; notre positionnement = ...' },
     { id: 'p2', icon: '🎨', title: 'Phase 2 — Branding & Identite', phaseKey: 'phase2',
-      hint: 'Presentez le nom, le logo, la palette et le ton de votre marque de facon coherente.' },
+      hint: 'Presentez le nom, le logo, la palette et le ton de votre marque de facon coherente.',
+      starter: 'NOM DE MARQUE : ... (pourquoi : ...)\nBASELINE : "..."\nLOGO : decrire le concept visuel\nPALETTE : 3 couleurs (hex)\nTON DE VOIX : 5 adjectifs' },
     { id: 'p3', icon: '📢', title: 'Phase 3 — Campagne Marketing', phaseKey: 'phase3',
-      hint: 'Decrivez vos visuels, vos textes et votre plan media comme dans un vrai brief d\'agence.' },
+      hint: 'Decrivez vos visuels, vos textes et votre plan media comme dans un vrai brief d\'agence.',
+      starter: 'CONCEPT CREATIF : ...\n3 HEADLINES : 1) ... 2) ... 3) ...\nCANAUX & BUDGET : Meta % / Google % / Influence % / Email %\nKPIs : impressions, CTR, conversions, ROAS' },
     { id: 'p4', icon: '🚀', title: 'Phase 4 — Pitch & Lancement', phaseKey: 'phase4',
-      hint: 'Resumez votre landing, votre video pitch et votre deck — preparez votre prise de parole.' },
+      hint: 'Resumez votre landing, votre video pitch et votre deck — preparez votre prise de parole.',
+      starter: 'LANDING : sections cles (hero, preuve sociale, pricing, CTA)\nPITCH VIDEO (script 30s) : hook / probleme / solution / preuve / CTA\nDECK : plan en 10 slides' },
     { id: 'learnings', icon: '🎓', title: 'Apprentissages cles', phaseKey: null,
-      hint: 'Qu\'avez-vous appris sur l\'IA generative et le marketing ? 3 a 5 points concrets.' },
+      hint: 'Qu\'avez-vous appris sur l\'IA generative et le marketing ? 3 a 5 points concrets.',
+      starter: '1. ...\n2. ...\n3. ...\n(Astuce : cliquez sur "Importer mes reflexions" pour partir de vos notes.)' },
     { id: 'nextSteps', icon: '🧭', title: 'Prochaines etapes', phaseKey: null,
-      hint: 'Si vous lanciez vraiment ce produit, quelles seraient vos 3 prochaines actions ?' }
+      hint: 'Si vous lanciez vraiment ce produit, quelles seraient vos 3 prochaines actions ?',
+      starter: '1. ...\n2. ...\n3. ...' }
   ];
 
   function getWB() {
@@ -177,10 +184,11 @@
 
       html += '<div class="wb-redaction">' +
         '<label>✍️ Votre redaction structuree</label>' +
-        '<p class="wb-hint">' + escapeHtml(s.hint) + '</p>' +
-        '<textarea class="wb-textarea" data-section="' + s.id + '" rows="6" placeholder="Redigez ici votre version finale, claire et ordonnee...">' + escapeHtml(fieldVal) + '</textarea>' +
+        '<p class="wb-hint"><strong>Consigne :</strong> ' + escapeHtml(s.hint) + '</p>' +
+        '<textarea class="wb-textarea" data-section="' + s.id + '" data-starter="' + encodeURIComponent(s.starter || '') + '" rows="7" placeholder="' + escapeHtml(s.starter || 'Redigez ici votre version finale, claire et ordonnee...') + '">' + escapeHtml(fieldVal) + '</textarea>' +
         '<div class="wb-section-actions">' +
         '<button class="btn-primary btn-sm wb-save" data-section="' + s.id + '">💾 Enregistrer</button>' +
+        (s.starter ? '<button class="btn-ghost btn-sm wb-use-template" data-section="' + s.id + '">📝 Utiliser le modele</button>' : '') +
         '<button class="btn-ghost btn-sm wb-finalize" data-section="' + s.id + '">' + (isFinal ? 'Rouvrir' : '✅ Marquer finalise') + '</button>' +
         (s.id === 'learnings' ? '<button class="btn-ghost btn-sm" id="wb-import-reflections">↧ Importer mes reflexions</button>' : '') +
         '</div>' +
@@ -241,6 +249,19 @@
         wb.finalized[id] = !wb.finalized[id];
         if (AIA.saveState) AIA.saveState();
         renderWorkbook(main);
+      });
+    });
+
+    main.querySelectorAll('.wb-use-template').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var id = this.getAttribute('data-section');
+        var ta = main.querySelector('.wb-textarea[data-section="' + id + '"]');
+        if (!ta) return;
+        var starter = decodeURIComponent(ta.getAttribute('data-starter') || '');
+        if (ta.value.trim() && !confirm('Remplacer le contenu actuel par le modele ?')) return;
+        ta.value = starter;
+        ta.focus();
+        AIA.showToast('Modele insere — completez-le avec vos infos', 'info');
       });
     });
 

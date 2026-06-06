@@ -267,7 +267,9 @@
       });
     }
 
+    var _campaignStates = {};
     function renderCampaignsLive(allStates) {
+      _campaignStates = allStates || {};
       var liveEl = document.getElementById('campaigns-live');
       if (!liveEl) return;
       var PHASES = (AIA.PHASES_GUIDE) || {};
@@ -328,7 +330,7 @@
         html += '<div class="glass-card" style="text-align:center;padding:2rem;margin-top:1rem"><p style="color:var(--text-muted)">Aucun etudiant n\'a encore choisi son projet.</p></div>';
       } else {
         html += '<table class="admin-table full" style="margin-top:1rem">' +
-          '<thead><tr><th>Etudiant</th><th>Projet</th><th>Phase 1</th><th>Phase 2</th><th>Phase 3</th><th>Phase 4</th><th>Total</th><th>Assets</th></tr></thead><tbody>';
+          '<thead><tr><th>Etudiant</th><th>Projet</th><th>Phase 1</th><th>Phase 2</th><th>Phase 3</th><th>Phase 4</th><th>Total</th><th>Assets</th><th></th></tr></thead><tbody>';
         withTheme.forEach(function (r) {
           var t = r.theme;
           html += '<tr>' +
@@ -346,6 +348,7 @@
             '<div class="phase-progress-bar"><div class="phase-progress-fill" style="width:' + r.pct + '%;background:linear-gradient(90deg,var(--gold),var(--accent))"></div></div>' +
             '<strong>' + r.pct + '%</strong></div></td>' +
             '<td>📎 ' + r.assetCount + '</td>' +
+            '<td><button class="btn-ghost btn-xs btn-student-detail" data-detail-key="' + r.key + '">🔍 Detail</button></td>' +
             '</tr>';
         });
         html += '</tbody></table>';
@@ -381,6 +384,148 @@
       }
 
       liveEl.innerHTML = html;
+      liveEl.querySelectorAll('.btn-student-detail').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          renderStudentDetail(this.getAttribute('data-detail-key'));
+        });
+      });
+    }
+
+    /* ======== DETAIL ETUDIANT — ce qu'il a fait, en detail ======== */
+    function renderStudentDetail(key) {
+      var s = _campaignStates[key] || {};
+      var PHASES = AIA.PHASES_GUIDE || {};
+      var name = (s.user && s.user.name) || key;
+      function esc(x){ return escapeHtml(x == null ? '' : String(x)); }
+      function fmtDate(iso){ try { return new Date(iso).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}); } catch(e){ return iso || ''; } }
+
+      var xpTotal = (s.xp && s.xp.total) || 0;
+      var badges = Array.isArray(s.badges) ? s.badges : [];
+      var demos = Array.isArray(s.demosCompleted) ? s.demosCompleted : [];
+      var reflections = s.reflections || {};
+      var journal = Array.isArray(s.journal) ? s.journal : [];
+      var checkins = Array.isArray(s.checkins) ? s.checkins : [];
+      var wb = s.workbook || { fields:{}, finalized:{} };
+      var cd = s.campaignData || {};
+      var gd = s.gameDeliverables || {};
+
+      var html = '<div class="sd-overlay"><div class="sd-modal">' +
+        '<button class="sd-close">✕</button>' +
+        '<div class="sd-header">' +
+        '<div class="sd-avatar">' + (s.productTheme ? s.productTheme.emoji : '👤') + '</div>' +
+        '<div><h2>' + esc(name) + '</h2>' +
+        '<div class="sd-sub">' + (s.productTheme ? esc(s.productTheme.name) + ' &bull; ' + esc(s.productTheme.category||'') : 'Pas de projet choisi') + '</div></div>' +
+        '<div class="sd-xp">' + xpTotal + ' XP</div>' +
+        '</div>' +
+        '<div class="sd-body">';
+
+      // Synthese rapide
+      var gameDone = Object.keys(gd).filter(function(k){return gd[k];}).length;
+      html += '<div class="sd-stats">' +
+        '<div class="sd-stat"><b>' + demos.length + '/15</b><span>Demos</span></div>' +
+        '<div class="sd-stat"><b>' + gameDone + '/12</b><span>Etapes Game</span></div>' +
+        '<div class="sd-stat"><b>' + Object.keys(reflections).length + '</b><span>Reflexions</span></div>' +
+        '<div class="sd-stat"><b>' + journal.length + '</b><span>Journal</span></div>' +
+        '<div class="sd-stat"><b>' + badges.length + '</b><span>Badges</span></div>' +
+        '<div class="sd-stat"><b>' + checkins.length + '</b><span>Check-ins</span></div>' +
+        '</div>';
+
+      // Tests
+      if (s.preTest || s.postTest) {
+        html += '<div class="sd-section"><h3>📊 Evaluations</h3>';
+        if (s.preTest) html += '<div class="sd-line">Pre-test : <strong>' + s.preTest.score + '/' + s.preTest.total + '</strong> (' + fmtDate(s.preTest.ts) + ')</div>';
+        if (s.postTest) html += '<div class="sd-line">Post-test : <strong>' + s.postTest.score + '/' + s.postTest.total + '</strong> (' + fmtDate(s.postTest.ts) + ')</div>';
+        html += '</div>';
+      }
+
+      // Demos
+      html += '<div class="sd-section"><h3>🛠️ Demos testees (' + demos.length + ')</h3>' +
+        (demos.length ? '<div class="sd-chips">' + demos.map(function(d){return '<span class="sd-chip">'+esc(d)+'</span>';}).join('') + '</div>' : '<div class="sd-empty">Aucune demo testee</div>') +
+        '</div>';
+
+      // Business Game detail (steps + content)
+      html += '<div class="sd-section"><h3>🎯 Business Game — productions</h3>';
+      var anyGame = false;
+      Object.keys(PHASES).forEach(function(pk){
+        var phase = PHASES[pk];
+        var stepsHtml = '';
+        phase.steps.forEach(function(step){
+          var data = cd[step.id] || {};
+          var done = !!gd[step.id];
+          var fieldsHtml = '';
+          (step.fields||[]).forEach(function(f){
+            var v = data[f.name];
+            if (v && String(v).trim()) { fieldsHtml += '<div class="sd-field"><span class="sd-flabel">'+esc(f.label)+'</span><div class="sd-fval">'+esc(v).replace(/\n/g,'<br>')+'</div></div>'; }
+          });
+          if (fieldsHtml || done) {
+            anyGame = true;
+            stepsHtml += '<div class="sd-step">'+(done?'✅':'⬜')+' <strong>'+esc(step.title)+'</strong>'+fieldsHtml+'</div>';
+          }
+        });
+        if (stepsHtml) html += '<div class="sd-phase"><h4>'+phase.icon+' '+esc(phase.title)+'</h4>'+stepsHtml+'</div>';
+      });
+      if (!anyGame) html += '<div class="sd-empty">Aucune production Business Game</div>';
+      html += '</div>';
+
+      // Workbook
+      var wbFields = wb.fields || {};
+      var wbKeys = Object.keys(wbFields).filter(function(k){return wbFields[k] && wbFields[k].trim();});
+      html += '<div class="sd-section"><h3>📓 Carnet de Campagne (' + wbKeys.length + ' sections)</h3>';
+      if (wbKeys.length) {
+        wbKeys.forEach(function(k){
+          html += '<div class="sd-field"><span class="sd-flabel">'+esc(k)+(wb.finalized&&wb.finalized[k]?' ✅':'')+'</span><div class="sd-fval">'+esc(wbFields[k]).replace(/\n/g,'<br>')+'</div></div>';
+        });
+      } else html += '<div class="sd-empty">Carnet vide</div>';
+      html += '</div>';
+
+      // Reflections
+      html += '<div class="sd-section"><h3>🪞 Reflexions</h3>';
+      var rKeys = Object.keys(reflections);
+      if (rKeys.length) {
+        rKeys.forEach(function(k){ html += '<div class="sd-field"><span class="sd-flabel">'+esc(k)+'</span><div class="sd-fval">'+esc(reflections[k].text).replace(/\n/g,'<br>')+'</div></div>'; });
+      } else html += '<div class="sd-empty">Aucune reflexion</div>';
+      html += '</div>';
+
+      // Journal
+      html += '<div class="sd-section"><h3>📔 Journal</h3>';
+      if (journal.length) {
+        journal.forEach(function(e){ html += '<div class="sd-field"><span class="sd-flabel">J'+(e.day||'?')+' &bull; '+esc(e.title||'')+' &bull; '+fmtDate(e.ts)+'</span><div class="sd-fval">'+esc(e.content||'').replace(/\n/g,'<br>')+'</div></div>'; });
+      } else html += '<div class="sd-empty">Journal vide</div>';
+      html += '</div>';
+
+      // Check-ins
+      html += '<div class="sd-section"><h3>☀️🌙 Check-ins</h3>';
+      if (checkins.length) {
+        checkins.forEach(function(c){
+          html += '<div class="sd-field"><span class="sd-flabel">'+(c.type==='morning'?'☀️ Matin':'🌙 Soir')+' J'+(c.day||'?')+' '+(c.mood||'')+' &bull; '+fmtDate(c.ts)+'</span><div class="sd-fval">'+
+            (c.goal?'Objectif : '+esc(c.goal):'')+(c.learned?'Appris : '+esc(c.learned):'')+(c.question?'<br>Question : '+esc(c.question):'')+(c.unclear?'<br>Flou : '+esc(c.unclear):'')+'</div></div>';
+        });
+      } else html += '<div class="sd-empty">Aucun check-in</div>';
+      html += '</div>';
+
+      // Badges
+      html += '<div class="sd-section"><h3>🏅 Badges (' + badges.length + ')</h3>' +
+        (badges.length ? '<div class="sd-chips">' + badges.map(function(b){return '<span class="sd-chip">'+esc(b)+'</span>';}).join('') + '</div>' : '<div class="sd-empty">Aucun badge</div>') +
+        '</div>';
+
+      // XP history
+      var hist = (s.xp && Array.isArray(s.xp.history)) ? s.xp.history : [];
+      html += '<div class="sd-section"><h3>⚡ Historique XP (' + hist.length + ')</h3>';
+      if (hist.length) {
+        html += '<div class="sd-history">' + hist.slice(0,30).map(function(h){return '<div class="sd-hline">+'+h.amount+' XP &bull; '+esc(h.reason||'')+' <span class="sd-htime">'+fmtDate(h.date)+'</span></div>';}).join('') + '</div>';
+      } else html += '<div class="sd-empty">Aucun historique</div>';
+      html += '</div>';
+
+      html += '</div></div></div>';
+
+      var existing = document.querySelector('.sd-overlay');
+      if (existing) existing.remove();
+      var wrap = document.createElement('div');
+      wrap.innerHTML = html;
+      document.body.appendChild(wrap.firstChild);
+      var ov = document.querySelector('.sd-overlay');
+      ov.querySelector('.sd-close').addEventListener('click', function(){ ov.remove(); });
+      ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     }
 
 
