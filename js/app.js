@@ -149,12 +149,12 @@
       matin: [
         { id: 'd4-finalize', type: 'game', time: '9h00-11h00', title: 'Business Game : Sprint Final', desc: 'Finaliser les livrables avec l\'aide de l\'IA', xp: 60, links: ['business-game'] },
         { id: 'd4-demo-playground', type: 'demo', time: '11h00-12h00', title: 'Demo : Playground Libre', desc: 'Experimenter librement avec les modeles IA', xp: 40, links: ['demo-prompt','demo-speech'] },
-        { id: 'd4-prep-pitch', type: 'atelier', time: '12h00-12h30', title: 'Preparation Pitch', desc: 'Preparer sa presentation finale', xp: 20, links: ['business-game'] }
+        { id: 'd4-prep-pitch', type: 'atelier', time: '12h00-12h30', title: 'Preparation Pitch', desc: 'Structurer votre Carnet de Campagne et preparer la presentation finale', xp: 20, links: ['workbook','business-game'] }
       ],
       aprem: [
         { id: 'd4-pitch', type: 'game', time: '14h00-16h00', title: 'Pitchs & Votes', desc: 'Chaque equipe presente, la classe vote', xp: 80, links: ['showcase','wall'] },
         { id: 'd4-awards', type: 'cours', time: '16h00-16h30', title: 'Ceremonie des Awards', desc: 'Remise des badges, classement final, diplomes', xp: 50, links: ['leaderboard','assessment-post','certificate'] },
-        { id: 'd4-closing', type: 'cours', time: '16h30-17h00', title: 'Cloture & Perspectives', desc: 'Bilan, ressources et prochaines etapes', xp: 50, links: ['skilltree','resources','certificate'] }
+        { id: 'd4-closing', type: 'cours', time: '16h30-17h00', title: 'Cloture & Perspectives', desc: 'Bilan, export du Carnet de Campagne, ressources et prochaines etapes', xp: 50, links: ['workbook','skilltree','resources','certificate'] }
       ]
     }
   };
@@ -503,6 +503,7 @@
       highlights:function(){if(window.AIA&&window.AIA.renderHighlightsPage)window.AIA.renderHighlightsPage(main);},
       resources:function(){if(window.AIA&&window.AIA.renderResources)window.AIA.renderResources(main);},
       journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
+      workbook:function(){if(window.AIA&&window.AIA.renderWorkbook)window.AIA.renderWorkbook(main);},
       checkins:function(){if(window.AIA&&window.AIA.renderCheckinsPage)window.AIA.renderCheckinsPage(main);},
       'assessment-pre':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'pre');},
       'assessment-post':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'post');},
@@ -603,6 +604,7 @@
     'certificate': { icon:'🏆', label:'Mon certificat' },
     'resources': { icon:'📚', label:'Ressources' },
     'journal': { icon:'📔', label:'Journal' },
+    'workbook': { icon:'📓', label:'Carnet de campagne' },
     'skilltree': { icon:'🌳', label:'Skill Tree' },
     'battle': { icon:'⚔️', label:'Battle de Prompts' },
     'arena': { icon:'🏟️', label:'Arena (Quiz/Defis)' },

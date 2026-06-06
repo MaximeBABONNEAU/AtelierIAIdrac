@@ -2853,6 +2853,83 @@ body {
   border-left: 2px solid var(--gold);
 }
 
+/* ========== CARNET DE CAMPAGNE (WORKBOOK) ========== */
+.wb-toolbar { display:flex; align-items:center; gap:1rem; padding:0.8rem 1rem; margin-bottom:0.8rem; flex-wrap:wrap; }
+.wb-progress { flex:1; min-width:160px; }
+.wb-toolbar-actions { display:flex; gap:0.4rem; flex-wrap:wrap; }
+.wb-help { font-size:0.82rem; color:var(--text-secondary); background:rgba(245,183,49,0.06);
+  border-left:3px solid var(--gold); padding:0.6rem 0.8rem; border-radius:var(--radius-xs); margin-bottom:1rem; line-height:1.5; }
+.wb-help strong { color:var(--gold); }
+
+.wb-cover { display:flex; align-items:center; gap:1.2rem; padding:1.3rem 1.5rem; margin-bottom:1rem;
+  background:linear-gradient(135deg, rgba(212,52,63,0.12), rgba(245,183,49,0.08)); border:1px solid rgba(245,183,49,0.3); }
+.wb-cover-emoji { font-size:3.4rem; line-height:1; }
+.wb-cover-eyebrow { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--gold); font-weight:700; }
+.wb-cover-title { font-size:1.8rem; font-weight:900; margin:0.2rem 0; }
+.wb-cover-tagline { font-size:0.95rem; color:var(--text-secondary); }
+.wb-cover-meta { font-size:0.78rem; color:var(--text-muted); margin-top:0.4rem; }
+
+.wb-section { padding:1.1rem 1.3rem; margin-bottom:0.9rem; }
+.wb-section.finalized { border-left:4px solid #2ecc71; background:rgba(46,204,113,0.04); }
+.wb-section-head { display:flex; align-items:center; justify-content:space-between; gap:0.6rem; margin-bottom:0.6rem; }
+.wb-section-head h3 { font-size:1.05rem; margin:0; }
+.wb-final-badge { font-size:0.7rem; color:#2ecc71; font-weight:700; padding:0.15rem 0.5rem; background:rgba(46,204,113,0.12); border-radius:999px; }
+
+.wb-compiled { background:rgba(52,152,219,0.05); border:1px solid rgba(52,152,219,0.2); border-radius:var(--radius-xs);
+  padding:0.6rem 0.8rem; margin-bottom:0.8rem; }
+.wb-compiled summary { cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--cyan); }
+.wb-step { margin-top:0.6rem; }
+.wb-step-title { font-size:0.85rem; color:var(--text-primary); margin:0.4rem 0 0.2rem; }
+.wb-field { margin:0.3rem 0; padding-left:0.6rem; border-left:2px solid rgba(255,255,255,0.1); }
+.wb-field-label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.03em; }
+.wb-field-val { font-size:0.85rem; color:var(--text-secondary); line-height:1.5; white-space:pre-wrap; }
+.wb-empty-note { font-size:0.8rem; color:var(--text-muted); padding:0.6rem 0.8rem; background:rgba(245,183,49,0.06);
+  border-radius:var(--radius-xs); margin-bottom:0.8rem; }
+
+.wb-redaction label { display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.2rem; }
+.wb-hint { font-size:0.76rem; color:var(--text-muted); font-style:italic; margin-bottom:0.4rem; }
+.wb-textarea { width:100%; padding:0.7rem 0.9rem; background:rgba(255,255,255,0.04); border:1px solid var(--border-glass);
+  border-radius:var(--radius-xs); color:var(--text-primary); font-size:0.88rem; font-family:inherit; resize:vertical; line-height:1.55; }
+.wb-textarea:focus { outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(245,183,49,0.15); }
+.wb-section-actions { display:flex; gap:0.4rem; flex-wrap:wrap; margin-top:0.5rem; }
+
+.wb-assets { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:0.6rem; }
+.wb-asset { background:rgba(255,255,255,0.03); border:1px solid var(--border-glass); border-radius:var(--radius-xs);
+  padding:0.5rem; text-align:center; font-size:0.74rem; }
+.wb-asset img { width:100%; height:90px; object-fit:cover; border-radius:4px; margin-bottom:0.3rem; }
+.wb-asset-link { font-size:1.6rem; margin-bottom:0.3rem; }
+.wb-asset a { color:var(--cyan); word-break:break-word; }
+
+.wb-preview-actions { display:flex; gap:0.5rem; margin-bottom:1rem; }
+
+/* ---- Document propre (apercu + impression) ---- */
+.wb-doc { max-width:820px; margin:0 auto; background:#fffdf8; color:#1a1a2e; border-radius:8px;
+  padding:0; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,0.3); border:1px solid #e8e0cc; }
+.wb-doc-cover { text-align:center; padding:3rem 2rem 2.5rem; background:linear-gradient(135deg,#A71F28,#d4434b); color:#fff; }
+.wb-doc-logo { font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; opacity:0.9; margin-bottom:1rem; }
+.wb-doc-emoji { font-size:4rem; }
+.wb-doc-title { font-size:2.4rem; font-weight:900; margin:0.4rem 0; color:#fff; }
+.wb-doc-tagline { font-size:1.05rem; font-style:italic; opacity:0.95; }
+.wb-doc-author { margin-top:1.2rem; font-size:0.95rem; }
+.wb-doc-date { font-size:0.82rem; opacity:0.85; margin-top:0.2rem; }
+.wb-doc-section { padding:1.2rem 2.2rem; border-bottom:1px solid #efe7d6; }
+.wb-doc-section h2 { font-size:1.25rem; color:#A71F28; margin:0 0 0.6rem; }
+.wb-doc-text { font-size:0.95rem; line-height:1.7; color:#2c2c3a; white-space:pre-wrap; }
+.wb-doc-compiled { font-size:0.88rem; color:#444; }
+.wb-doc-compiled .wb-field-label { color:#888; }
+.wb-doc-compiled .wb-field-val { color:#333; }
+.wb-doc-footer { text-align:center; padding:1.2rem; font-size:0.72rem; color:#999; font-style:italic; }
+
+/* Mobile nav workbook accent */
+.mobile-link-workbook span { color: var(--gold); }
+
+@media print {
+  body * { visibility:hidden !important; }
+  #wb-doc, #wb-doc * { visibility:visible !important; }
+  #wb-doc { position:absolute; left:0; top:0; width:100%; box-shadow:none; border:none; }
+  .no-print { display:none !important; }
+}
+
 /* Campaign detail (read-only) */
 .showcase-step { padding: 0.8rem; margin: 0.5rem 0; background: rgba(255,255,255,0.02); border-radius: var(--radius-xs); }
 .showcase-step h4 { font-size: 0.92rem; margin-bottom: 0.5rem; }
