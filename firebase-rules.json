@@ -5,7 +5,8 @@
     "A la 1ere connexion d'un compte, /owners/{key} est fixe a l'uid. Ensuite, seul cet uid peut ecrire l'etat/le resume de ce compte -> un etudiant ne peut pas falsifier les donnees d'un autre.",
     "Les mots de passe sont haches en SHA-256 sale par compte cote client ; /accounts n'est lisible que par un utilisateur authentifie.",
     "L'auth anonyme ne distingue pas admin/etudiant : le gate admin reste cote client (mot de passe SHA-256 fort). /config et annonces sont donc ecrivables par tout utilisateur authentifie (acceptable en atelier encadre).",
-    "Pour deverrouiller la propriete (ex: changement d'appareil), le formateur peut supprimer /owners/{key} depuis la console."
+    "Pour deverrouiller la propriete (ex: changement d'appareil), le formateur peut supprimer /owners/{key} depuis la console.",
+    "Anti-triche points : les gains XP (states/students) sont plafonnes a +5000 par ecriture et ne peuvent etre negatifs ; les points PvP ne peuvent pas baisser et augmentent de +300 max par ecriture ; wins/losses +2 max. Bloque l'inflation grossiere des scores via la console."
   ],
   "rules": {
     ".read": false,
@@ -43,7 +44,7 @@
         ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
         "xp": {
-          "total": { ".validate": "newData.isNumber() && newData.val() <= 1000000" }
+          "total": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (!data.exists() || newData.val() <= data.val() + 5000)" }
         }
       }
     },
@@ -54,7 +55,7 @@
         ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
         "name":  { ".validate": "newData.isString() && newData.val().length < 80" },
-        "xp":    { ".validate": "newData.isNumber() && newData.val() <= 1000000" },
+        "xp":    { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (!data.exists() || newData.val() <= data.val() + 5000)" },
         "online":{ ".validate": "newData.isBoolean()" }
       }
     },
@@ -73,7 +74,12 @@
       ".read": true,
       "$accountKey": {
         ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
-        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)"
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
+        "points":         { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000000 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 300))" },
+        "wins":           { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 2))" },
+        "losses":         { ".validate": "newData.isNumber() && newData.val() >= 0 && (!data.exists() || (newData.val() >= data.val() && newData.val() <= data.val() + 2))" },
+        "battlesToday":   { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100" },
+        "lastBattleDate": { ".validate": "newData.isString() && newData.val().length < 40" }
       }
     },
 

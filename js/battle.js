@@ -741,10 +741,229 @@
     renderUI();
   }
 
+  /* ======== BOSS ADMIN — "L'IA SUPREME" (duel unique, coriace) ======== */
+
+  // Avatar / identite du boss = l'Admin. Theme cyber/neon.
+  var BOSS = {
+    id: 'ai-supreme', name: "L'IA Supreme", icon: '🤖',
+    desc: 'Le boss de l\'Admin — intelligence artificielle ultime',
+    baseHP: 175, baseATK: 25, baseDEF: 16,
+    skills: [
+      { name: 'Override', icon: '⚡', dmg: 34, cost: 20, desc: 'Surcharge brutale du systeme' },
+      { name: 'Token Storm', icon: '🌀', dmg: 24, cost: 13, desc: 'Rafale de tokens' },
+      { name: 'Deep Learning', icon: '🧠', heal: 30, cost: 22, desc: 'Auto-regeneration neuronale' },
+      { name: 'Firewall', icon: '🛡️', defBuff: 10, cost: 15, desc: 'Pare-feu defensif (+10 DEF)' }
+    ]
+  };
+  var BOSS_WIN_XP = 150;                  // x2 (duel seul) => 300 XP appliques en cas de victoire
+  var BOSS_LOSS_XP = 25;                  // consolation (avant malus)
+  var BOSS_PENALTY_MS = 2 * 60 * 60 * 1000; // malus 0,75x pendant 2h si defaite
+
+  function renderBossArena(main) {
+    var AIA = window.AIA;
+    var bd = AIA.getBossDuel ? AIA.getBossDuel() : null;
+
+    main.innerHTML = '<div class="page-header">' + backBtn() +
+      '<h1>Duel : <span class="gradient-text">L\'IA Supr&ecirc;me</span></h1>' +
+      '<p class="page-subtitle">Le boss de l\'Admin &bull; tentative unique sur tout le s&eacute;minaire</p></div>' +
+      '<div id="boss-root" class="glass-card boss-battle" style="padding:1.5rem"></div>';
+    var root = document.getElementById('boss-root');
+
+    if (bd && bd.used) {
+      var won = bd.result === 'win';
+      root.innerHTML = '<div class="boss-intro">' +
+        '<div class="boss-portrait ' + (won ? 'beaten' : '') + '">🤖</div>' +
+        '<h2>' + (won ? '🏆 Boss vaincu' : '💀 Tentative utilis&eacute;e') + '</h2>' +
+        '<p style="color:var(--text-muted);max-width:480px;margin:0.5rem auto 1.2rem">' +
+        (won ? 'Vous avez d&eacute;j&agrave; <strong>terrass&eacute; l\'IA Supr&ecirc;me</strong> et encaiss&eacute; le bonus x2. Un exploit rare !' :
+               'Vous avez d&eacute;j&agrave; d&eacute;fi&eacute; l\'IA Supr&ecirc;me. Le duel ne peut se jouer <strong>qu\'une seule fois</strong>.') +
+        '</p>' +
+        '<button class="btn-outline" data-navigate="arena">Retour Arena</button></div>';
+      return;
+    }
+
+    // Ecran d'intro + selection de classe
+    root.innerHTML = '<div class="boss-intro">' +
+      '<div class="boss-portrait">🤖</div>' +
+      '<h2 class="boss-title">L\'IA Supr&ecirc;me vous attend</h2>' +
+      '<p class="boss-pitch">Le champion de l\'Admin. <strong>Coriace.</strong> Vous n\'avez <strong>qu\'une seule tentative</strong>.</p>' +
+      '<div class="boss-stakes-grid">' +
+        '<div class="boss-stake win"><div class="boss-stake-ic">🏆</div><div><strong>Si vous gagnez</strong><br>Gains du duel <b>x2</b> (jusqu\'&agrave; +' + (BOSS_WIN_XP * 2) + ' XP)</div></div>' +
+        '<div class="boss-stake lose"><div class="boss-stake-ic">💀</div><div><strong>Si vous perdez</strong><br>Malus <b>-25%</b> sur vos gains XP pendant <b>2h</b></div></div>' +
+      '</div>' +
+      '<div style="margin:0.9rem auto 0;max-width:520px;font-size:0.75rem;color:#ff9db0">⚠️ Une fois la classe choisie, le duel compte comme votre <strong>tentative unique</strong> — m&ecirc;me si vous quittez la page.</div>' +
+      '<h3 style="margin:1.4rem 0 0.8rem;font-size:1rem">Choisissez votre classe pour l\'affrontement</h3>' +
+      '<div class="rpg-class-grid">' + RPG_CLASSES.map(function (cls) {
+        return '<div class="rpg-class-card glass-card" data-class="' + cls.id + '">' +
+          '<div class="rpg-class-icon">' + cls.icon + '</div>' +
+          '<h4>' + cls.name + '</h4><p>' + cls.desc + '</p>' +
+          '<div class="rpg-class-stats"><span>HP ' + cls.baseHP + '</span><span>ATK ' + cls.baseATK + '</span><span>DEF ' + cls.baseDEF + '</span></div>' +
+          '</div>';
+      }).join('') + '</div></div>';
+
+    document.querySelectorAll('#boss-root .rpg-class-card').forEach(function (card) {
+      card.addEventListener('click', function () {
+        var classId = this.getAttribute('data-class');
+        var cls = RPG_CLASSES.find(function (c) { return c.id === classId; });
+        if (cls) startBossBattle(main, cls);
+      });
+    });
+  }
+
+  function startBossBattle(main, playerClass) {
+    var AIA = window.AIA, st = AIA.getState();
+    // Securite : tentative unique
+    if (AIA.getBossDuel && AIA.getBossDuel() && AIA.getBossDuel().used) { renderBossArena(main); return; }
+    // La tentative est consommee DES le lancement : impossible de rafraichir pour eviter le malus.
+    // endBoss() ecrasera ce 'pending' par le resultat final (win/loss).
+    if (AIA.recordBossDuel) AIA.recordBossDuel('pending');
+
+    var lvl = AIA.getLevelInfo ? AIA.getLevelInfo(st.xp.total) : { level: 1 };
+    var BOSS_MANA_REGEN = MANA_PER_TURN + 4;
+
+    var player = { name: st.user ? st.user.name : 'Vous', cls: playerClass, icon: playerClass.icon,
+      hp: playerClass.baseHP + lvl.level * 5, maxHP: playerClass.baseHP + lvl.level * 5,
+      atk: playerClass.baseATK + Math.floor(lvl.level * 1.5), def: playerClass.baseDEF + lvl.level,
+      mana: 50, maxMana: 50, tempDef: 0 };
+    // Boss coriace : stats nettement boostees + scaling sur le niveau du joueur (~30% de victoires)
+    var enemy = { name: BOSS.name, cls: BOSS, icon: BOSS.icon,
+      hp: Math.round((BOSS.baseHP + lvl.level * 7) * 1.15), maxHP: Math.round((BOSS.baseHP + lvl.level * 7) * 1.15),
+      atk: Math.round((BOSS.baseATK + lvl.level * 2) * 1.12), def: Math.round((BOSS.baseDEF + lvl.level * 1.3) * 1.1),
+      mana: 60, maxMana: 60, tempDef: 0 };
+
+    var log = [], turn = 1, battleOver = false;
+
+    function renderFighter(f, side, isBoss) {
+      var hpPct = Math.max(0, Math.round(f.hp / f.maxHP * 100));
+      var mpPct = Math.round(f.mana / f.maxMana * 100);
+      var hpC = hpPct > 50 ? '#2ecc71' : hpPct > 25 ? '#f5b731' : '#e74c3c';
+      return '<div class="rpg-fighter ' + side + (isBoss ? ' boss-fighter' : '') + '">' +
+        '<div class="rpg-fighter-icon">' + f.icon + '</div>' +
+        '<div class="rpg-fighter-name">' + escapeHtml(f.name) + '</div>' +
+        '<div class="rpg-fighter-class">' + (isBoss ? 'BOSS' : f.cls.name) + '</div>' +
+        '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + hpPct + '%;background:' + hpC + '"></div></div>' +
+        '<div class="rpg-bar-label">HP ' + Math.max(0, f.hp) + '/' + f.maxHP + '</div>' +
+        '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + mpPct + '%;background:#3498db"></div></div>' +
+        '<div class="rpg-bar-label">MP ' + f.mana + '/' + f.maxMana + '</div>' +
+        '<div class="rpg-fighter-stats">ATK ' + f.atk + ' DEF ' + (f.def + f.tempDef) + '</div></div>';
+    }
+
+    function renderUI() {
+      var root = document.getElementById('boss-root'); if (!root) return;
+      root.innerHTML =
+        '<div class="rpg-battle-header">⚠️ DUEL BOSS &bull; Tour ' + turn + '</div>' +
+        '<div class="rpg-arena">' + renderFighter(player, 'left', false) + '<div class="rpg-vs">VS</div>' + renderFighter(enemy, 'right', true) + '</div>' +
+        (!battleOver ? '<div class="rpg-actions">' +
+          '<button class="rpg-btn attack" id="boss-attack">Attaque<span class="rpg-btn-sub">(' + player.atk + ' ATK)</span></button>' +
+          '<button class="rpg-btn defend" id="boss-defend">Defense<span class="rpg-btn-sub">(+50% DEF)</span></button>' +
+          player.cls.skills.map(function (sk, i) {
+            var dis = player.mana < sk.cost;
+            return '<button class="rpg-btn skill' + (dis ? ' disabled' : '') + '" data-skill="' + i + '"' + (dis ? ' disabled' : '') + '>' +
+              sk.icon + ' ' + sk.name + '<span class="rpg-btn-sub">(' + sk.cost + ' MP)</span></button>';
+          }).join('') + '</div>' : '') +
+        '<div class="rpg-log">' + log.slice(-6).map(function (l) { return '<div class="rpg-log-entry">' + l + '</div>'; }).join('') + '</div>';
+
+      if (!battleOver) {
+        document.getElementById('boss-attack').addEventListener('click', function () { doTurn('attack'); });
+        document.getElementById('boss-defend').addEventListener('click', function () { doTurn('defend'); });
+        document.querySelectorAll('#boss-root .rpg-btn.skill:not(.disabled)').forEach(function (b) {
+          b.addEventListener('click', function () { doTurn('skill', parseInt(this.getAttribute('data-skill'))); });
+        });
+      }
+    }
+
+    function calcDmg(a, d) { return Math.max(1, Math.round((a - Math.floor(d * 0.6)) * (0.85 + Math.random() * 0.3))); }
+
+    function doTurn(action, si) {
+      if (battleOver) return;
+      player.tempDef = 0;
+      if (action === 'attack') {
+        var d = calcDmg(player.atk, enemy.def + enemy.tempDef);
+        enemy.hp -= d; log.push('<strong>' + escapeHtml(player.name) + '</strong> attaque — ' + d + ' dmg');
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN);
+      } else if (action === 'defend') {
+        player.tempDef = Math.floor(player.def * 0.5);
+        log.push('<strong>' + escapeHtml(player.name) + '</strong> se defend (+' + player.tempDef + ' DEF)');
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN + 5);
+      } else {
+        var sk = player.cls.skills[si]; if (!sk || player.mana < sk.cost) return;
+        player.mana -= sk.cost;
+        if (sk.dmg) { var sd = calcDmg(sk.dmg, enemy.def + enemy.tempDef); enemy.hp -= sd; log.push(sk.icon + ' <strong>' + escapeHtml(player.name) + '</strong> lance ' + sk.name + ' — ' + sd + ' dmg'); }
+        if (sk.heal) { player.hp = Math.min(player.maxHP, player.hp + sk.heal); log.push(escapeHtml(player.name) + ' recupere ' + sk.heal + ' HP'); }
+        if (sk.defBuff) { player.tempDef += sk.defBuff; }
+        player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN);
+      }
+      if (enemy.hp <= 0) { endBoss(true); return; }
+
+      /* Boss AI — agressive : tape fort, soigne tard, defend rarement */
+      enemy.tempDef = 0;
+      var hpRatio = enemy.hp / enemy.maxHP;
+      var aiAct = 'attack', aiSi = -1;
+      if (hpRatio < 0.30) { var hi = BOSS.skills.findIndex(function (s) { return s.heal && enemy.mana >= s.cost; }); if (hi >= 0) { aiAct = 'skill'; aiSi = hi; } }
+      if (aiAct === 'attack' && Math.random() < 0.06) aiAct = 'defend';
+      if (aiAct === 'attack') { var us = []; BOSS.skills.forEach(function (s, i) { if (s.dmg && enemy.mana >= s.cost) us.push(i); }); if (us.length && Math.random() < 0.7) { aiAct = 'skill'; aiSi = us[Math.floor(Math.random() * us.length)]; } }
+
+      if (aiAct === 'attack') {
+        var ed = calcDmg(enemy.atk, player.def + player.tempDef);
+        player.hp -= ed; log.push('<strong>' + escapeHtml(enemy.name) + '</strong> attaque — ' + ed + ' dmg');
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN);
+      } else if (aiAct === 'defend') {
+        enemy.tempDef = Math.floor(enemy.def * 0.5);
+        log.push('<strong>' + escapeHtml(enemy.name) + '</strong> active un pare-feu');
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN + 5);
+      } else {
+        var esk = BOSS.skills[aiSi]; enemy.mana -= esk.cost;
+        if (esk.dmg) { var esd = calcDmg(esk.dmg, player.def + player.tempDef); player.hp -= esd; log.push(esk.icon + ' <strong>' + escapeHtml(enemy.name) + '</strong> lance ' + esk.name + ' — ' + esd + ' dmg'); }
+        if (esk.heal) { enemy.hp = Math.min(enemy.maxHP, enemy.hp + esk.heal); log.push(esk.icon + ' ' + escapeHtml(enemy.name) + ' recupere ' + esk.heal + ' HP'); }
+        if (esk.defBuff) enemy.tempDef += esk.defBuff;
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN);
+      }
+      if (player.hp <= 0) { endBoss(false); return; }
+      turn++; if (turn > 40) { endBoss(player.hp > enemy.hp); return; }
+      renderUI();
+    }
+
+    function endBoss(won) {
+      battleOver = true;
+      // Consomme la tentative unique
+      if (AIA.recordBossDuel) AIA.recordBossDuel(won ? 'win' : 'loss');
+
+      var xpGain;
+      if (won) {
+        xpGain = BOSS_WIN_XP * 2; // bonus x2 sur le duel seul
+        AIA.addXP(xpGain, 'Victoire vs IA Supreme (x2)');
+        log.push('<strong>VICTOIRE !</strong> Bonus x2 — +' + xpGain + ' XP');
+        try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-win', target: BOSS.name }); } catch (e) {}
+      } else {
+        xpGain = BOSS_LOSS_XP; // consolation full AVANT le malus
+        AIA.addXP(xpGain, 'Duel vs IA Supreme');
+        if (AIA.startPvpPenalty) AIA.startPvpPenalty(BOSS_PENALTY_MS); // malus 0,75x / 2h sur la suite
+        log.push('<strong>DEFAITE</strong> — malus -25% sur vos gains pendant 2h. +' + xpGain + ' XP');
+        try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-try', target: BOSS.name }); } catch (e) {}
+      }
+      if (AIA.saveStateNow) AIA.saveStateNow();
+
+      renderUI();
+      var root = document.getElementById('boss-root'); if (!root) return;
+      root.innerHTML += '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
+        '<div class="rpg-result-icon">' + (won ? '🏆' : '💀') + '</div>' +
+        '<h3>' + (won ? 'Vous avez vaincu l\'IA Supr&ecirc;me !' : 'L\'IA Supr&ecirc;me l\'emporte') + '</h3>' +
+        '<p>' + (won ? 'Bonus x2 encaiss&eacute; : <strong>+' + xpGain + ' XP</strong>. Exploit rare !' :
+                       'Malus <strong>-25%</strong> sur vos gains XP pendant <strong>2h</strong>. +' + xpGain + ' XP de consolation.') + '</p>' +
+        '<div style="font-size:0.78rem;color:var(--text-muted);margin:0.4rem 0 0.8rem">Tentative unique utilis&eacute;e — le duel ne se rejoue pas.</div>' +
+        '<button class="btn-primary" data-navigate="arena">Retour Arena</button></div>';
+    }
+
+    renderUI();
+  }
+
   window.AIA = window.AIA || {};
   window.AIA.renderBattle = renderBattle;
   window.AIA.startQuiz = startQuiz;
   window.AIA.startChallenge = startChallenge;
   window.AIA.renderRPG = renderRPG;
   window.AIA.RPG_CLASSES = RPG_CLASSES;
+  window.AIA.renderBossArena = renderBossArena;
+  window.AIA.startBossBattle = startBossBattle;
+  window.AIA.BOSS = BOSS;
 })();

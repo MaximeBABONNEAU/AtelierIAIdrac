@@ -184,7 +184,10 @@
     user: null, xp: { total: 0, history: [] }, progress: {}, badges: [],
     streak: { count: 0, lastDate: null }, gameNotes: '', gameDeliverables: {},
     toolsExplored: [], avatar: null, currentPage: 'dashboard', demosCompleted: [],
-    reactions: {}
+    reactions: {},
+    // Duel contre l'admin (IA Supreme) : tentative unique pour tout le seminaire.
+    bossDuel: null,            // { used:true, result:'win'|'loss', ts:'...' }
+    pvpPenaltyUntil: 0         // timestamp ms : malus 0,75x sur les gains XP jusqu'a cette heure
   };
 
   var Storage = {
@@ -446,13 +449,28 @@
     return {level:lvl.level,title:lvl.title,xpNeeded:lvl.xpNeeded,nextXp:next?next.xpNeeded:lvl.xpNeeded,progress:Math.min(100,pct)};
   }
 
+  var PVP_PENALTY_FACTOR = 0.75; // malus apres defaite contre l'IA Supreme
+  function isPvpPenaltyActive() { return !!(state.pvpPenaltyUntil && Date.now() < state.pvpPenaltyUntil); }
+  function pvpPenaltyMinutesLeft() { return isPvpPenaltyActive() ? Math.ceil((state.pvpPenaltyUntil - Date.now()) / 60000) : 0; }
+  // Demarre le malus 0,75x pendant `ms` (defaite contre l'admin)
+  function startPvpPenalty(ms) { state.pvpPenaltyUntil = Date.now() + ms; saveStateNow(); }
+  // Enregistre que la tentative unique de duel admin est consommee
+  function recordBossDuel(result) { state.bossDuel = { used: true, result: result, ts: new Date().toISOString() }; saveStateNow(); }
+  function getBossDuel() { return state.bossDuel; }
+
   function addXP(amount, reason) {
     if (!state.xp) state.xp = { total: 0, history: [] };
     if (!Array.isArray(state.xp.history)) state.xp.history = [];
-    state.xp.total = (state.xp.total || 0) + amount;
-    state.xp.history.unshift({amount:amount,reason:reason||'',date:new Date().toISOString()});
+    // Malus PvP : 0,75x sur les gains positifs tant que le malus est actif (defaite contre l'IA Supreme)
+    var applied = amount;
+    if (amount > 0 && isPvpPenaltyActive()) {
+      applied = Math.round(amount * PVP_PENALTY_FACTOR);
+      reason = (reason || '') + ' ⚠️ malus -25%';
+    }
+    state.xp.total = (state.xp.total || 0) + applied;
+    state.xp.history.unshift({amount:applied,reason:reason||'',date:new Date().toISOString()});
     if(state.xp.history.length>50) state.xp.history.length=50;
-    updateXPDisplay(); showXPPopup(amount,reason);
+    updateXPDisplay(); showXPPopup(applied,reason);
     if(state.xp.total>=500) awardBadge('xp-500');
     saveState();
   }
@@ -547,7 +565,8 @@
       wall:function(){if(window.AIA&&window.AIA.renderWall)window.AIA.renderWall(main);},
       inbox:function(){if(window.AIA&&window.AIA.renderInbox)window.AIA.renderInbox(main);},
       shop:function(){if(window.AIA&&window.AIA.renderShop)window.AIA.renderShop(main);},
-      arena:renderArena, 'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
+      arena:renderArena, boss:function(){if(window.AIA&&window.AIA.renderBossArena)window.AIA.renderBossArena(document.getElementById('main-content'));},
+      'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
       tools:renderTools, profile:renderProfile, admin:renderAdmin
@@ -1187,19 +1206,39 @@
 
   function renderArena(){
     var main=document.getElementById('main-content');
+    // Carte "Defier l'Admin" (IA Supreme) — tentative unique sur tout le seminaire
+    var bd = state.bossDuel;
+    var bossCard;
+    if (bd && bd.used) {
+      var bdWon = bd.result === 'win';
+      bossCard = '<div class="arena-mode-card glass-card boss-card done '+(bdWon?'boss-won':'boss-lost')+'">'+
+        '<div class="mode-icon">🤖</div><h3>L\'IA Supr&ecirc;me</h3>'+
+        '<p>'+(bdWon?'Vous avez TERRASS&Eacute; le boss 🏆 — bonus x2 encaiss&eacute; !':'D&eacute;faite courageuse. Le malus s\'est dissip&eacute;.')+'</p>'+
+        '<div class="boss-card-badge">'+(bdWon?'✅ Vaincu':'💀 Tentative utilis&eacute;e')+' &bull; 1 seule fois</div></div>';
+    } else {
+      bossCard = '<div class="arena-mode-card glass-card boss-card challenge" id="btn-start-boss">'+
+        '<div class="boss-card-glow"></div>'+
+        '<div class="mode-icon">🤖</div><h3>D&eacute;fier l\'IA Supr&ecirc;me</h3>'+
+        '<p>Le boss de l\'Admin. Coriace. <strong>Une seule tentative</strong> pour tout le s&eacute;minaire.</p>'+
+        '<div class="boss-card-stakes">🏆 Victoire = gains du duel <strong>x2</strong> &bull; 💀 D&eacute;faite = <strong>-25%</strong> sur 2h</div></div>';
+    }
+
     main.innerHTML='<div class="page-header"><h1>Arena <span class="gradient-text">Multijoueur</span></h1>'+
       '<p class="page-subtitle">Battles, challenges et quiz en temps reel</p></div>'+
       '<div class="arena-modes">'+
       '<div class="arena-mode-card glass-card" data-navigate="battle"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Affrontez un autre etudiant : soumettez vos prompts, la classe vote</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div>'+
-      '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe marketing et combattez en tour par tour !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Gagnez des points PvP</div></div></div>';
+      '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe marketing et combattez en tour par tour !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Gagnez des points PvP</div></div>'+
+      bossCard+'</div>';
     var q=document.getElementById('btn-start-quiz');
     if(q) q.addEventListener('click',function(){if(window.AIA&&window.AIA.startQuiz)window.AIA.startQuiz(main);});
     var ch=document.getElementById('btn-start-challenge');
     if(ch) ch.addEventListener('click',function(){if(window.AIA&&window.AIA.startChallenge)window.AIA.startChallenge(main);});
     var rpg=document.getElementById('btn-start-rpg');
     if(rpg) rpg.addEventListener('click',function(){navigateTo('rpg');});
+    var boss=document.getElementById('btn-start-boss');
+    if(boss) boss.addEventListener('click',function(){navigateTo('boss');});
   }
 
   function renderRoom(){
@@ -1676,6 +1715,10 @@
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
   window.AIA.hashAccountPass=hashAccountPass; // SHA-256 sale par compte (async)
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
+  // Duel admin (IA Supreme)
+  window.AIA.startPvpPenalty=startPvpPenalty; window.AIA.recordBossDuel=recordBossDuel;
+  window.AIA.getBossDuel=getBossDuel; window.AIA.isPvpPenaltyActive=isPvpPenaltyActive;
+  window.AIA.pvpPenaltyMinutesLeft=pvpPenaltyMinutesLeft;
   window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
   window.AIA.getActivityRef=getActivityRef;
   window.AIA.getActivityShareUrl=getActivityShareUrl;
