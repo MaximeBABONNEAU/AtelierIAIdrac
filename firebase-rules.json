@@ -1,10 +1,11 @@
 {
-  "_comment": "AI Marketing Academy — Firebase Realtime Database Security Rules. Copy this content into Firebase Console > Realtime Database > Rules tab and Publish.",
+  "_comment": "AI Marketing Academy — Regles Firebase RTDB v2 (Auth anonyme + propriete par compte). Coller dans Firebase Console > Realtime Database > Rules > Publier.",
   "_security_notes": [
-    "These rules block raw external scraping while still allowing the app to function.",
-    "Since the app uses anonymous custom auth (no Firebase Auth), rules rely on path-level structure validation + write-throttling.",
-    "For full protection, migrate to Firebase Authentication (anonymous or custom token signed by you).",
-    "Until then : these rules at least prevent mass-deletion, malformed writes, and reading users private states from outside legitimate flows."
+    "L'app se connecte en anonyme (firebase.auth().signInAnonymously) : chaque appareil obtient un uid.",
+    "A la 1ere connexion d'un compte, /owners/{key} est fixe a l'uid. Ensuite, seul cet uid peut ecrire l'etat/le resume de ce compte -> un etudiant ne peut pas falsifier les donnees d'un autre.",
+    "Les mots de passe sont haches en SHA-256 sale par compte cote client ; /accounts n'est lisible que par un utilisateur authentifie.",
+    "L'auth anonyme ne distingue pas admin/etudiant : le gate admin reste cote client (mot de passe SHA-256 fort). /config et annonces sont donc ecrivables par tout utilisateur authentifie (acceptable en atelier encadre).",
+    "Pour deverrouiller la propriete (ex: changement d'appareil), le formateur peut supprimer /owners/{key} depuis la console."
   ],
   "rules": {
     ".read": false,
@@ -12,13 +13,21 @@
 
     "config": {
       ".read": true,
-      ".write": false
+      ".write": "auth != null"
+    },
+
+    "owners": {
+      ".read": true,
+      "$key": {
+        ".write": "(!data.exists() || data.val() === auth.uid) && auth != null",
+        ".validate": "newData.isString() || !newData.exists()"
+      }
     },
 
     "accounts": {
-      ".read": true,
+      ".read": "auth != null",
       "$accountKey": {
-        ".write": "newData.exists() && newData.hasChildren(['firstName', 'lastName', 'passwordHash', 'createdAt'])",
+        ".write": "auth != null && (newData.exists() && newData.hasChildren(['firstName', 'lastName', 'passwordHash', 'createdAt']) || !newData.exists())",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
         "firstName":  { ".validate": "newData.isString() && newData.val().length < 60" },
         "lastName":   { ".validate": "newData.isString() && newData.val().length < 60" },
@@ -31,7 +40,7 @@
     "states": {
       ".read": true,
       "$accountKey": {
-        ".write": true,
+        ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
         "xp": {
           "total": { ".validate": "newData.isNumber() && newData.val() <= 1000000" }
@@ -42,7 +51,7 @@
     "students": {
       ".read": true,
       "$accountKey": {
-        ".write": true,
+        ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
         "name":  { ".validate": "newData.isString() && newData.val().length < 80" },
         "xp":    { ".validate": "newData.isNumber() && newData.val() <= 1000000" },
@@ -54,7 +63,7 @@
       ".read": true,
       "$activityId": {
         "$accountKey": {
-          ".write": true,
+          ".write": "auth != null",
           ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/) && newData.exists()"
         }
       }
@@ -63,18 +72,15 @@
     "pvp": {
       ".read": true,
       "$accountKey": {
-        ".write": true,
-        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",
-        "wins":   { ".validate": "newData.isNumber() && newData.val() < 100000" },
-        "losses": { ".validate": "newData.isNumber() && newData.val() < 100000" },
-        "points": { ".validate": "newData.isNumber() && newData.val() < 100000" }
+        ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
+        ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)"
       }
     },
 
     "votes": {
       ".read": true,
       "$voterKey": {
-        ".write": true,
+        ".write": "auth != null && (!root.child('owners/' + $voterKey).exists() || root.child('owners/' + $voterKey).val() === auth.uid)",
         ".validate": "$voterKey.matches(/^[a-z0-9_]{3,80}$/)",
         "$targetKey": {
           ".validate": "$targetKey.matches(/^[a-z0-9_]{3,80}$/) && (newData.val() === true || !newData.exists())"
@@ -82,14 +88,56 @@
       }
     },
 
+    "highlight_scores": {
+      ".read": true,
+      "$highlightId": {
+        "$accountKey": {
+          ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
+          ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)"
+        }
+      }
+    },
+
+    "boss_scores": {
+      ".read": true,
+      "$bossId": {
+        "$accountKey": {
+          ".write": "auth != null && (!root.child('owners/' + $accountKey).exists() || root.child('owners/' + $accountKey).val() === auth.uid)",
+          ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)"
+        }
+      }
+    },
+
+    "reviews": {
+      ".read": true,
+      "$reviewerKey": {
+        ".write": "auth != null && (!root.child('owners/' + $reviewerKey).exists() || root.child('owners/' + $reviewerKey).val() === auth.uid)"
+      }
+    },
+
+    "activity_feed": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+
+    "announcements": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+
+    "inbox": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
     "dayLocks": {
       ".read": true,
-      ".write": true
+      ".write": "auth != null"
     },
 
     "notifications": {
       ".read": true,
-      ".write": true
+      ".write": "auth != null"
     },
 
     "$other": {

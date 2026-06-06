@@ -25,7 +25,7 @@
 
   var CONFIG = {
     classCode: 'AIMARK2026',
-    adminHash: '9d9e119b',
+    adminHash: 'b3deac97220109d7fef1afb62b195a710933e4d3a71291037bcf6099371b1c3d', // SHA-256 sale (mdp : IDRAC-Atelier-IA-2026!) — change-le en regenerant le hash
     disablePublicRegistration: true, // Admin must create accounts via admin panel
     allowedHosts: ALLOWED_HOSTS,
     storagePrefix: 'aia_',
@@ -378,6 +378,13 @@
       db = firebase.database();
       window.AIA = window.AIA || {};
       window.AIA.db = db;
+      // Auth anonyme : donne un uid par appareil pour la propriete des comptes (regles Firebase).
+      // Si l'auth anonyme n'est pas (encore) activee dans la console, on continue sans bloquer l'app.
+      if (firebase.auth) {
+        firebase.auth().signInAnonymously().catch(function (e) {
+          console.warn('Auth anonyme indisponible (activez-la dans la console Firebase) :', e && e.code);
+        });
+      }
     } catch (e) { console.error('Firebase init error:', e); }
   }
 
@@ -408,6 +415,28 @@
   }
 
   function hashPass(str) { var h=0; for(var i=0;i<str.length;i++){h=((h<<5)-h+str.charCodeAt(i))|0;} return (h>>>0).toString(16); }
+  // Hachage fort SHA-256 (Web Crypto, contexte securise https/localhost). Sel par compte = anti rainbow-table.
+  function sha256Hex(str) {
+    try {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (buf) {
+        var v = new Uint8Array(buf), out = '';
+        for (var i = 0; i < v.length; i++) out += ('0' + v[i].toString(16)).slice(-2);
+        return out;
+      });
+    } catch (e) {
+      return Promise.resolve('legacy:' + hashPass(str)); // fallback (vieux navigateur / contexte non securise)
+    }
+  }
+  function hashAccountPass(accountKey, pw) { return sha256Hex('aia2|' + accountKey + '|' + pw); }
+  function hashAdminPass(pw) { return sha256Hex('aia2-admin|' + pw); }
+  // Revendication de propriete : lie le compte a l'uid (auth anonyme) du 1er appareil. Les regles empechent un autre de l'ecraser.
+  function claimOwnership(accountKey) {
+    try {
+      var u = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+      if (!db || !u || !accountKey) return;
+      db.ref('owners/' + accountKey).transaction(function (cur) { return (cur === null || cur === undefined) ? u.uid : cur; });
+    } catch (e) {}
+  }
 
   function getLevelInfo(xp) {
     var lvl=LEVELS[0];
@@ -1368,6 +1397,12 @@
     }
     saveState(); listenDayLocks();
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
+    // Revendiquer la propriete du compte des que l'auth anonyme est prete (lie le compte a cet appareil)
+    if (!isAdmin && accountKey && typeof firebase !== 'undefined' && firebase.auth) {
+      var _claim = function () { claimOwnership(accountKey); };
+      if (firebase.auth().currentUser) _claim();
+      else firebase.auth().onAuthStateChanged(function (u) { if (u) _claim(); });
+    }
     if (!isAdmin) initAnnouncements();
     renderNavAvatar();
     // Sync admin student-mode banner visibility
@@ -1519,7 +1554,8 @@
       if (!ln || !fn) return showToast('Selectionnez votre nom dans la liste', 'warning');
       if (!pw) return showToast('Mot de passe requis', 'warning');
       showToast('Connexion...', 'info');
-      loginAccount(ln, fn, hashPass(pw), function (result) {
+      hashAccountPass(getAccountKey(ln, fn), pw).then(function (ph) {
+      loginAccount(ln, fn, ph, function (result) {
         if (result.error) return showToast(result.error, 'error');
         var displayName = result.account.firstName + ' ' + result.account.lastName;
         state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
@@ -1527,6 +1563,7 @@
           state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
           enterApp(result.account.firstName, false, result.key);
         });
+      });
       });
     });
 
@@ -1546,7 +1583,8 @@
       if (pw !== pw2) return showToast('Les mots de passe ne correspondent pas', 'error');
       if (code !== CONFIG.classCode) return showToast('Code de formation incorrect', 'error');
       showToast('Creation du compte...', 'info');
-      createAccount(ln, fn, hashPass(pw), function (result) {
+      hashAccountPass(getAccountKey(ln, fn), pw).then(function (ph) {
+      createAccount(ln, fn, ph, function (result) {
         if (result.error) return showToast(result.error, 'error');
         var displayName = fn + ' ' + ln;
         state.user = { name: displayName, firstName: fn, lastName: ln, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
@@ -1561,14 +1599,17 @@
           }
         }, 600);
       });
+      });
     });
 
     document.getElementById('btn-admin-login').addEventListener('click', function () {
       var pw = document.getElementById('admin-password').value;
       if (!pw) return showToast('Mot de passe requis', 'warning');
-      if (hashPass(pw) !== CONFIG.adminHash) return showToast('Mot de passe incorrect', 'error');
-      state.user = { name: CONFIG.mentorName, isAdmin: true, loginDate: new Date().toISOString().split('T')[0] };
-      enterApp(CONFIG.mentorName, true, null);
+      hashAdminPass(pw).then(function (ph) {
+        if (ph !== CONFIG.adminHash) return showToast('Mot de passe incorrect', 'error');
+        state.user = { name: CONFIG.mentorName, isAdmin: true, loginDate: new Date().toISOString().split('T')[0] };
+        enterApp(CONFIG.mentorName, true, null);
+      });
     });
 
     document.getElementById('btn-logout').addEventListener('click', function () {
@@ -1633,6 +1674,7 @@
   window.AIA.getActivityStatus=getActivityStatus; window.AIA.toggleReaction=toggleReaction;
   window.AIA.getAccountsFromFirebase=getAccountsFromFirebase; window.AIA.saveAccountsToFirebase=saveAccountsToFirebase;
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
+  window.AIA.hashAccountPass=hashAccountPass; // SHA-256 sale par compte (async)
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
   window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
   window.AIA.getActivityRef=getActivityRef;

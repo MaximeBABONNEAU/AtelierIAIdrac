@@ -1173,9 +1173,11 @@
               if (!a) return;
               var newPw = prompt('Nouveau mot de passe pour ' + a.firstName + ' ' + a.lastName + ' :');
               if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
-              accts[key].passwordHash = AIA.hashPass(newPw);
-              AIA.saveAccountsToFirebase(accts);
-              AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+              AIA.hashAccountPass(key, newPw).then(function (ph) {
+                accts[key].passwordHash = ph;
+                AIA.saveAccountsToFirebase(accts);
+                AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+              });
             });
           });
 
@@ -1209,10 +1211,11 @@
           if (btnResetAllPw) {
             btnResetAllPw.addEventListener('click', function () {
               if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
-              var defaultHash = AIA.hashPass('idrac2026');
-              for (var k in accts) { accts[k].passwordHash = defaultHash; }
-              AIA.saveAccountsToFirebase(accts);
-              AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
+              var keys = Object.keys(accts);
+              Promise.all(keys.map(function (k) { return AIA.hashAccountPass(k, 'idrac2026').then(function (ph) { accts[k].passwordHash = ph; }); })).then(function () {
+                AIA.saveAccountsToFirebase(accts);
+                AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
+              });
             });
           }
 
@@ -1246,13 +1249,15 @@
               var pw = document.getElementById('new-acct-password').value.trim() || 'idrac2026';
               if (!ln || !fn) return AIA.showToast('Nom et prenom requis', 'warning');
               if (pw.length < 4) return AIA.showToast('Mot de passe trop court (4 car. min)', 'warning');
-              AIA.createAccount(ln, fn, AIA.hashPass(pw), function (result) {
+              AIA.hashAccountPass(AIA.getAccountKey(ln, fn), pw).then(function (ph) {
+              AIA.createAccount(ln, fn, ph, function (result) {
                 if (result.error) return AIA.showToast(result.error, 'error');
                 AIA.showToast('Compte cree : ' + fn + ' ' + ln + ' (MDP: ' + pw + ')', 'success');
                 document.getElementById('new-acct-lastname').value = '';
                 document.getElementById('new-acct-firstname').value = '';
                 document.getElementById('new-acct-password').value = 'idrac2026';
                 renderAccounts(el);
+              });
               });
             });
           }
@@ -1269,10 +1274,12 @@
                 var parts = line.split(';').map(function (p) { return p.trim(); });
                 var ln = parts[0], fn = parts[1], pw = parts[2] || 'idrac2026';
                 if (!ln || !fn) { fail++; pending--; if (!pending) finishBatch(); return; }
-                AIA.createAccount(ln, fn, AIA.hashPass(pw), function (res) {
-                  if (res.error) fail++; else ok++;
-                  pending--;
-                  if (!pending) finishBatch();
+                AIA.hashAccountPass(AIA.getAccountKey(ln, fn), pw).then(function (ph) {
+                  AIA.createAccount(ln, fn, ph, function (res) {
+                    if (res.error) fail++; else ok++;
+                    pending--;
+                    if (!pending) finishBatch();
+                  });
                 });
               });
               function finishBatch() {
