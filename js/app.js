@@ -440,6 +440,7 @@
     state.badges.push(id);
     var b=BADGES.find(function(x){return x.id===id;});
     if(b){ document.getElementById('badge-popup-icon').textContent=b.icon; document.getElementById('badge-popup-name').textContent=b.name; document.getElementById('badge-popup').classList.remove('hidden'); }
+    try { if(window.AIA && window.AIA.pushFeed && state.user && !state.user.isAdmin) window.AIA.pushFeed({ action:'badge-unlocked', target: (b?b.name:id) }); } catch(e){}
     saveState();
   }
 

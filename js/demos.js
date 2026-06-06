@@ -30,6 +30,7 @@
       AIA.addXP(25);
       AIA.saveState();
       AIA.showToast('Demo completee ! +25 XP', 'success');
+      try { if (AIA.pushFeed) AIA.pushFeed({ action: 'demo-done', target: demoId }); } catch (e) {}
       if (st.demosCompleted.length >= ALL_DEMO_IDS.length) {
         AIA.awardBadge('demo-all');
       }

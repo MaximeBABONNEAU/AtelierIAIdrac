@@ -182,14 +182,17 @@
     var AIA = window.AIA;
     if (!AIA.db) return;
     var st = AIA.getState();
-    var actorName = (st.user && st.user.name) || entry.actorKey;
+    // Robustesse : actorKey/actorName toujours definis (Firebase rejette les valeurs undefined).
+    var actorKey = entry.actorKey || (st.user && st.user.accountKey) || 'anon';
+    var actorName = entry.actorName || (st.user && st.user.name) ||
+      (st.user && ((st.user.firstName || '') + ' ' + (st.user.lastName || '')).trim()) || actorKey;
     var item = {
-      id: 'act_' + Date.now(),
-      actorKey: entry.actorKey,
-      actorName: actorName,
-      action: entry.action,
+      id: 'act_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+      actorKey: actorKey,
+      actorName: actorName || 'Etudiant',
+      action: entry.action || 'activity',
       target: entry.target || '',
-      overall: entry.overall || null,
+      overall: (entry.overall == null ? null : entry.overall),
       ts: new Date().toISOString()
     };
     AIA.db.ref('activity_feed/' + item.id).set(item);
@@ -241,7 +244,7 @@
 
   function renderActionMessage(item) {
     switch (item.action) {
-      case 'reviewed': return 'a review une campagne (' + (item.overall || '?') + '/5)';
+      case 'reviewed': return 'a review une campagne (' + escapeHtml(String(item.overall == null ? '?' : item.overall)) + '/5)';
       case 'step-done': return 'a valide une etape Business Game : <strong>' + escapeHtml(item.target) + '</strong>';
       case 'badge-unlocked': return 'a debloque le badge <strong>' + escapeHtml(item.target) + '</strong>';
       case 'voted': return 'a vote pour une campagne';

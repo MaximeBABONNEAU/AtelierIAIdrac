@@ -338,6 +338,7 @@
         if (AIA.saveState) AIA.saveState();
         overlay.remove();
         AIA.showToast('Projet choisi : ' + theme.name + ' ' + theme.emoji + ' — bonne campagne !', 'success');
+        try { if (AIA.pushFeed) AIA.pushFeed({ action: 'theme-picked', target: theme.name + ' ' + (theme.emoji || '') }); } catch (e) {}
         _guideFirstStep = true; // declenche le guidage vers la 1ere etape au prochain rendu
         if (typeof onConfirm === 'function') onConfirm(theme);
       });
@@ -686,6 +687,7 @@
           var nextStep = orderedSteps(true).find(function (s) { return !st.gameDeliverables[s.id]; });
           _suggestNextStepId = nextStep ? nextStep.id : null;
           _justCompletedTitle = (orderedSteps().find(function (s) { return s.id === stepId; }) || {}).title || '';
+          try { if (AIA.pushFeed) AIA.pushFeed({ action: 'step-done', target: _justCompletedTitle }); } catch (e) {}
         }
         renderBusinessGame(main);
       });

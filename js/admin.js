@@ -123,6 +123,11 @@
     function renderCockpit(el) {
       if (!AIA.db) { el.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Firebase non connecte.</div>'; return; }
       el.innerHTML =
+        '<div class="admin-section glass-card cockpit-live-launch">' +
+        '<div><h3 style="margin:0">📺 Mode Live (partage d\'ecran)</h3>' +
+        '<p style="color:var(--text-muted);margin:0.3rem 0 0">Vue plein ecran immersive a projeter : classement, activite en direct, dernieres creations, temps fort. (Echap pour quitter)</p></div>' +
+        '<button class="btn-primary" id="cockpit-live-btn">🚀 Lancer le Mode Live</button>' +
+        '</div>' +
         '<div class="admin-section glass-card">' +
         '<h3>📣 Annonce a toute la classe</h3>' +
         '<div class="cockpit-announce-row">' +
@@ -135,6 +140,8 @@
         '<p style="color:var(--text-muted)">Les etudiants en difficulte (inactifs &gt; 6 min ou en retard) remontent en haut.</p>' +
         '<div id="cockpit-live"><div class="loading-pulse" style="padding:2rem;text-align:center">Chargement...</div></div>' +
         '</div>';
+      var liveBtn = document.getElementById('cockpit-live-btn');
+      if (liveBtn) liveBtn.addEventListener('click', function () { if (AIA.renderLiveMode) AIA.renderLiveMode(); });
       var send = document.getElementById('cockpit-send');
       if (send) send.addEventListener('click', function () {
         var inp = document.getElementById('cockpit-msg');
