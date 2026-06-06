@@ -338,6 +338,7 @@
         if (AIA.saveState) AIA.saveState();
         overlay.remove();
         AIA.showToast('Projet choisi : ' + theme.name + ' ' + theme.emoji + ' — bonne campagne !', 'success');
+        _guideFirstStep = true; // declenche le guidage vers la 1ere etape au prochain rendu
         if (typeof onConfirm === 'function') onConfirm(theme);
       });
     });
@@ -443,6 +444,30 @@
   }
 
   /* ============ ENHANCED BUSINESS GAME PAGE ============ */
+  var _suggestNextStepId = null, _justCompletedTitle = '', _guideFirstStep = false;
+  function highlightStepCard(main, stepId, focusField) {
+    var card = main.querySelector('.game-step-card[data-step-id="' + stepId + '"]');
+    if (!card) return;
+    var body = card.querySelector('.game-step-body');
+    if (body) body.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.style.transition = 'box-shadow 0.5s';
+    card.style.boxShadow = '0 0 30px rgba(245,183,49,0.6)';
+    setTimeout(function () { card.style.boxShadow = ''; }, 2000);
+    if (focusField) { var ta = card.querySelector('textarea, input'); if (ta) { try { ta.focus(); } catch (e) {} } }
+  }
+  function isPhaseUnlocked(pk) { var AIA = window.AIA; return !AIA.isItemUnlocked || AIA.isItemUnlocked('phases', pk); }
+  function orderedSteps(unlockedOnly) {
+    var arr = [];
+    Object.keys(PHASES_GUIDE).forEach(function (pk) {
+      if (unlockedOnly && !isPhaseUnlocked(pk)) return;
+      PHASES_GUIDE[pk].steps.forEach(function (s) { arr.push(s); });
+    });
+    return arr;
+  }
+  function hasLockedPhases() {
+    return Object.keys(PHASES_GUIDE).some(function (pk) { return !isPhaseUnlocked(pk); });
+  }
   function renderBusinessGame(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -548,7 +573,12 @@
             '<div class="game-step-prompt">' +
             '<div class="game-step-prompt-label">📝 Prompt suggere (a copier dans votre outil IA) :</div>' +
             '<div class="game-step-prompt-text">' + escapeHtml(promptText) + '</div>' +
+            '<div class="game-step-prompt-actions">' +
             '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(promptText) + '">📋 Copier le prompt</button>' +
+            '<a class="btn-outline btn-xs ia-tool-link" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 Ouvrir ChatGPT ↗</a>' +
+            '<a class="btn-outline btn-xs ia-tool-link" href="https://claude.ai/" target="_blank" rel="noopener">🧠 Ouvrir Claude ↗</a>' +
+            '</div>' +
+            '<p class="game-step-howto">1) Copiez le prompt &bull; 2) Ouvrez un outil IA &bull; 3) Collez et generez &bull; 4) Notez le resultat ci-dessous</p>' +
             '</div>' +
             '<div class="game-step-fields">' +
             step.fields.map(function (f) {
@@ -632,6 +662,8 @@
         var stepId = this.getAttribute('data-step-id');
         var ok = saveStepData(stepId, main, true);
         if (!ok) { AIA.showToast('Remplissez au moins 1 champ avant de valider', 'warning'); return; }
+        // Reset systematique des indices de guidage (evite une banniere obsolete si on re-sauvegarde une etape deja validee)
+        _suggestNextStepId = null; _justCompletedTitle = '';
         var wasDone = !!st.gameDeliverables[stepId];
         st.gameDeliverables[stepId] = true;
         if (!wasDone) { AIA.addXP(15); AIA.showToast('Etape validee ! +15 XP', 'success'); }
@@ -649,6 +681,12 @@
         });
         if (totalAssets >= 10 && AIA.awardBadge) AIA.awardBadge('asset-collector');
         if (AIA.saveState) AIA.saveState();
+        // Auto-check + suggestion de l'etape suivante (fil conducteur sans rupture)
+        if (!wasDone) {
+          var nextStep = orderedSteps(true).find(function (s) { return !st.gameDeliverables[s.id]; });
+          _suggestNextStepId = nextStep ? nextStep.id : null;
+          _justCompletedTitle = (orderedSteps().find(function (s) { return s.id === stepId; }) || {}).title || '';
+        }
         renderBusinessGame(main);
       });
     });
@@ -673,6 +711,59 @@
       if (AIA.saveState) AIA.saveState();
       renderBusinessGame(main);
     });
+
+    // ===== Fil conducteur guide (micro-etape 2) =====
+    // Cas A : suggestion explicite de l'etape suivante apres une validation
+    if (_suggestNextStepId) {
+      var nextId = _suggestNextStepId; _suggestNextStepId = null;
+      var doneTitle = _justCompletedTitle; _justCompletedTitle = '';
+      var ns = orderedSteps().find(function (s) { return s.id === nextId; });
+      var nextTitle = ns ? ns.title : 'la suite';
+      var banner = document.createElement('div');
+      banner.className = 'game-next-banner';
+      banner.innerHTML =
+        '<span class="gnb-check">✅</span>' +
+        '<span class="gnb-text"><strong>' + escapeHtml(doneTitle) + '</strong> validee !' +
+        ' Prochaine etape : <strong>' + escapeHtml(nextTitle) + '</strong></span>' +
+        '<button class="btn-primary btn-xs" id="gnb-continue">Continuer →</button>';
+      if (main.firstChild) main.insertBefore(banner, main.firstChild); else main.appendChild(banner);
+      var cont = banner.querySelector('#gnb-continue');
+      if (cont) cont.addEventListener('click', function () {
+        highlightStepCard(main, nextId, true);
+        if (banner.parentNode) banner.parentNode.removeChild(banner);
+      });
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (_justCompletedTitle) {
+      _justCompletedTitle = '';
+      var bannerDone = document.createElement('div');
+      if (hasLockedPhases()) {
+        // Cas B1 : toutes les etapes DEBLOQUEES faites, mais des phases restent verrouillees
+        bannerDone.className = 'game-next-banner';
+        bannerDone.innerHTML =
+          '<span class="gnb-check">⏳</span>' +
+          '<span class="gnb-text"><strong>Phase terminee !</strong>' +
+          ' La phase suivante sera debloquee par le formateur pendant le cours.' +
+          ' En attendant, structurez votre travail dans le Carnet.</span>' +
+          '<button class="btn-primary btn-xs" id="gnb-workbook">Ouvrir le Carnet →</button>';
+      } else {
+        // Cas B2 : toutes les phases validees -> orienter vers le Carnet de campagne
+        bannerDone.className = 'game-next-banner done';
+        bannerDone.innerHTML =
+          '<span class="gnb-check">🎉</span>' +
+          '<span class="gnb-text"><strong>Toutes les etapes sont validees !</strong>' +
+          ' Structurez votre rendu dans le Carnet de campagne.</span>' +
+          '<button class="btn-primary btn-xs" id="gnb-workbook">Ouvrir le Carnet →</button>';
+      }
+      if (main.firstChild) main.insertBefore(bannerDone, main.firstChild); else main.appendChild(bannerDone);
+      var wb = bannerDone.querySelector('#gnb-workbook');
+      if (wb) wb.addEventListener('click', function () { if (AIA.navigateTo) AIA.navigateTo('workbook'); });
+      bannerDone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (_guideFirstStep) {
+      // Cas C : juste apres le choix du projet -> guider vers la 1ere etape disponible
+      _guideFirstStep = false;
+      var first = orderedSteps(true).find(function (s) { return !st.gameDeliverables[s.id]; });
+      if (first) setTimeout(function () { highlightStepCard(main, first.id, true); }, 250);
+    }
   }
 
   /* ============ ASSETS BLOCK (per step) ============ */

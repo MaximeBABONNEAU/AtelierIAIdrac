@@ -1332,6 +1332,32 @@ body {
 .game-step-fields { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 0.8rem; }
 .game-step-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
+/* Micro-etape 2 : prompt pret + liens outils IA + mode d'emploi */
+.game-step-prompt-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; margin: 0.5rem 0 0.3rem; }
+.ia-tool-link { text-decoration: none; }
+.game-step-howto {
+  font-size: 0.72rem; color: var(--text-muted); margin: 0.2rem 0 0;
+  line-height: 1.5; opacity: 0.9;
+}
+
+/* Fil conducteur : banniere "etape suivante" apres validation */
+.game-next-banner {
+  display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+  background: linear-gradient(135deg, rgba(46,204,113,0.14), rgba(245,183,49,0.10));
+  border: 1px solid rgba(46,204,113,0.4); border-radius: var(--radius-sm);
+  padding: 0.7rem 0.9rem; margin-bottom: 1rem;
+  animation: gnb-pop 0.35s ease;
+}
+.game-next-banner.done {
+  background: linear-gradient(135deg, rgba(245,183,49,0.16), rgba(212,52,63,0.10));
+  border-color: rgba(245,183,49,0.5);
+}
+.gnb-check { font-size: 1.2rem; line-height: 1; }
+.gnb-text { flex: 1; min-width: 180px; font-size: 0.85rem; line-height: 1.45; }
+.gnb-text strong { color: var(--gold); }
+.game-next-banner .btn-primary { white-space: nowrap; }
+@keyframes gnb-pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
 .game-final-cta {
   margin-top: 2rem; padding: 1.5rem; text-align: center;
   background: linear-gradient(135deg, rgba(245,183,49,0.1), rgba(212,52,63,0.08));
