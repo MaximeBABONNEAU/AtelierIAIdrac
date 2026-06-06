@@ -322,6 +322,12 @@
           if (AIA.navigateTo) AIA.navigateTo('lightning');
           return;
         }
+        // Boss : experience dediee (quiz de synthese chrono + classement). XP a la fin du defi.
+        if (h && h.type === 'boss') {
+          _activeBossId = hid;
+          if (AIA.navigateTo) AIA.navigateTo('boss');
+          return;
+        }
         if (h) {
           var st = AIA.getState();
           st.highlightsCompleted = st.highlightsCompleted || {};
@@ -546,6 +552,214 @@
 
   function setActiveLightning(id) { _activeLightningId = id; }
 
+  /* ============ BOSS DU JOUR (quiz de synthese chrono + classement) ============ */
+  var BOSS_QUIZZES = {
+    1: [
+      { q: 'Que structure la methode CRAC d\'un bon prompt ?', o: ['Contexte, Role, Action, Contraintes', 'Copier, Relire, Analyser, Coller', 'Creer, Repeter, Ajuster, Comparer'], a: 0 },
+      { q: 'Qu\'est-ce qui ameliore le PLUS un prompt vague ?', o: ['Le rendre plus court', 'Donner un role + une cible + des contraintes precises', 'Mettre des majuscules'], a: 1 },
+      { q: 'A quoi sert un persona marketing ?', o: ['Definir precisement la cible', 'Choisir une couleur', 'Calculer le prix'], a: 0 },
+      { q: 'Le "few-shot prompting" consiste a...', o: ['Ecrire le moins possible', 'Donner quelques exemples du resultat attendu', 'Poser une seule question'], a: 1 },
+      { q: 'Quel outil pour generer/raffiner du TEXTE marketing ?', o: ['Un tableur', 'Un LLM (ChatGPT, Claude)', 'Un logiciel de retouche photo'], a: 1 }
+    ],
+    2: [
+      { q: 'Stable Diffusion et FLUX servent a...', o: ['Generer des images', 'Ecrire du code', 'Analyser du son'], a: 0 },
+      { q: 'Une charte de marque coherente inclut...', o: ['Uniquement un logo', 'Logo + palette + ton de voix', 'Le chiffre d\'affaires'], a: 1 },
+      { q: 'Pour detourer une photo produit, on utilise...', o: ['La suppression de fond (RMBG)', 'La traduction', 'Un A/B test'], a: 0 },
+      { q: 'Un bon nom de marque est avant tout...', o: ['Long et complexe', 'Memorable et disponible', 'En latin'], a: 1 },
+      { q: 'La palette de couleurs influence surtout...', o: ['La vitesse du site', 'La perception emotionnelle de la marque', 'Le prix de revient'], a: 1 }
+    ],
+    3: [
+      { q: 'A quoi sert l\'A/B testing ?', o: ['Comparer 2 variantes pour optimiser', 'Traduire un texte', 'Generer un logo'], a: 0 },
+      { q: 'MusicGen permet de generer...', o: ['Des images', 'De la musique / des jingles', 'Des tableaux'], a: 1 },
+      { q: 'Un plan media repartit principalement...', o: ['Le budget entre les canaux', 'Les couleurs de marque', 'Les mots de passe'], a: 0 },
+      { q: 'Le CTR (Click-Through Rate) mesure...', o: ['Le taux de clic', 'Le cout de production', 'La taille du fichier'], a: 0 },
+      { q: 'Un bon headline publicitaire est...', o: ['Long et technique', 'Court, accrocheur, oriente benefice', 'Sans verbe'], a: 1 }
+    ],
+    4: [
+      { q: 'Le SEO optimise...', o: ['La musique de la pub', 'Le referencement sur Google', 'Le logo'], a: 1 },
+      { q: 'Un pitch de 30s efficace contient...', o: ['Uniquement le prix', 'La liste des fonctionnalites brutes', 'Hook + probleme + solution + preuve + CTA'], a: 2 },
+      { q: 'Une meta description fait idealement...', o: ['1000 mots', '~155 caracteres', '3 caracteres'], a: 1 },
+      { q: 'Une landing page convertit grace a...', o: ['Beaucoup de texte gris', 'Aucun bouton', 'Un CTA clair + preuve sociale'], a: 2 },
+      { q: 'Whisper (OpenAI) sert a...', o: ['Generer des images', 'La transcription audio -> texte', 'Calculer le ROAS'], a: 1 }
+    ]
+  };
+  var _activeBossId = null;
+  var _bossTimer = null;
+  var BOSS_SECONDS = 120;
+  var BOSS_PASS_PCT = 60;
+
+  function currentBoss() {
+    if (_activeBossId) { var byId = HIGHLIGHTS.find(function (x) { return x.id === _activeBossId; }); if (byId) return byId; }
+    var dt = nowDayTime();
+    var act = HIGHLIGHTS.find(function (h) { return h.type === 'boss' && isHighlightActive(h, dt); });
+    if (act) return act;
+    var avail = HIGHLIGHTS.filter(function (h) { return h.type === 'boss' && isHighlightAvailable(h, dt); });
+    if (avail.length) return avail[avail.length - 1];
+    return HIGHLIGHTS.find(function (h) { return h.type === 'boss'; });
+  }
+  function bossQuestions(h) { return BOSS_QUIZZES[h.day] || BOSS_QUIZZES[1]; }
+
+  function renderBossChallenge(main) {
+    var AIA = window.AIA;
+    if (_bossTimer) { clearInterval(_bossTimer); _bossTimer = null; }
+    var h = currentBoss();
+    _activeBossId = null;
+    if (!h) { main.innerHTML = '<div class="page-header"><h1>Boss</h1></div><div class="glass-card" style="padding:2rem;text-align:center">Aucun Boss disponible.</div>'; return; }
+    var dt = nowDayTime();
+    if (!isHighlightAvailable(h, dt)) {
+      main.innerHTML = '<div class="page-header"><h1>' + (h.icon || '👑') + ' ' + escapeHtml(h.title) + '</h1></div>' +
+        '<div class="glass-card" style="text-align:center;padding:2rem">🔒 Ce Boss s\'ouvre a ' + h.timeStart + '. Reviens quand le formateur lance le defi !' +
+        '<div style="margin-top:1rem"><button class="btn-outline" data-navigate="highlights">← Temps Forts</button></div></div>';
+      return;
+    }
+    var qs = bossQuestions(h);
+    main.innerHTML =
+      '<div class="page-header"><h1>' + (h.icon || '👑') + ' <span class="gradient-text">' + escapeHtml(h.title) + '</span></h1>' +
+      '<p class="page-subtitle">Defi de synthese chrono — valide tes acquis du jour. Ton score entre au classement.</p></div>' +
+      '<div class="ltn-card glass-card">' +
+      '<div class="ltn-brief"><strong>🎯 Objectif :</strong> ' + escapeHtml(h.desc || '') + '</div>' +
+      '<div class="ltn-rules">⏱️ ' + BOSS_SECONDS + 's &bull; ' + qs.length + ' questions &bull; ✅ ' + BOSS_PASS_PCT + '% pour vaincre le Boss &bull; +' + h.xp + ' XP</div>' +
+      '<div class="ltn-actions"><button class="btn-primary" id="boss-start">⚔️ Affronter le Boss</button>' +
+      '<button class="btn-ghost btn-sm" id="boss-see-rank">📊 Voir le classement</button></div>' +
+      '</div>';
+    document.getElementById('boss-start').addEventListener('click', function () { startBossQuiz(main, h); });
+    document.getElementById('boss-see-rank').addEventListener('click', function () { showBossRanking(main, h, false); });
+  }
+
+  function startBossQuiz(main, h) {
+    if (_bossTimer) { clearInterval(_bossTimer); _bossTimer = null; }
+    var qs = bossQuestions(h);
+    var remaining = BOSS_SECONDS;
+    var html = '<div class="page-header"><h1>' + (h.icon || '👑') + ' ' + escapeHtml(h.title) + '</h1></div>' +
+      '<div class="ltn-card glass-card"><div class="ltn-timer" id="boss-timer">' + fmtTime(remaining) + '</div>' +
+      '<div class="boss-quiz">';
+    qs.forEach(function (item, qi) {
+      html += '<div class="boss-q" data-qi="' + qi + '"><div class="boss-q-text">' + (qi + 1) + '. ' + escapeHtml(item.q) + '</div><div class="boss-opts">';
+      item.o.forEach(function (opt, oi) {
+        html += '<label class="boss-opt"><input type="radio" name="boss-q-' + qi + '" value="' + oi + '"> <span>' + escapeHtml(opt) + '</span></label>';
+      });
+      html += '</div></div>';
+    });
+    html += '</div><div class="ltn-actions"><button class="btn-primary" id="boss-submit">✅ Valider mes reponses</button></div></div>';
+    main.innerHTML = html;
+    var submitted = false;
+    var submit = function () {
+      if (submitted) return; submitted = true;
+      if (_bossTimer) { clearInterval(_bossTimer); _bossTimer = null; }
+      var correct = 0;
+      qs.forEach(function (item, qi) {
+        var sel = main.querySelector('input[name="boss-q-' + qi + '"]:checked');
+        if (sel && parseInt(sel.value, 10) === item.a) correct++;
+      });
+      finishBoss(main, h, correct, qs.length, BOSS_SECONDS - remaining);
+    };
+    document.getElementById('boss-submit').addEventListener('click', submit);
+    _bossTimer = setInterval(function () {
+      remaining--;
+      var el = document.getElementById('boss-timer');
+      if (!el) { clearInterval(_bossTimer); _bossTimer = null; return; }
+      el.textContent = fmtTime(remaining);
+      if (remaining <= 20) el.classList.add('urgent');
+      if (remaining <= 0) submit();
+    }, 1000);
+  }
+
+  function finishBoss(main, h, correct, total, elapsed) {
+    var AIA = window.AIA;
+    var pct = total > 0 ? Math.round(correct * 100 / total) : 0;
+    var passed = pct >= BOSS_PASS_PCT;
+    var st = AIA.getState();
+    st.highlightsCompleted = st.highlightsCompleted || {};
+    st.bossTried = st.bossTried || {};
+    var firstClear = passed && !st.highlightsCompleted[h.id];
+    if (firstClear) {
+      st.highlightsCompleted[h.id] = true;
+      if (AIA.addXP) AIA.addXP(h.xp, 'Boss vaincu : ' + h.title);
+      if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
+    } else if (!passed && !st.highlightsCompleted[h.id] && !st.bossTried[h.id] && AIA.addXP) {
+      AIA.addXP(15, 'Boss tente : ' + h.title); // consolation une seule fois (anti-farming)
+    }
+    st.bossTried[h.id] = true;
+    if (AIA.saveState) AIA.saveState();
+    var color = passed ? '#2ecc71' : '#e67e22';
+    main.innerHTML =
+      '<div class="page-header"><h1>' + (h.icon || '👑') + ' ' + (passed ? 'Boss vaincu !' : 'Boss resiste...') + '</h1></div>' +
+      '<div class="ltn-card glass-card">' +
+      '<div class="ltn-result"><div class="ltn-grade" style="color:' + color + '">' + (passed ? '🏆' : '💪') + '</div>' +
+      '<div class="ltn-score">' + correct + '<span>/' + total + '</span></div></div>' +
+      '<p class="ltn-fb">' + pct + '% &bull; ' + (passed ? 'Bravo, tu maitrises les acquis du jour ! +' + h.xp + ' XP + badge.' : 'Il faut ' + BOSS_PASS_PCT + '%. Revois et reessaie ! (+15 XP)') + ' &bull; ' + elapsed + 's</p>' +
+      '<div class="ltn-rank-zone" id="boss-rank-zone">📊 Envoi au classement...</div>' +
+      '<div class="ltn-actions"><button class="btn-outline btn-sm" id="boss-retry">🔁 Reessayer</button>' +
+      '<button class="btn-ghost btn-sm" data-navigate="highlights">← Temps Forts</button></div>' +
+      '</div>';
+    var retry = document.getElementById('boss-retry');
+    if (retry) retry.addEventListener('click', function () { _activeBossId = h.id; renderBossChallenge(main); });
+    try { if (AIA.pushFeed) AIA.pushFeed({ action: 'highlight-done', target: h.title }); } catch (e) {}
+    postBossScore(h.id, pct, function () { showBossRanking(main, h, true); });
+  }
+
+  function postBossScore(bid, score, cb) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var db = AIA.db, key = st.user && st.user.accountKey;
+    if (!db || !key) { if (cb) cb(false); return; }
+    var name = (st.user && (st.user.name || ((st.user.firstName || '') + ' ' + (st.user.lastName || '')).trim())) || 'Etudiant';
+    var ref = db.ref('boss_scores/' + bid + '/' + key);
+    ref.once('value', function (snap) {
+      var prev = snap.val();
+      if (prev && prev.score >= score) { if (cb) cb(true); return; }
+      var done = false;
+      var to = setTimeout(function () { if (!done) { done = true; if (cb) cb(true); } }, 4000);
+      ref.set({ name: name, score: score, ts: new Date().toISOString() }, function () { if (done) return; done = true; clearTimeout(to); if (cb) cb(true); });
+    }, function () { if (cb) cb(false); });
+  }
+
+  function showBossRanking(main, h, inline) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var db = AIA.db, myKey = st.user && st.user.accountKey;
+    var zone = inline ? document.getElementById('boss-rank-zone') : null;
+    var render = function (rows) {
+      rows.sort(function (a, b) { return b.score - a.score || (a.ts < b.ts ? -1 : 1); });
+      var medals = ['🥇', '🥈', '🥉'];
+      var html = '<div class="ltn-rank"><h3 class="ltn-rank-title">🏆 Classement Boss — ' + escapeHtml(h.title) + '</h3>';
+      if (!rows.length) { html += '<p class="ltn-empty">Personne n\'a encore affronte ce Boss. A toi de jouer !</p>'; }
+      else {
+        html += '<div class="ltn-podium">' + rows.slice(0, 3).map(function (r, i) {
+          var me = myKey && r.key === myKey;
+          return '<div class="ltn-pod ltn-pod-' + (i + 1) + (me ? ' me' : '') + '"><div class="ltn-pod-medal">' + medals[i] + '</div>' +
+            '<div class="ltn-pod-name">' + escapeHtml(r.name || 'Etudiant') + (me ? ' (toi)' : '') + '</div>' +
+            '<div class="ltn-pod-score">' + r.score + '%</div></div>';
+        }).join('') + '</div>';
+        if (myKey) {
+          var myIdx = rows.findIndex(function (r) { return r.key === myKey; });
+          if (myIdx >= 3) html += '<div class="ltn-myrank">Ton rang : <strong>#' + (myIdx + 1) + '</strong> / ' + rows.length + ' &bull; ' + rows[myIdx].score + '%</div>';
+          else if (myIdx >= 0) html += '<div class="ltn-myrank">🎉 Tu es sur le podium !</div>';
+        }
+        html += '<div class="ltn-rank-list">' + rows.slice(0, 10).map(function (r, i) {
+          var me = myKey && r.key === myKey;
+          return '<div class="ltn-rank-row' + (me ? ' me' : '') + '"><span class="ltn-rk">#' + (i + 1) + '</span><span class="ltn-rn">' + escapeHtml(r.name || 'Etudiant') + '</span><span class="ltn-rs">' + r.score + '%</span></div>';
+        }).join('') + '</div>';
+      }
+      html += '<p class="ltn-rank-foot">Le score = % de bonnes reponses. Reessaie pour grimper au classement !</p></div>';
+      if (zone) { zone.innerHTML = html; }
+      else {
+        main.innerHTML = '<div class="page-header"><h1>' + (h.icon || '👑') + ' ' + escapeHtml(h.title) + '</h1></div><div class="ltn-card glass-card">' + html +
+          '<div class="ltn-actions"><button class="btn-primary btn-sm" id="boss-go">⚔️ Affronter le Boss</button>' +
+          '<button class="btn-ghost btn-sm" data-navigate="highlights">← Temps Forts</button></div></div>';
+        var go = document.getElementById('boss-go');
+        if (go) go.addEventListener('click', function () { _activeBossId = h.id; renderBossChallenge(main); });
+      }
+    };
+    if (!db) { render([]); return; }
+    db.ref('boss_scores/' + h.id).once('value', function (snap) {
+      var val = snap.val() || {};
+      render(Object.keys(val).map(function (k) { return { key: k, name: val[k].name, score: val[k].score || 0, ts: val[k].ts || '' }; }));
+    }, function () { render([]); });
+  }
+
+  function setActiveBoss(id) { _activeBossId = id; }
+
   /* ============ EXPORTS ============ */
   window.AIA = window.AIA || {};
   window.AIA.HIGHLIGHTS = HIGHLIGHTS;
@@ -555,4 +769,6 @@
   window.AIA.getNextHighlight = function () { return getNextHighlight(nowDayTime()); };
   window.AIA.renderLightningChallenge = renderLightningChallenge;
   window.AIA.setActiveLightning = setActiveLightning;
+  window.AIA.renderBossChallenge = renderBossChallenge;
+  window.AIA.setActiveBoss = setActiveBoss;
 })();
