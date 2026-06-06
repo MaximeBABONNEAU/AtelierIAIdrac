@@ -779,9 +779,23 @@
       '<p class="page-subtitle">Decortiquez les pubs concurrentes — l\'IA decrit ce qu\'elle voit (alt-text SEO, benchmark)</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">👁️ BLIP — Image Captioning</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une image (capture d\'une pub concurrente, votre visuel, un meme). L\'IA decrit ce qu\'elle voit — utile pour SEO, accessibilite, benchmark visuel.</p>' +
-      createHFEmbed('https://salesforce-blip.hf.space', 'BLIP — Image Captioning', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">👁️ Analyse d\'image par IA vision</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une image (pub concurrente, votre visuel, un meme) dans un outil IA vision et demandez une description, un alt-text SEO ou une analyse marketing. Les IA vision modernes (ChatGPT/Claude/Gemini) sont bien plus puissantes que les anciens modeles de captioning.</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">👁️</div>' +
+      '<p class="demo-launch-txt">Ouvre un outil IA <strong>vision</strong> dans un nouvel onglet, <strong>uploade l\'image</strong> a analyser, puis copie une mission ci-dessous et colle-la.</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 ChatGPT (vision) ↗</a>' +
+      '<a class="btn-outline" href="https://claude.ai/" target="_blank" rel="noopener">🧠 Claude (vision) ↗</a>' +
+      '<a class="btn-outline" href="https://gemini.google.com/" target="_blank" rel="noopener">✨ Gemini (vision) ↗</a>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:1rem;text-align:left">' +
+      '<div class="tip" style="padding:0.7rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Colle-le dans l\\\'outil vision avec ton image\',\'success\')" data-p="Decris cette image en une phrase optimisee pour un attribut alt SEO (concis, descriptif, avec le mot-cle principal si pertinent).">' +
+      '<strong style="color:var(--cyan)">Mission A : Alt-text SEO</strong><br><span style="font-size:0.76rem;color:var(--text-secondary)">Generer l\'alt-text SEO d\'une image produit</span></div>' +
+      '<div class="tip" style="padding:0.7rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Colle-le dans l\\\'outil vision avec ton image\',\'success\')" data-p="Analyse cette publicite concurrente : 1) cible visee, 2) message principal, 3) emotions activees, 4) points forts, 5) faiblesses, 6) ce que je pourrais faire de mieux pour ma marque.">' +
+      '<strong style="color:var(--gold)">Mission B : Benchmark pub concurrente</strong><br><span style="font-size:0.76rem;color:var(--text-secondary)">Decortiquer une pub concurrente (Meta Ads Library)</span></div>' +
+      '</div>' +
+      '</div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>🎯 Comment exploiter ces descriptions</h3>' +
@@ -855,9 +869,16 @@
       '<p class="page-subtitle">Internationalisez votre campagne en 200 langues — NLLB de Meta</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">🌍 NLLB-200 — No Language Left Behind</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Traduisez slogans, descriptions produit, emails en 200 langues. Qualite native sur les langues majeures (EN, ES, DE, IT, ZH, AR, JA, PT, NL, RU).</p>' +
-      createHFEmbed('https://facebook-nllb-translation.hf.space', 'NLLB-200 — Translation', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">🌍 Traduire & internationaliser ta campagne</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Traduis slogans, descriptions produit et emails en quelques secondes. Les traducteurs IA pro (DeepL, Google Translate) couvrent 100+ langues avec une qualite native sur les langues majeures (EN, ES, DE, IT, ZH, AR, JA, PT, NL, RU).</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">🌍</div>' +
+      '<p class="demo-launch-txt">Ouvre un traducteur dans un nouvel onglet, colle ton texte marketing et choisis la langue cible. Pense <strong>transcreation</strong>, pas juste traduction (voir ci-dessous).</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://www.deepl.com/translator" target="_blank" rel="noopener">🔵 DeepL ↗</a>' +
+      '<a class="btn-outline" href="https://translate.google.com/" target="_blank" rel="noopener">🟢 Google Translate ↗</a>' +
+      '<a class="btn-outline" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 ChatGPT (transcreation) ↗</a>' +
+      '</div></div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>💡 Insight pedagogique : Traduction vs Transcreation</h3>' +
