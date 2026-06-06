@@ -1353,6 +1353,43 @@ body {
   .nb-brick, .nb-cover, .nb-stat { break-inside: avoid; }
 }
 
+/* ===== Profondeur Business Game : methode guidee, feedback, bilan de phase ===== */
+.game-step-method { margin: 0.5rem 0; font-size: 0.82rem; }
+.game-step-method summary { cursor: pointer; color: var(--cyan, #3498db); font-weight: 600; }
+.game-method-list { margin: 0.5rem 0 0; padding-left: 1.2rem; }
+.game-method-list li { margin-bottom: 0.3rem; color: var(--text-secondary); }
+.game-step-feedback { margin-top: 0.6rem; }
+.fb-box { padding: 0.8rem 1rem; border-radius: var(--radius-xs); border: 1px solid var(--border-glass); background: var(--bg-secondary); font-size: 0.83rem; }
+.fb-box.fb-a { border-color: rgba(46,204,113,0.45); }
+.fb-box.fb-b { border-color: rgba(52,152,219,0.45); }
+.fb-box.fb-c { border-color: rgba(245,183,49,0.45); }
+.fb-box.fb-d { border-color: rgba(231,76,60,0.45); }
+.fb-score { font-size: 0.95rem; margin-bottom: 0.4rem; }
+.fb-tips ul { margin: 0.2rem 0 0; padding-left: 1.1rem; }
+.fb-tips li { margin-bottom: 0.2rem; }
+.fb-ok { color: #2ecc71; font-weight: 600; }
+.fb-note { margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); }
+.phase-review { margin-top: 1rem; padding: 0.9rem 1rem; border-radius: var(--radius-xs); background: rgba(167,31,40,0.05); border: 1px dashed rgba(167,31,40,0.3); }
+.phase-review h4 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+.phase-review-hint { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+.phase-review-ta { width: 100%; margin-bottom: 0.5rem; }
+
+/* ===== Cas pratiques (exercices) ===== */
+.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem; }
+.ex-card { padding: 1.1rem; }
+.ex-card.done { border-color: rgba(46,204,113,0.4); }
+.ex-head { display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.6rem; }
+.ex-icon { font-size: 1.6rem; }
+.ex-day { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.ex-head h3 { font-size: 0.98rem; margin: 0; }
+.ex-badge { margin-left: auto; font-size: 0.72rem; color: #2ecc71; font-weight: 700; }
+.ex-scenario { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.4rem; }
+.ex-question { font-size: 0.85rem; margin-bottom: 0.5rem; }
+.ex-answer { width: 100%; }
+.ex-actions { display: flex; align-items: center; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.ex-ok { color: #2ecc71; font-size: 0.8rem; font-weight: 600; }
+.ex-warn { color: #f5b731; font-size: 0.8rem; }
+
 /* Leaderboard Item Icons */
 .rank-items { font-size: 0.75rem; margin-left: 0.3rem; }
 .podium-item .rank-items { display: block; margin-top: 0.2rem; margin-left: 0; font-size: 0.85rem; }

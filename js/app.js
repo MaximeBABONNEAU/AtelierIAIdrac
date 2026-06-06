@@ -592,6 +592,7 @@
       journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
       workbook:function(){if(window.AIA&&window.AIA.renderWorkbook)window.AIA.renderWorkbook(main);},
       notebook:function(){if(window.AIA&&window.AIA.renderNotebook)window.AIA.renderNotebook(document.getElementById('main-content'));},
+      exercices:function(){if(window.AIA&&window.AIA.renderExercises)window.AIA.renderExercises(document.getElementById('main-content'));},
       checkins:function(){if(window.AIA&&window.AIA.renderCheckinsPage)window.AIA.renderCheckinsPage(main);},
       'assessment-pre':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'pre');},
       'assessment-post':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'post');},

@@ -493,6 +493,17 @@
   }
   function scoreClass(score) { return score >= 80 ? 'sc-a' : score >= 60 ? 'sc-b' : score >= 40 ? 'sc-c' : 'sc-d'; }
   function brickBonus(score) { return score >= 80 ? 15 : score >= 60 ? 10 : score >= 40 ? 5 : 0; }
+  // Feedback non bloquant (boucle d'iteration) : score actuel + conseils concrets, sans verrouiller.
+  function gameBrickTips(step, data) {
+    data = data || {}; var fields = (step && step.fields) || []; var tips = [], allText = '';
+    fields.forEach(function (f) { var v = (data[f.name] || '').trim(); if (!v) tips.push('Remplir le champ : ' + f.label); allText += ' ' + v; });
+    allText = allText.trim(); var words = allText ? allText.split(/\s+/).length : 0;
+    if (words < 70) tips.push('Developper davantage (viser 120+ mots, actuellement ' + words + ').');
+    if (!/\n/.test(allText) && !/(\d+[\.\)]|[-•*])/.test(allText)) tips.push('Structurer avec des listes ou des sauts de ligne.');
+    if ((allText.match(/\d+/g) || []).length < 3) tips.push('Ajouter des chiffres concrets (prix, %, KPIs, dates).');
+    if (allText.indexOf(':') === -1) tips.push('Utiliser des libelles (ex. "Objectif : ...").');
+    return { score: scoreBrick(step, data), tips: tips };
+  }
   function renderBusinessGame(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -610,6 +621,13 @@
           return '<div class="game-step-card' + (done ? ' done' : '') + '" data-step-id="' + step.id + '">' + headerHtml +
             '<div class="game-step-body" style="display:' + (done ? 'none' : 'block') + '">' +
             '<div class="game-step-tool">🛠️ <strong>Outil suggere :</strong> ' + step.aiTool + '</div>' +
+            '<details class="game-step-method"><summary>🧭 Methode guidee en 4 etapes</summary>' +
+            '<ol class="game-method-list">' +
+            '<li><strong>Recherche</strong> : reunis les infos cles sur ' + escapeHtml(theme.name) + ' (cible, concurrents, chiffres).</li>' +
+            '<li><strong>Brouillon IA</strong> : copie le prompt ci-dessous dans ChatGPT/Claude et genere une 1ere version.</li>' +
+            '<li><strong>Critique</strong> : demande a l\'IA d\'ameliorer sa reponse, puis clique sur 🔍 <em>Tester ma brique</em>.</li>' +
+            '<li><strong>Finalisation</strong> : ajoute ta touche perso, puis 🔒 <em>Valide definitivement</em>.</li>' +
+            '</ol></details>' +
             '<div class="game-step-prompt">' +
             '<div class="game-step-prompt-label">📝 Prompt suggere (a copier dans votre outil IA) :</div>' +
             '<div class="game-step-prompt-text">' + escapeHtml(promptText) + '</div>' +
@@ -636,12 +654,20 @@
             '<p class="game-step-validate-note">⚠️ <strong>Valider definitivement</strong> note votre brique (auto-evaluation) et la verrouille comme rendu officiel. Vous gagnez les points + un bonus selon la qualite.</p>' +
             '<div class="game-step-actions">' +
             '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">🔒 Valider definitivement</button>' +
+            '<button class="btn-outline btn-sm btn-feedback-step" data-step-id="' + step.id + '">🔍 Tester ma brique</button>' +
             '<button class="btn-ghost btn-sm btn-save-draft" data-step-id="' + step.id + '">💾 Sauvegarder brouillon</button>' +
             '</div>' +
+            '<div class="game-step-feedback" id="fb-' + step.id + '"></div>' +
             '</div>' +
             '</div>';
         }).join('') +
         '</div>' +
+        (doneInPhase === phase.steps.length ?
+          '<div class="phase-review"><h4>🧐 Bilan de phase</h4>' +
+          '<p class="phase-review-hint">Que retiens-tu de cette phase ? Qu\'est-ce qui a le mieux marche avec l\'IA, et qu\'ameliorerais-tu ?</p>' +
+          '<textarea class="phase-review-ta" data-phase="' + pkey + '" rows="3" placeholder="Ton bilan en 2-3 phrases...">' + escapeHtml((st.phaseReviews && st.phaseReviews[pkey]) || '') + '</textarea>' +
+          '<button class="btn-outline btn-sm btn-phase-review" data-phase="' + pkey + '">💾 Enregistrer le bilan (+15 XP)</button></div>'
+          : '') +
         '</div>';
     });
 
@@ -695,6 +721,39 @@
         var stepId = this.getAttribute('data-step-id');
         saveStepData(stepId, main);
         AIA.showToast('Brouillon sauvegarde', 'info');
+      });
+    });
+
+    // Boucle d'iteration : feedback non bloquant (score + conseils) avant la validation
+    main.querySelectorAll('.btn-feedback-step').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var stepId = this.getAttribute('data-step-id');
+        saveStepData(stepId, main); // capture le brouillon sans verrouiller
+        var stepObj = orderedSteps().find(function (s) { return s.id === stepId; }) || { fields: [] };
+        var fb = gameBrickTips(stepObj, st.campaignData[stepId] || {});
+        var el = document.getElementById('fb-' + stepId); if (!el) return;
+        var cls = fb.score >= 80 ? 'a' : fb.score >= 60 ? 'b' : fb.score >= 40 ? 'c' : 'd';
+        el.innerHTML = '<div class="fb-box fb-' + cls + '">' +
+          '<div class="fb-score">Score actuel : <strong>' + fb.score + '/100</strong></div>' +
+          (fb.tips.length
+            ? '<div class="fb-tips"><strong>Pour gagner des points :</strong><ul>' + fb.tips.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul></div>'
+            : '<div class="fb-ok">✅ Excellent — prêt à valider !</div>') +
+          '<div class="fb-note">💡 Ce test ne verrouille rien : améliore puis re-teste autant que tu veux.</div></div>';
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+
+    // Revue de fin de phase (bilan + auto-evaluation)
+    main.querySelectorAll('.btn-phase-review').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pk = this.getAttribute('data-phase');
+        var ta = main.querySelector('.phase-review-ta[data-phase="' + pk + '"]'); if (!ta) return;
+        st.phaseReviews = st.phaseReviews || {};
+        var firstTime = !((st.phaseReviews[pk] || '').trim());
+        st.phaseReviews[pk] = ta.value.trim();
+        if (AIA.saveState) AIA.saveState();
+        if (firstTime && ta.value.trim() && AIA.addXP) AIA.addXP(15, 'Bilan de phase');
+        AIA.showToast('Bilan de phase enregistre', 'success');
       });
     });
 
