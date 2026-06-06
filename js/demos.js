@@ -704,9 +704,16 @@
       '<p class="page-subtitle">Detourez vos visuels produits en 1 clic — ideal e-commerce et social media</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">🖼️ Background Remover — BRIA RMBG 1.4</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une photo produit, l\'IA detoure le sujet automatiquement et retourne un PNG transparent. Parfait pour catalogues, A/B tests visuels, banner ads.</p>' +
-      createHFEmbed('https://briaai-bria-rmbg-1-4.hf.space', 'BRIA RMBG 1.4 — Background Removal', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">🖼️ Detourage automatique du fond</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploade une photo produit : l\'IA detoure le sujet et retourne un PNG transparent. Parfait pour catalogues, A/B tests visuels, banner ads.</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">🖼️</div>' +
+      '<p class="demo-launch-txt">Ouvre un outil de detourage dans un nouvel onglet et glisse ta photo produit. <strong>remove.bg</strong> est l\'outil standard (gratuit, sans compte).</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://www.remove.bg/upload" target="_blank" rel="noopener">✂️ remove.bg ↗</a>' +
+      '<a class="btn-outline" href="https://www.adobe.com/express/feature/image/remove-background" target="_blank" rel="noopener">🅰️ Adobe Express ↗</a>' +
+      '<a class="btn-outline" href="https://www.canva.com/features/background-remover/" target="_blank" rel="noopener">🎨 Canva ↗</a>' +
+      '</div></div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>💡 Use cases marketing</h3>' +
@@ -818,9 +825,16 @@
       '<p class="page-subtitle">Generez voix-off pro pour vos videos publicitaires en secondes</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">🗣️ Parler-TTS — Voix Off Realiste</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Tapez votre script, choisissez le style de voix (genre, ton, vitesse) et generez une voix-off de qualite broadcast. Royalty-free pour usages perso/educatifs.</p>' +
-      createHFEmbed('https://parler-tts-parler-tts-expresso.hf.space', 'Parler-TTS Expresso — Voix Off', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">🗣️ Voix off realiste par IA</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Tape ton script, choisis une voix, genere une voix-off de qualite broadcast. Copie un script ci-dessous, ouvre un outil et colle-le.</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">🗣️</div>' +
+      '<p class="demo-launch-txt">Ouvre un generateur de voix dans un nouvel onglet. <strong>ElevenLabs</strong> est la reference (voix tres realistes, free tier), copie un des scripts ci-dessous.</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://elevenlabs.io/text-to-speech" target="_blank" rel="noopener">🎙️ ElevenLabs ↗</a>' +
+      '<a class="btn-outline" href="https://murf.ai/" target="_blank" rel="noopener">🎚️ Murf ↗</a>' +
+      '<a class="btn-outline" href="https://ttsmaker.com/" target="_blank" rel="noopener">🔊 TTSMaker (gratuit) ↗</a>' +
+      '</div></div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>🎯 Scripts marketing a tester</h3>' +
@@ -842,9 +856,16 @@
       '<p class="page-subtitle">Augmentez la resolution de vos visuels x4 — sauvez vieilles photos produits</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">🔍 Real-ESRGAN — Upscaler IA x4</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez une image basse resolution. L\'IA reconstruit les details et la rend 4x plus grande, nette, exploitable en print/web.</p>' +
-      createHFEmbed('https://akhaliq-real-esrgan.hf.space', 'Real-ESRGAN — Image Upscaler', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">🔍 Upscaling d\'image x4 par IA</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploade une image basse resolution : l\'IA reconstruit les details et la rend 4x plus grande, nette, exploitable en print/web.</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">🔍</div>' +
+      '<p class="demo-launch-txt">Ouvre un upscaler dans un nouvel onglet et glisse ton image basse def. Ces outils gratuits font de la super-resolution en 1 clic.</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://www.upscale.media/upload" target="_blank" rel="noopener">⬆️ Upscale.media ↗</a>' +
+      '<a class="btn-outline" href="https://imgupscaler.com/" target="_blank" rel="noopener">🖼️ ImgUpscaler ↗</a>' +
+      '<a class="btn-outline" href="https://bigjpg.com/" target="_blank" rel="noopener">🔎 Bigjpg ↗</a>' +
+      '</div></div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>💡 Insight pedagogique</h3>' +
@@ -929,9 +950,15 @@
       '<p class="page-subtitle">Animez une photo statique avec audio — ideal pitch fondateur, FAQ video</p></div>';
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">🗣️ SadTalker — Photo + Audio → Video parlante</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez photo + audio (ou TTS). L\'IA genere une video courte ou la personne semble dire le texte. Workflow accelere x100 vs studio video.</p>' +
-      createHFEmbed('https://vinthony-sadtalker.hf.space', 'SadTalker — Talking Head Generator', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">🗣️ Avatar video : photo/script → video parlante</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">A partir d\'une photo (ou avatar) + un script, l\'IA genere une video ou un presentateur dit ton texte. Workflow accelere x100 vs studio video. (Compte gratuit requis.)</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">🎬</div>' +
+      '<p class="demo-launch-txt">Ouvre un generateur d\'avatar video dans un nouvel onglet. <strong>HeyGen</strong> et <strong>D-ID</strong> sont les references du marche (essai gratuit).</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://www.heygen.com/" target="_blank" rel="noopener">🎥 HeyGen ↗</a>' +
+      '<a class="btn-outline" href="https://www.d-id.com/" target="_blank" rel="noopener">👤 D-ID ↗</a>' +
+      '</div></div>' +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3 style="color:#f5b731">⚠️ Insight pedagogique + ETHIQUE</h3>' +
