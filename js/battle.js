@@ -178,21 +178,22 @@
     return { total: total, breakdown: breakdown, hits: hits, missing: missing, wordCount: words.length };
   }
 
-  function renderBattle(main) {
+  var BATTLE_BOSS_TARGET = 85; // score requis pour vaincre le Brief Legendaire (boss)
+  function renderBattle(main, bossMode) {
     var AIA = window.AIA;
     var st = AIA.getState();
-    var currentBriefIdx = Math.floor(Math.random() * PROMPT_BRIEFS.length);
+    var currentBriefIdx = bossMode ? (PROMPT_BRIEFS.length - 1) : Math.floor(Math.random() * PROMPT_BRIEFS.length);
 
     function renderUI() {
       var brief = PROMPT_BRIEFS[currentBriefIdx];
       main.innerHTML = '<div class="page-header">' + backBtn() +
-        '<h1>Battle de <span class="gradient-text">Prompts</span></h1>' +
-        '<p class="page-subtitle">Sujet impose, evaluation objective, correction de reference</p></div>' +
-
-        '<div class="battle-zone glass-card">' +
+        '<h1>' + (bossMode ? 'Battle <span class="gradient-text">BOSS</span> 🔥' : 'Battle de <span class="gradient-text">Prompts</span>') + '</h1>' +
+        '<p class="page-subtitle">' + (bossMode ? 'Brief l&eacute;gendaire &bull; score &ge; ' + BATTLE_BOSS_TARGET + '/100 pour vaincre le boss' : 'Sujet impose, evaluation objective, correction de reference') + '</p></div>' +
+        (bossMode ? '' : bossZoneHtml('battle', 'Le Brief L&eacute;gendaire', '🔥')) +
+        '<div class="battle-zone glass-card' + (bossMode ? ' boss-battle' : '') + '">' +
         '<div class="battle-brief enhanced">' +
         '<div class="battle-brief-header">' +
-        '<span class="battle-brief-num">Brief ' + (currentBriefIdx + 1) + '/' + PROMPT_BRIEFS.length + '</span>' +
+        '<span class="battle-brief-num">' + (bossMode ? '🔥 BRIEF BOSS' : 'Brief ' + (currentBriefIdx + 1) + '/' + PROMPT_BRIEFS.length) + '</span>' +
         '<h3>' + escapeHtml(brief.title) + '</h3>' +
         '</div>' +
         '<p class="battle-brief-text">' + escapeHtml(brief.brief) + '</p>' +
@@ -201,11 +202,11 @@
         '<ul>' + brief.tips.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul>' +
         '</details>' +
         '</div>' +
-        '<button class="btn-ghost btn-sm" id="btn-new-brief">🎲 Autre sujet</button>' +
+        (bossMode ? '' : '<button class="btn-ghost btn-sm" id="btn-new-brief">🎲 Autre sujet</button>') +
         '</div>' +
 
         '<div class="battle-submit">' +
-        '<h3>Votre prompt (objectif : score &gt; 75/100)</h3>' +
+        '<h3>Votre prompt (objectif : score &gt; ' + (bossMode ? BATTLE_BOSS_TARGET : 75) + '/100)</h3>' +
         '<textarea id="battle-prompt" class="demo-textarea" rows="6" placeholder="En tant que [role], pour [contexte/marque/cible], [action] [format]. Ton : [ton]. Contraintes : [nombre, longueur, eviter]..."></textarea>' +
         '<div class="battle-submit-actions">' +
         '<button class="btn-primary" id="btn-battle-submit">⚔️ Soumettre & Evaluer</button>' +
@@ -223,10 +224,11 @@
         });
       }
 
-      document.getElementById('btn-new-brief').addEventListener('click', function () {
-        currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length;
-        renderUI();
-      });
+      if (!bossMode) {
+        var nb = document.getElementById('btn-new-brief');
+        if (nb) nb.addEventListener('click', function () { currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length; renderUI(); });
+        wireBossZone('battle', function () { renderBattle(main, true); });
+      }
 
       document.getElementById('btn-battle-submit').addEventListener('click', function () {
         var prompt = ta.value.trim();
@@ -291,20 +293,36 @@
         '</div>' +
 
         '<div class="battle-result">' +
-        '<div class="result-icon">' + (userWins ? '🏆' : '💪') + '</div>' +
+        '<div class="result-icon">' + (bossMode ? (evalResult.total >= BATTLE_BOSS_TARGET ? '🏆' : '💀') : (userWins ? '🏆' : '💪')) + '</div>' +
         '<div class="result-text">' +
-        (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+' + Math.max(0, evalResult.total - 50) + ' XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+' + Math.max(10, Math.round(evalResult.total / 3)) + ' XP)') +
+        (bossMode
+          ? (evalResult.total >= BATTLE_BOSS_TARGET
+              ? 'BOSS VAINCU ! Score ' + evalResult.total + '/100 — +' + SOLO_BOSS_XP + ' XP + badge 🔥'
+              : 'Le boss r&eacute;siste (score ' + evalResult.total + '/100, il en faut ' + BATTLE_BOSS_TARGET + '). +20 XP — r&eacute;essaie !')
+          : (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+' + Math.max(0, evalResult.total - 50) + ' XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+' + Math.max(10, Math.round(evalResult.total / 3)) + ' XP)')) +
         '</div>' +
-        '<button class="btn-outline" id="btn-battle-retry">🔄 Reessayer avec ce sujet</button>' +
-        '<button class="btn-primary" id="btn-battle-next">➡️ Sujet suivant</button>' +
+        '<button class="btn-outline" id="btn-battle-retry">🔄 ' + (bossMode ? 'Réessayer le boss' : 'Reessayer avec ce sujet') + '</button>' +
+        (bossMode ? '' : '<button class="btn-primary" id="btn-battle-next">➡️ Sujet suivant</button>') +
         '</div>';
 
       arena.innerHTML = html;
 
-      // XP & badge
-      var xpEarned = userWins ? Math.max(0, evalResult.total - 50) + 50 : Math.max(10, Math.round(evalResult.total / 3));
-      AIA.addXP(xpEarned);
-      if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
+      // XP, badge & progression
+      if (bossMode) {
+        if (evalResult.total >= BATTLE_BOSS_TARGET) {
+          if (AIA.markGameBoss) AIA.markGameBoss('battle');
+          AIA.addXP(SOLO_BOSS_XP, 'Battle Boss vaincu');
+          if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
+          try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Brief Legendaire' }); } catch (e) {}
+        } else {
+          AIA.addXP(20, 'Battle Boss tente');
+        }
+      } else {
+        var xpEarned = userWins ? Math.max(0, evalResult.total - 50) + 50 : Math.max(10, Math.round(evalResult.total / 3));
+        AIA.addXP(xpEarned);
+        if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
+        if (AIA.bumpGameProgress) AIA.bumpGameProgress('battle'); // progression vers le Brief Legendaire
+      }
 
       if (AIA.submitActivity) {
         AIA.submitActivity('battle-prompt', {
@@ -318,7 +336,8 @@
         renderUI();
         setTimeout(function () { var ta = document.getElementById('battle-prompt'); if (ta) { ta.value = prompt; ta.focus(); } }, 50);
       });
-      document.getElementById('btn-battle-next').addEventListener('click', function () {
+      var nx = document.getElementById('btn-battle-next');
+      if (nx) nx.addEventListener('click', function () {
         currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length;
         renderUI();
       });
@@ -327,9 +346,26 @@
     renderUI();
   }
 
-  /* ======== QUIZ INTERACTIF ======== */
+  /* ======== QUIZ INTERACTIF (+ boss solo) ======== */
+  // Landing : intro + zone boss + bouton "Commencer"
   function startQuiz(main) {
+    main.innerHTML = '<div class="page-header">' + backBtn() +
+      '<h1>Quiz <span class="gradient-text">Interactif</span></h1>' +
+      '<p class="page-subtitle">10 questions &bull; 15s par question</p></div>' +
+      '<div class="glass-card" style="padding:1.5rem;text-align:center">' +
+      bossZoneHtml('quiz', 'Le Quiz Ma&icirc;tre', '🧠') +
+      '<div style="margin:1.2rem 0 0.3rem"><button class="btn-primary" id="btn-quiz-start">▶️ Commencer le quiz</button></div>' +
+      '<p style="font-size:0.74rem;color:var(--text-muted)">3 quiz r&eacute;ussis d&eacute;bloquent le Quiz Ma&icirc;tre (manche express tr&egrave;s difficile).</p>' +
+      '</div>';
+    var s = document.getElementById('btn-quiz-start');
+    if (s) s.addEventListener('click', function () { runQuiz(main, false); });
+    wireBossZone('quiz', function () { runQuiz(main, true); });
+  }
+
+  function runQuiz(main, bossMode) {
     var AIA = window.AIA;
+    var perQ = bossMode ? 8 : 15;                 // boss = chrono serre
+    var winThreshold = 8;                          // boss vaincu si >= 8/10
     var questions = [];
     var used = {};
     while (questions.length < 10 && questions.length < QUIZ_QUESTIONS.length) {
@@ -346,12 +382,13 @@
       answered = false;
       var q = questions[currentQ];
       main.innerHTML = '<div class="page-header">' + backBtn() +
-        '<h1>Quiz <span class="gradient-text">Interactif</span></h1></div>' +
-        '<div class="quiz-container glass-card">' +
+        '<h1>' + (bossMode ? 'Quiz <span class="gradient-text">BOSS</span> 🧠' : 'Quiz <span class="gradient-text">Interactif</span>') + '</h1>' +
+        (bossMode ? '<p class="page-subtitle" style="color:#ff9db0">Manche express &bull; ' + perQ + 's / question &bull; objectif ' + winThreshold + '/10</p>' : '') + '</div>' +
+        '<div class="quiz-container glass-card' + (bossMode ? ' boss-battle' : '') + '">' +
         '<div class="quiz-header">' +
         '<div class="quiz-progress">Question ' + (currentQ + 1) + '/' + questions.length + '</div>' +
         '<div class="quiz-score">Score: ' + score + '</div>' +
-        '<div class="quiz-timer" id="quiz-timer">15</div>' +
+        '<div class="quiz-timer" id="quiz-timer">' + perQ + '</div>' +
         '</div>' +
         '<div class="quiz-question">' + escapeHtml(q.q) + '</div>' +
         '<div class="quiz-options">' + q.options.map(function (opt, i) {
@@ -359,7 +396,7 @@
         }).join('') + '</div>' +
         '<div id="quiz-feedback" class="quiz-feedback"></div></div>';
 
-      var timeLeft = 15;
+      var timeLeft = perQ;
       var timerEl = document.getElementById('quiz-timer');
 
       if (timerInterval) clearInterval(timerInterval);
@@ -412,12 +449,38 @@
         } else {
           showQuizResults();
         }
-      }, 2000);
+      }, bossMode ? 1200 : 2000);
     }
 
     function showQuizResults() {
       if (timerInterval) clearInterval(timerInterval);
       var pct = Math.round(score / questions.length * 100);
+
+      if (bossMode) {
+        var won = score >= winThreshold;
+        if (won) {
+          if (AIA.markGameBoss) AIA.markGameBoss('quiz');
+          AIA.addXP(SOLO_BOSS_XP, 'Quiz Boss vaincu');
+          if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
+          try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Quiz Maitre' }); } catch (e) {}
+        } else {
+          AIA.addXP(20, 'Quiz Boss tente');
+        }
+        main.innerHTML = '<div class="page-header">' + backBtn() +
+          '<h1>Quiz <span class="gradient-text">BOSS</span></h1></div>' +
+          '<div class="quiz-results glass-card boss-battle">' +
+          '<div class="result-emoji">' + (won ? '🏆' : '💀') + '</div>' +
+          '<div class="result-score">' + score + '/' + questions.length + '</div>' +
+          '<div class="result-grade">' + (won ? 'Quiz Maître VAINCU ! +' + SOLO_BOSS_XP + ' XP + badge' : 'Raté (' + winThreshold + '/10 requis). +20 XP') + '</div>' +
+          '<div style="margin-top:1.5rem">' +
+          (won ? '' : '<button class="btn-primary" id="btn-quiz-retry">Réessayer le boss</button>') +
+          '<button class="btn-outline" data-navigate="arena" style="margin-left:0.5rem">Retour Arena</button>' +
+          '</div></div>';
+        var rb = document.getElementById('btn-quiz-retry');
+        if (rb) rb.addEventListener('click', function () { runQuiz(main, true); });
+        return;
+      }
+
       var grade = pct >= 90 ? 'Excellent !' : pct >= 70 ? 'Tres bien !' : pct >= 50 ? 'Pas mal !' : 'A retravailler';
       var emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🌟' : pct >= 50 ? '👍' : '📚';
 
@@ -433,6 +496,7 @@
         '<button class="btn-outline" data-navigate="arena" style="margin-left:0.5rem">Retour Arena</button>' +
         '</div></div>';
 
+      if (AIA.bumpGameProgress) AIA.bumpGameProgress('quiz'); // progression vers le Quiz Maitre
       if (score === questions.length) {
         AIA.awardBadge('quiz-perfect');
         AIA.addXP(100);
@@ -448,22 +512,27 @@
     renderQuestion();
   }
 
-  /* ======== CHALLENGE COLLECTIF ======== */
-  function startChallenge(main) {
+  /* ======== CHALLENGE COLLECTIF (+ boss solo) ======== */
+  var CHALLENGE_BOSS = { title: 'D&Eacute;FI PI&Egrave;GE : le brief impossible', brief: 'Concevez une campagne pour un produit a la fois PREMIUM et ULTRA pas cher, eco-responsable MAIS jetable, ciblant ados ET retraites. Transformez chaque contradiction en argument de vente. Reponse structuree et convaincante.' };
+  var CHALLENGE_BOSS_MINLEN = 180;
+  function startChallenge(main, bossMode) {
     var AIA = window.AIA;
-    var challenge = CHALLENGE_BRIEFS[Math.floor(Math.random() * CHALLENGE_BRIEFS.length)];
+    var challenge = bossMode ? CHALLENGE_BOSS : CHALLENGE_BRIEFS[Math.floor(Math.random() * CHALLENGE_BRIEFS.length)];
 
     main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>Challenge <span class="gradient-text">Collectif</span></h1>' +
-      '<p class="page-subtitle">Meme brief pour tous — soumettez votre meilleure solution</p></div>' +
-      '<div class="challenge-container glass-card">' +
+      '<h1>' + (bossMode ? 'Challenge <span class="gradient-text">BOSS</span> 🎭' : 'Challenge <span class="gradient-text">Collectif</span>') + '</h1>' +
+      '<p class="page-subtitle">' + (bossMode ? 'Brief pi&egrave;ge &bull; r&eacute;ponse argument&eacute;e (&ge; ' + CHALLENGE_BOSS_MINLEN + ' caract&egrave;res)' : 'Meme brief pour tous — soumettez votre meilleure solution') + '</p></div>' +
+      (bossMode ? '' : bossZoneHtml('challenge', 'Le D&eacute;fi Pi&egrave;ge', '🎭')) +
+      '<div class="challenge-container glass-card' + (bossMode ? ' boss-battle' : '') + '">' +
       '<div class="challenge-brief">' +
-      '<div class="challenge-icon">🏆</div>' +
+      '<div class="challenge-icon">' + (bossMode ? '🎭' : '🏆') + '</div>' +
       '<h3>' + escapeHtml(challenge.title) + '</h3>' +
       '<p>' + escapeHtml(challenge.brief) + '</p></div>' +
       '<textarea id="challenge-response" class="demo-textarea" rows="5" placeholder="Votre reponse au challenge..."></textarea>' +
       '<button class="btn-primary" id="btn-challenge-submit" style="margin-top:1rem">Soumettre ma reponse</button>' +
       '<div id="challenge-results" class="demo-results"></div></div>';
+
+    if (!bossMode) wireBossZone('challenge', function () { startChallenge(main, true); });
 
     document.getElementById('btn-challenge-submit').addEventListener('click', function () {
       var response = document.getElementById('challenge-response').value.trim();
@@ -472,6 +541,27 @@
       var res = document.getElementById('challenge-results');
       res.innerHTML = '<div class="loading-pulse">Soumission et analyse...</div>';
 
+      if (bossMode) {
+        setTimeout(function () {
+          var won = response.length >= CHALLENGE_BOSS_MINLEN;
+          if (won) {
+            if (AIA.markGameBoss) AIA.markGameBoss('challenge');
+            AIA.addXP(SOLO_BOSS_XP, 'Challenge Boss vaincu');
+            if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
+            try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Defi Piege' }); } catch (e) {}
+          } else { AIA.addXP(20, 'Challenge Boss tente'); }
+          res.innerHTML = '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
+            '<div class="rpg-result-icon">' + (won ? '🏆' : '💀') + '</div>' +
+            '<h3>' + (won ? 'D&eacute;fi Pi&egrave;ge relev&eacute; !' : 'Pas encore...') + '</h3>' +
+            '<p>' + (won ? '+' + SOLO_BOSS_XP + ' XP + badge 🎭 — tu as dompt&eacute; le brief impossible !' : 'R&eacute;ponse trop courte (&ge; ' + CHALLENGE_BOSS_MINLEN + ' caract&egrave;res requis, ' + response.length + ' actuellement). +20 XP.') + '</p>' +
+            '<div style="margin-top:0.6rem">' + (won ? '' : '<button class="btn-primary" id="btn-chal-retry">R&eacute;essayer</button> ') +
+            '<button class="btn-outline" data-navigate="arena">Retour Arena</button></div></div>';
+          var rb = document.getElementById('btn-chal-retry');
+          if (rb) rb.addEventListener('click', function () { startChallenge(main, true); });
+        }, 1200);
+        return;
+      }
+
       setTimeout(function () {
         var fakeSubmissions = [
           { name: 'Alice', score: 72 + Math.floor(Math.random() * 20), excerpt: 'Solution creative avec focus storytelling...' },
@@ -479,7 +569,8 @@
           { name: 'Clara', score: 70 + Math.floor(Math.random() * 20), excerpt: 'Branding emotionnel et experience client...' },
           { name: 'David', score: 60 + Math.floor(Math.random() * 30), excerpt: 'Strategie multicanale integree...' }
         ];
-        var userName = AIA.getState().user || 'Vous';
+        var u = AIA.getState().user;
+        var userName = (u && u.name) ? u.name : 'Vous';
         var userScore = Math.min(95, 50 + response.length / 2 + Math.floor(Math.random() * 20));
         fakeSubmissions.push({ name: userName, score: Math.round(userScore), excerpt: response.substring(0, 50) + '...' });
         fakeSubmissions.sort(function (a, b) { return b.score - a.score; });
@@ -504,6 +595,7 @@
           (userRank <= 2 ? 'Bravo, vous etes sur le podium !' : 'Continuez a pratiquer pour monter au classement !') +
           '</div>';
 
+        if (AIA.bumpGameProgress) AIA.bumpGameProgress('challenge'); // progression vers le Defi Piege
         AIA.addXP(20 + (6 - userRank) * 10);
         AIA.showToast('Challenge termine ! Rang #' + userRank, 'success');
       }, 2500);
@@ -576,12 +668,22 @@
       var root = document.getElementById('rpg-root');
       if (!root) return;
 
+      // Zone boss : Prof (PvP, quasi imbattable) + boss PvE du RPG
+      var bd = AIA.getBossDuel ? AIA.getBossDuel() : null;
+      var profEntry;
+      if (bd && bd.used) {
+        profEntry = '<div class="rpg-boss-card prof done ' + (bd.result === 'win' ? 'won' : 'lost') + '"><span class="sbz-ic">🤖</span><div class="sbz-txt"><strong>Le Prof</strong><br><span class="sbz-sub">' + (bd.result === 'win' ? '🏆 battu — l&eacute;gende !' : 'tentative utilis&eacute;e') + '</span></div></div>';
+      } else {
+        profEntry = '<div class="rpg-boss-card prof challenge"><span class="sbz-ic">🤖</span><div class="sbz-txt"><strong>D&eacute;fier le Prof</strong><br><span class="sbz-sub">IA quasi imbattable &bull; gros risque / grosse r&eacute;compense</span></div><button class="btn-primary btn-sm" id="btn-prof">D&eacute;fier</button></div>';
+      }
+
       root.innerHTML =
         '<div class="rpg-stats-bar">' +
         '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.points + '</span><span class="rpg-stat-lbl">PvP Points</span></div>' +
         '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.wins + '</span><span class="rpg-stat-lbl">Victoires</span></div>' +
         '<div class="rpg-stat"><span class="rpg-stat-val">' + pvp.losses + '</span><span class="rpg-stat-lbl">Defaites</span></div>' +
         '<div class="rpg-stat"><span class="rpg-stat-val">' + remaining + '/' + MAX_BATTLES_PER_DAY + '</span><span class="rpg-stat-lbl">Combats restants</span></div></div>' +
+        '<div class="rpg-boss-bar">' + profEntry + bossZoneHtml('rpg', CREATURE_CONF.name, '🐲') + '</div>' +
         (remaining <= 0 ?
           '<div class="rpg-limit-msg"><h3>Limite atteinte</h3><p>Revenez demain pour 5 nouveaux combats !</p></div>' :
           '<h3 style="margin:1.5rem 0 1rem;font-size:1rem">Choisissez votre classe</h3>' +
@@ -602,6 +704,10 @@
           if (cls) startRPGBattle(main, cls, pvp);
         });
       });
+      // Boss : Prof (popup pros/cons) + boss PvE (si debloque)
+      var bp = document.getElementById('btn-prof');
+      if (bp) bp.addEventListener('click', function () { showProfPopup(main); });
+      wireBossZone('rpg', function () { renderPveBossSelect(main); });
     });
   }
 
@@ -721,6 +827,7 @@
       pvp.battlesToday++; if (won) pvp.wins++; else pvp.losses++;
       pvp.points += ptsGain; pvp.lastBattleDate = new Date().toISOString().split('T')[0];
       savePvpStats(pvp);
+      if (won && AIA.bumpGameProgress) AIA.bumpGameProgress('rpg'); // progression vers le boss PvE
       AIA.addXP(xpGain, won ? 'Victoire PvP' : 'Combat PvP');
       if (won && pvp.wins === 1) AIA.awardBadge('battle-win');
       log.push(won ? '<strong>VICTOIRE !</strong> +' + ptsGain + ' PvP, +' + xpGain + ' XP' : '<strong>DEFAITE</strong> +' + ptsGain + ' PvP, +' + xpGain + ' XP');
@@ -741,141 +848,146 @@
     renderUI();
   }
 
-  /* ======== BOSS ADMIN — "L'IA SUPREME" (duel unique, coriace) ======== */
+  /* =====================================================================
+     BOSS — moteur generique + Prof (PvP, quasi imbattable) + boss solo (PvE)
+     ===================================================================== */
 
-  // Avatar / identite du boss = l'Admin. Theme cyber/neon.
-  var BOSS = {
-    id: 'ai-supreme', name: "L'IA Supreme", icon: '🤖',
-    desc: 'Le boss de l\'Admin — intelligence artificielle ultime',
-    baseHP: 175, baseATK: 25, baseDEF: 16,
+  var BOSS_WIN_XP = 150;                       // x2 (duel seul) => 300 XP si on bat le Prof
+  var BOSS_LOSS_XP = 25;                        // consolation defaite Prof (avant malus)
+  var BOSS_PENALTY_MS = 2 * 60 * 60 * 1000;     // malus 0,75x pendant 2h si defaite contre le Prof
+  var SOLO_BOSS_XP = 120;                       // recompense boss solo PvE
+
+  // Le Prof : IA quasi imbattable (~10% de reussite). En realite un ordinateur tres dur.
+  // Tune par simulation Monte-Carlo (cf. tests) : ~10% de victoire pour un bon joueur de haut niveau,
+  // quasi 0% a bas niveau. Le scaling (level*6 HP / *1.8 ATK / *1.2 DEF) le rend dominant en fin de partie.
+  var PROF_CONF = {
+    name: 'Le Prof', icon: '🤖', baseHP: 128, baseATK: 17, baseDEF: 10,
+    diffMult: 1.05, manaRegenBonus: 4, aggression: { defend: 0.06, skill: 0.65, healAt: 0.35 },
     skills: [
-      { name: 'Override', icon: '⚡', dmg: 34, cost: 20, desc: 'Surcharge brutale du systeme' },
-      { name: 'Token Storm', icon: '🌀', dmg: 24, cost: 13, desc: 'Rafale de tokens' },
-      { name: 'Deep Learning', icon: '🧠', heal: 30, cost: 22, desc: 'Auto-regeneration neuronale' },
-      { name: 'Firewall', icon: '🛡️', defBuff: 10, cost: 15, desc: 'Pare-feu defensif (+10 DEF)' }
+      { name: 'Correction Impitoyable', icon: '📕', dmg: 26, cost: 18 },
+      { name: 'Examen Surprise', icon: '⚡', dmg: 18, cost: 11 },
+      { name: 'Cours Magistral', icon: '🧠', heal: 24, cost: 20 },
+      { name: 'Autorite', icon: '🛡️', defBuff: 9, cost: 14 }
     ]
   };
-  var BOSS_WIN_XP = 150;                  // x2 (duel seul) => 300 XP appliques en cas de victoire
-  var BOSS_LOSS_XP = 25;                  // consolation (avant malus)
-  var BOSS_PENALTY_MS = 2 * 60 * 60 * 1000; // malus 0,75x pendant 2h si defaite
+  // Boss PvE du RPG : rejouable et battable (~35-50% pour un bon joueur). Pas de malus.
+  var CREATURE_CONF = {
+    name: 'Le Gardien Algorithmique', icon: '🐲', baseHP: 115, baseATK: 15, baseDEF: 9,
+    diffMult: 1.0, manaRegenBonus: 3, aggression: { defend: 0.1, skill: 0.55, healAt: 0.3 },
+    skills: [
+      { name: 'Souffle de Donnees', icon: '🔥', dmg: 20, cost: 16 },
+      { name: 'Griffe Binaire', icon: '⚔️', dmg: 15, cost: 11 },
+      { name: 'Regen Cloud', icon: '💚', heal: 18, cost: 16 },
+      { name: 'Carapace', icon: '🛡️', defBuff: 7, cost: 14 }
+    ]
+  };
 
-  function renderBossArena(main) {
-    var AIA = window.AIA;
-    var bd = AIA.getBossDuel ? AIA.getBossDuel() : null;
-
-    main.innerHTML = '<div class="page-header">' + backBtn() +
-      '<h1>Duel : <span class="gradient-text">L\'IA Supr&ecirc;me</span></h1>' +
-      '<p class="page-subtitle">Le boss de l\'Admin &bull; tentative unique sur tout le s&eacute;minaire</p></div>' +
-      '<div id="boss-root" class="glass-card boss-battle" style="padding:1.5rem"></div>';
-    var root = document.getElementById('boss-root');
-
-    if (bd && bd.used) {
-      var won = bd.result === 'win';
-      root.innerHTML = '<div class="boss-intro">' +
-        '<div class="boss-portrait ' + (won ? 'beaten' : '') + '">🤖</div>' +
-        '<h2>' + (won ? '🏆 Boss vaincu' : '💀 Tentative utilis&eacute;e') + '</h2>' +
-        '<p style="color:var(--text-muted);max-width:480px;margin:0.5rem auto 1.2rem">' +
-        (won ? 'Vous avez d&eacute;j&agrave; <strong>terrass&eacute; l\'IA Supr&ecirc;me</strong> et encaiss&eacute; le bonus x2. Un exploit rare !' :
-               'Vous avez d&eacute;j&agrave; d&eacute;fi&eacute; l\'IA Supr&ecirc;me. Le duel ne peut se jouer <strong>qu\'une seule fois</strong>.') +
-        '</p>' +
-        '<button class="btn-outline" data-navigate="arena">Retour Arena</button></div>';
-      return;
-    }
-
-    // Ecran d'intro + selection de classe
-    root.innerHTML = '<div class="boss-intro">' +
-      '<div class="boss-portrait">🤖</div>' +
-      '<h2 class="boss-title">L\'IA Supr&ecirc;me vous attend</h2>' +
-      '<p class="boss-pitch">Le champion de l\'Admin. <strong>Coriace.</strong> Vous n\'avez <strong>qu\'une seule tentative</strong>.</p>' +
-      '<div class="boss-stakes-grid">' +
-        '<div class="boss-stake win"><div class="boss-stake-ic">🏆</div><div><strong>Si vous gagnez</strong><br>Gains du duel <b>x2</b> (jusqu\'&agrave; +' + (BOSS_WIN_XP * 2) + ' XP)</div></div>' +
-        '<div class="boss-stake lose"><div class="boss-stake-ic">💀</div><div><strong>Si vous perdez</strong><br>Malus <b>-25%</b> sur vos gains XP pendant <b>2h</b></div></div>' +
-      '</div>' +
-      '<div style="margin:0.9rem auto 0;max-width:520px;font-size:0.75rem;color:#ff9db0">⚠️ Une fois la classe choisie, le duel compte comme votre <strong>tentative unique</strong> — m&ecirc;me si vous quittez la page.</div>' +
-      '<h3 style="margin:1.4rem 0 0.8rem;font-size:1rem">Choisissez votre classe pour l\'affrontement</h3>' +
-      '<div class="rpg-class-grid">' + RPG_CLASSES.map(function (cls) {
-        return '<div class="rpg-class-card glass-card" data-class="' + cls.id + '">' +
-          '<div class="rpg-class-icon">' + cls.icon + '</div>' +
-          '<h4>' + cls.name + '</h4><p>' + cls.desc + '</p>' +
-          '<div class="rpg-class-stats"><span>HP ' + cls.baseHP + '</span><span>ATK ' + cls.baseATK + '</span><span>DEF ' + cls.baseDEF + '</span></div>' +
-          '</div>';
-      }).join('') + '</div></div>';
-
-    document.querySelectorAll('#boss-root .rpg-class-card').forEach(function (card) {
+  /* ---- Helpers partages ---- */
+  function rpgModal(html) {
+    var ov = document.createElement('div');
+    ov.className = 'boss-modal-overlay';
+    ov.innerHTML = '<div class="boss-modal glass-card">' + html + '</div>';
+    document.body.appendChild(ov);
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    return { el: ov, close: close };
+  }
+  function classCard(cls) {
+    return '<div class="rpg-class-card glass-card" data-class="' + cls.id + '">' +
+      '<div class="rpg-class-icon">' + cls.icon + '</div>' +
+      '<h4>' + cls.name + '</h4><p>' + cls.desc + '</p>' +
+      '<div class="rpg-class-stats"><span>HP ' + cls.baseHP + '</span><span>ATK ' + cls.baseATK + '</span><span>DEF ' + cls.baseDEF + '</span></div></div>';
+  }
+  function wireClassCards(scope, cb) {
+    document.querySelectorAll(scope + ' .rpg-class-card').forEach(function (card) {
       card.addEventListener('click', function () {
-        var classId = this.getAttribute('data-class');
-        var cls = RPG_CLASSES.find(function (c) { return c.id === classId; });
-        if (cls) startBossBattle(main, cls);
+        var cls = RPG_CLASSES.find(function (c) { return c.id === this.getAttribute('data-class'); }.bind(this));
+        if (cls) cb(cls);
       });
     });
   }
+  // Banniere "boss solo" d'un mini-jeu (verrouille / debloque / vaincu).
+  function bossZoneHtml(gameKey, bossName, bossIcon) {
+    var AIA = window.AIA;
+    var gp = AIA.getGameProgress ? AIA.getGameProgress() : {};
+    var g = gp[gameKey] || { wins: 0, bossDone: false };
+    var need = AIA.BOSS_UNLOCK_WINS || 3;
+    if (g.bossDone) {
+      return '<div class="solo-boss-zone done"><span class="sbz-ic">' + bossIcon + '</span><div class="sbz-txt"><strong>' + bossName + '</strong><br><span class="sbz-sub">✅ Boss vaincu</span></div></div>';
+    }
+    if ((g.wins || 0) >= need) {
+      return '<div class="solo-boss-zone ready"><span class="sbz-ic">' + bossIcon + '</span><div class="sbz-txt"><strong>BOSS D&Eacute;BLOQU&Eacute; : ' + bossName + '</strong><br><span class="sbz-sub">Boss solo tr&egrave;s difficile &bull; +' + SOLO_BOSS_XP + ' XP + badge</span></div><button class="btn-primary btn-sm" id="solobtn-' + gameKey + '">Affronter</button></div>';
+    }
+    return '<div class="solo-boss-zone locked"><span class="sbz-ic">🔒</span><div class="sbz-txt"><strong>Boss verrouill&eacute; : ' + bossName + '</strong><br><span class="sbz-sub">Gagne encore ' + (need - (g.wins || 0)) + ' partie(s) pour le d&eacute;bloquer (' + (g.wins || 0) + '/' + need + ')</span></div></div>';
+  }
+  function wireBossZone(gameKey, onFight) {
+    var b = document.getElementById('solobtn-' + gameKey);
+    if (b) b.addEventListener('click', onFight);
+  }
 
-  function startBossBattle(main, playerClass) {
+  /* ---- Moteur de combat generique (Prof + boss PvE) ----
+     conf: {name,icon,baseHP,baseATK,baseDEF,skills,diffMult,manaRegenBonus,aggression:{defend,skill,healAt}}
+     opts: {rootId, backTo, onEnd:function(won){return {title,html};}} */
+  function runBossBattle(main, playerClass, conf, opts) {
     var AIA = window.AIA, st = AIA.getState();
-    // Securite : tentative unique
-    if (AIA.getBossDuel && AIA.getBossDuel() && AIA.getBossDuel().used) { renderBossArena(main); return; }
-    // La tentative est consommee DES le lancement : impossible de rafraichir pour eviter le malus.
-    // endBoss() ecrasera ce 'pending' par le resultat final (win/loss).
-    if (AIA.recordBossDuel) AIA.recordBossDuel('pending');
-
+    var rootId = opts.rootId || 'boss-root';
+    var diff = conf.diffMult || 1;
+    var regen = MANA_PER_TURN + (conf.manaRegenBonus || 4);
+    var aggr = conf.aggression || { defend: 0.08, skill: 0.6, healAt: 0.3 };
     var lvl = AIA.getLevelInfo ? AIA.getLevelInfo(st.xp.total) : { level: 1 };
-    var BOSS_MANA_REGEN = MANA_PER_TURN + 4;
 
     var player = { name: st.user ? st.user.name : 'Vous', cls: playerClass, icon: playerClass.icon,
       hp: playerClass.baseHP + lvl.level * 5, maxHP: playerClass.baseHP + lvl.level * 5,
       atk: playerClass.baseATK + Math.floor(lvl.level * 1.5), def: playerClass.baseDEF + lvl.level,
       mana: 50, maxMana: 50, tempDef: 0 };
-    // Boss coriace : stats nettement boostees + scaling sur le niveau du joueur (~30% de victoires)
-    var enemy = { name: BOSS.name, cls: BOSS, icon: BOSS.icon,
-      hp: Math.round((BOSS.baseHP + lvl.level * 7) * 1.15), maxHP: Math.round((BOSS.baseHP + lvl.level * 7) * 1.15),
-      atk: Math.round((BOSS.baseATK + lvl.level * 2) * 1.12), def: Math.round((BOSS.baseDEF + lvl.level * 1.3) * 1.1),
+    var enemy = { name: conf.name, cls: conf, icon: conf.icon,
+      hp: Math.round((conf.baseHP + lvl.level * 6) * diff), maxHP: Math.round((conf.baseHP + lvl.level * 6) * diff),
+      atk: Math.round((conf.baseATK + lvl.level * 1.8) * diff), def: Math.round((conf.baseDEF + lvl.level * 1.2) * diff),
       mana: 60, maxMana: 60, tempDef: 0 };
 
-    var log = [], turn = 1, battleOver = false;
+    var log = [], turn = 1, over = false;
 
-    function renderFighter(f, side, isBoss) {
+    function fighter(f, side, boss) {
       var hpPct = Math.max(0, Math.round(f.hp / f.maxHP * 100));
       var mpPct = Math.round(f.mana / f.maxMana * 100);
       var hpC = hpPct > 50 ? '#2ecc71' : hpPct > 25 ? '#f5b731' : '#e74c3c';
-      return '<div class="rpg-fighter ' + side + (isBoss ? ' boss-fighter' : '') + '">' +
+      return '<div class="rpg-fighter ' + side + (boss ? ' boss-fighter' : '') + '">' +
         '<div class="rpg-fighter-icon">' + f.icon + '</div>' +
         '<div class="rpg-fighter-name">' + escapeHtml(f.name) + '</div>' +
-        '<div class="rpg-fighter-class">' + (isBoss ? 'BOSS' : f.cls.name) + '</div>' +
+        '<div class="rpg-fighter-class">' + (boss ? 'BOSS' : f.cls.name) + '</div>' +
         '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + hpPct + '%;background:' + hpC + '"></div></div>' +
         '<div class="rpg-bar-label">HP ' + Math.max(0, f.hp) + '/' + f.maxHP + '</div>' +
         '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + mpPct + '%;background:#3498db"></div></div>' +
         '<div class="rpg-bar-label">MP ' + f.mana + '/' + f.maxMana + '</div>' +
         '<div class="rpg-fighter-stats">ATK ' + f.atk + ' DEF ' + (f.def + f.tempDef) + '</div></div>';
     }
+    function calcDmg(a, d) { return Math.max(1, Math.round((a - Math.floor(d * 0.6)) * (0.85 + Math.random() * 0.3))); }
 
-    function renderUI() {
-      var root = document.getElementById('boss-root'); if (!root) return;
+    function ui() {
+      var root = document.getElementById(rootId); if (!root) return;
       root.innerHTML =
-        '<div class="rpg-battle-header">⚠️ DUEL BOSS &bull; Tour ' + turn + '</div>' +
-        '<div class="rpg-arena">' + renderFighter(player, 'left', false) + '<div class="rpg-vs">VS</div>' + renderFighter(enemy, 'right', true) + '</div>' +
-        (!battleOver ? '<div class="rpg-actions">' +
-          '<button class="rpg-btn attack" id="boss-attack">Attaque<span class="rpg-btn-sub">(' + player.atk + ' ATK)</span></button>' +
-          '<button class="rpg-btn defend" id="boss-defend">Defense<span class="rpg-btn-sub">(+50% DEF)</span></button>' +
+        '<div class="rpg-battle-header">⚔️ ' + escapeHtml(conf.name).toUpperCase() + ' &bull; Tour ' + turn + '</div>' +
+        '<div class="rpg-arena">' + fighter(player, 'left', false) + '<div class="rpg-vs">VS</div>' + fighter(enemy, 'right', true) + '</div>' +
+        (!over ? '<div class="rpg-actions">' +
+          '<button class="rpg-btn attack" id="' + rootId + '-attack">Attaque<span class="rpg-btn-sub">(' + player.atk + ' ATK)</span></button>' +
+          '<button class="rpg-btn defend" id="' + rootId + '-defend">Defense<span class="rpg-btn-sub">(+50% DEF)</span></button>' +
           player.cls.skills.map(function (sk, i) {
             var dis = player.mana < sk.cost;
             return '<button class="rpg-btn skill' + (dis ? ' disabled' : '') + '" data-skill="' + i + '"' + (dis ? ' disabled' : '') + '>' +
               sk.icon + ' ' + sk.name + '<span class="rpg-btn-sub">(' + sk.cost + ' MP)</span></button>';
           }).join('') + '</div>' : '') +
         '<div class="rpg-log">' + log.slice(-6).map(function (l) { return '<div class="rpg-log-entry">' + l + '</div>'; }).join('') + '</div>';
-
-      if (!battleOver) {
-        document.getElementById('boss-attack').addEventListener('click', function () { doTurn('attack'); });
-        document.getElementById('boss-defend').addEventListener('click', function () { doTurn('defend'); });
-        document.querySelectorAll('#boss-root .rpg-btn.skill:not(.disabled)').forEach(function (b) {
-          b.addEventListener('click', function () { doTurn('skill', parseInt(this.getAttribute('data-skill'))); });
+      if (!over) {
+        document.getElementById(rootId + '-attack').addEventListener('click', function () { step('attack'); });
+        document.getElementById(rootId + '-defend').addEventListener('click', function () { step('defend'); });
+        document.querySelectorAll('#' + rootId + ' .rpg-btn.skill:not(.disabled)').forEach(function (b) {
+          b.addEventListener('click', function () { step('skill', parseInt(this.getAttribute('data-skill'))); });
         });
       }
     }
 
-    function calcDmg(a, d) { return Math.max(1, Math.round((a - Math.floor(d * 0.6)) * (0.85 + Math.random() * 0.3))); }
-
-    function doTurn(action, si) {
-      if (battleOver) return;
+    function step(action, si) {
+      if (over) return;
       player.tempDef = 0;
       if (action === 'attack') {
         var d = calcDmg(player.atk, enemy.def + enemy.tempDef);
@@ -893,68 +1005,139 @@
         if (sk.defBuff) { player.tempDef += sk.defBuff; }
         player.mana = Math.min(player.maxMana, player.mana + MANA_PER_TURN);
       }
-      if (enemy.hp <= 0) { endBoss(true); return; }
+      if (enemy.hp <= 0) { finish(true); return; }
 
-      /* Boss AI — agressive : tape fort, soigne tard, defend rarement */
+      // IA du boss
       enemy.tempDef = 0;
       var hpRatio = enemy.hp / enemy.maxHP;
       var aiAct = 'attack', aiSi = -1;
-      if (hpRatio < 0.30) { var hi = BOSS.skills.findIndex(function (s) { return s.heal && enemy.mana >= s.cost; }); if (hi >= 0) { aiAct = 'skill'; aiSi = hi; } }
-      if (aiAct === 'attack' && Math.random() < 0.06) aiAct = 'defend';
-      if (aiAct === 'attack') { var us = []; BOSS.skills.forEach(function (s, i) { if (s.dmg && enemy.mana >= s.cost) us.push(i); }); if (us.length && Math.random() < 0.7) { aiAct = 'skill'; aiSi = us[Math.floor(Math.random() * us.length)]; } }
+      if (hpRatio < aggr.healAt) { var hi = conf.skills.findIndex(function (s) { return s.heal && enemy.mana >= s.cost; }); if (hi >= 0) { aiAct = 'skill'; aiSi = hi; } }
+      if (aiAct === 'attack' && Math.random() < aggr.defend) aiAct = 'defend';
+      if (aiAct === 'attack') { var us = []; conf.skills.forEach(function (s, i) { if (s.dmg && enemy.mana >= s.cost) us.push(i); }); if (us.length && Math.random() < aggr.skill) { aiAct = 'skill'; aiSi = us[Math.floor(Math.random() * us.length)]; } }
 
       if (aiAct === 'attack') {
         var ed = calcDmg(enemy.atk, player.def + player.tempDef);
         player.hp -= ed; log.push('<strong>' + escapeHtml(enemy.name) + '</strong> attaque — ' + ed + ' dmg');
-        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN);
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + regen);
       } else if (aiAct === 'defend') {
         enemy.tempDef = Math.floor(enemy.def * 0.5);
-        log.push('<strong>' + escapeHtml(enemy.name) + '</strong> active un pare-feu');
-        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN + 5);
+        log.push('<strong>' + escapeHtml(enemy.name) + '</strong> se prot&egrave;ge');
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + regen + 5);
       } else {
-        var esk = BOSS.skills[aiSi]; enemy.mana -= esk.cost;
+        var esk = conf.skills[aiSi]; enemy.mana -= esk.cost;
         if (esk.dmg) { var esd = calcDmg(esk.dmg, player.def + player.tempDef); player.hp -= esd; log.push(esk.icon + ' <strong>' + escapeHtml(enemy.name) + '</strong> lance ' + esk.name + ' — ' + esd + ' dmg'); }
         if (esk.heal) { enemy.hp = Math.min(enemy.maxHP, enemy.hp + esk.heal); log.push(esk.icon + ' ' + escapeHtml(enemy.name) + ' recupere ' + esk.heal + ' HP'); }
         if (esk.defBuff) enemy.tempDef += esk.defBuff;
-        enemy.mana = Math.min(enemy.maxMana, enemy.mana + BOSS_MANA_REGEN);
+        enemy.mana = Math.min(enemy.maxMana, enemy.mana + regen);
       }
-      if (player.hp <= 0) { endBoss(false); return; }
-      turn++; if (turn > 40) { endBoss(player.hp > enemy.hp); return; }
-      renderUI();
+      if (player.hp <= 0) { finish(false); return; }
+      turn++; if (turn > 40) { finish(player.hp > enemy.hp); return; }
+      ui();
     }
 
-    function endBoss(won) {
-      battleOver = true;
-      // Consomme la tentative unique
-      if (AIA.recordBossDuel) AIA.recordBossDuel(won ? 'win' : 'loss');
-
-      var xpGain;
-      if (won) {
-        xpGain = BOSS_WIN_XP * 2; // bonus x2 sur le duel seul
-        AIA.addXP(xpGain, 'Victoire vs IA Supreme (x2)');
-        log.push('<strong>VICTOIRE !</strong> Bonus x2 — +' + xpGain + ' XP');
-        try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-win', target: BOSS.name }); } catch (e) {}
-      } else {
-        xpGain = BOSS_LOSS_XP; // consolation full AVANT le malus
-        AIA.addXP(xpGain, 'Duel vs IA Supreme');
-        if (AIA.startPvpPenalty) AIA.startPvpPenalty(BOSS_PENALTY_MS); // malus 0,75x / 2h sur la suite
-        log.push('<strong>DEFAITE</strong> — malus -25% sur vos gains pendant 2h. +' + xpGain + ' XP');
-        try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-try', target: BOSS.name }); } catch (e) {}
-      }
-      if (AIA.saveStateNow) AIA.saveStateNow();
-
-      renderUI();
-      var root = document.getElementById('boss-root'); if (!root) return;
+    function finish(won) {
+      over = true; ui();
+      var res = opts.onEnd ? opts.onEnd(won) : { title: won ? 'Victoire' : 'Defaite', html: '' };
+      var root = document.getElementById(rootId); if (!root) return;
       root.innerHTML += '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
         '<div class="rpg-result-icon">' + (won ? '🏆' : '💀') + '</div>' +
-        '<h3>' + (won ? 'Vous avez vaincu l\'IA Supr&ecirc;me !' : 'L\'IA Supr&ecirc;me l\'emporte') + '</h3>' +
-        '<p>' + (won ? 'Bonus x2 encaiss&eacute; : <strong>+' + xpGain + ' XP</strong>. Exploit rare !' :
-                       'Malus <strong>-25%</strong> sur vos gains XP pendant <strong>2h</strong>. +' + xpGain + ' XP de consolation.') + '</p>' +
-        '<div style="font-size:0.78rem;color:var(--text-muted);margin:0.4rem 0 0.8rem">Tentative unique utilis&eacute;e — le duel ne se rejoue pas.</div>' +
-        '<button class="btn-primary" data-navigate="arena">Retour Arena</button></div>';
+        '<h3>' + res.title + '</h3>' + (res.html || '') +
+        '<div style="margin-top:0.9rem"><button class="btn-primary" data-navigate="' + (opts.backTo || 'rpg') + '">Retour</button></div></div>';
     }
 
-    renderUI();
+    ui();
+  }
+
+  /* ---- Prof (PvP) : pop-up pros/cons -> selection de classe -> combat ---- */
+  function showProfPopup(main) {
+    var AIA = window.AIA;
+    var bd = AIA.getBossDuel ? AIA.getBossDuel() : null;
+    if (bd && bd.used) {
+      var m0 = rpgModal('<div class="boss-modal-head">🤖 Le Prof</div>' +
+        '<p style="color:var(--text-muted)">' + (bd.result === 'win' ?
+          'Vous avez d&eacute;j&agrave; <strong>battu le Prof</strong> 🏆 — exploit accompli !' :
+          'Vous avez d&eacute;j&agrave; tent&eacute; votre chance. <strong>Une seule tentative</strong> par s&eacute;minaire.') + '</p>' +
+        '<div class="boss-modal-actions"><button class="btn-primary" id="bm-close">Compris</button></div>');
+      m0.el.querySelector('#bm-close').addEventListener('click', m0.close);
+      return;
+    }
+    var html = '<div class="boss-modal-head">🤖 D&eacute;fier le Prof ?</div>' +
+      '<p class="boss-modal-warn">En face : une <strong>IA experte, quasi imbattable (~10% de r&eacute;ussite)</strong>. Ce n\'est pas vraiment le prof, mais un ordinateur tr&egrave;s dur.</p>' +
+      '<div class="boss-pros-cons">' +
+        '<div class="bpc pros"><h4>✅ Avantages</h4><ul>' +
+          '<li>Victoire = gains du duel <strong>x2</strong> (+' + (BOSS_WIN_XP * 2) + ' XP)</li>' +
+          '<li>Badge l&eacute;gendaire <strong>Tombeur du Prof</strong></li>' +
+          '<li>Temps fort affich&eacute; dans le Live</li></ul></div>' +
+        '<div class="bpc cons"><h4>⚠️ Inconv&eacute;nients</h4><ul>' +
+          '<li>D&eacute;faite = <strong>-25%</strong> sur vos gains XP pendant <strong>2h</strong></li>' +
+          '<li><strong>Une seule tentative</strong> pour tout le s&eacute;minaire</li>' +
+          '<li>Compte d&egrave;s que vous lancez (pas de retour arri&egrave;re)</li></ul></div>' +
+      '</div>' +
+      '<div class="boss-modal-actions"><button class="btn-ghost" id="bm-cancel">Annuler</button>' +
+      '<button class="btn-primary" id="bm-accept">J\'accepte le d&eacute;fi ⚔️</button></div>';
+    var m = rpgModal(html);
+    m.el.querySelector('#bm-cancel').addEventListener('click', m.close);
+    m.el.querySelector('#bm-accept').addEventListener('click', function () { m.close(); renderProfClassSelect(main); });
+  }
+
+  function renderProfClassSelect(main) {
+    main.innerHTML = '<div class="page-header">' + backBtn() +
+      '<h1>Duel : <span class="gradient-text">Le Prof</span></h1>' +
+      '<p class="page-subtitle">IA quasi imbattable &bull; tentative unique</p></div>' +
+      '<div id="boss-root" class="glass-card boss-battle" style="padding:1.5rem">' +
+      '<div class="boss-intro"><div class="boss-portrait">🤖</div>' +
+      '<p class="boss-pitch">Choisissez votre classe. Bonne chance... vous en aurez besoin.</p>' +
+      '<div class="rpg-class-grid">' + RPG_CLASSES.map(classCard).join('') + '</div></div></div>';
+    wireClassCards('#boss-root', function (cls) {
+      var AIA = window.AIA;
+      if (AIA.getBossDuel && AIA.getBossDuel() && AIA.getBossDuel().used) { showProfPopup(main); return; }
+      if (AIA.recordBossDuel) AIA.recordBossDuel('pending'); // consomme des le lancement (anti-refresh)
+      runBossBattle(main, cls, PROF_CONF, { rootId: 'boss-root', backTo: 'rpg', onEnd: profOnEnd });
+    });
+  }
+
+  function profOnEnd(won) {
+    var AIA = window.AIA, st = AIA.getState();
+    if (AIA.recordBossDuel) AIA.recordBossDuel(won ? 'win' : 'loss');
+    if (won) {
+      AIA.addXP(BOSS_WIN_XP * 2, 'Victoire vs le Prof (x2)');
+      if (AIA.awardBadge) AIA.awardBadge('prof-slayer');
+      try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-win', target: 'Le Prof' }); } catch (e) {}
+      if (AIA.saveStateNow) AIA.saveStateNow();
+      return { title: 'Vous avez BATTU le Prof !', html: '<p>Exploit l&eacute;gendaire 🏆 Bonus <strong>x2 : +' + (BOSS_WIN_XP * 2) + ' XP</strong> + badge <strong>Tombeur du Prof</strong>.</p><div style="font-size:0.78rem;color:var(--text-muted)">Tentative unique utilis&eacute;e.</div>' };
+    }
+    AIA.addXP(BOSS_LOSS_XP, 'Duel vs le Prof');
+    if (AIA.startPvpPenalty) AIA.startPvpPenalty(BOSS_PENALTY_MS);
+    try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-try', target: 'Le Prof' }); } catch (e) {}
+    if (AIA.saveStateNow) AIA.saveStateNow();
+    return { title: 'Le Prof vous a corrig&eacute;...', html: '<p>L\'IA du Prof est redoutable, comme pr&eacute;vu. Malus <strong>-25%</strong> sur vos gains XP pendant <strong>2h</strong>. +' + BOSS_LOSS_XP + ' XP.</p><div style="font-size:0.78rem;color:var(--text-muted)">Tentative unique utilis&eacute;e.</div>' };
+  }
+
+  /* ---- Boss PvE du RPG (rejouable) ---- */
+  function renderPveBossSelect(main) {
+    main.innerHTML = '<div class="page-header">' + backBtn() +
+      '<h1>Boss : <span class="gradient-text">' + escapeHtml(CREATURE_CONF.name) + '</span></h1>' +
+      '<p class="page-subtitle">Boss PvE du RPG &bull; r&eacute;essayable</p></div>' +
+      '<div id="boss-root" class="glass-card boss-battle" style="padding:1.5rem">' +
+      '<div class="boss-intro"><div class="boss-portrait">🐲</div>' +
+      '<p class="boss-pitch">Le gardien des donn&eacute;es. Choisissez votre classe.</p>' +
+      '<div class="rpg-class-grid">' + RPG_CLASSES.map(classCard).join('') + '</div></div></div>';
+    wireClassCards('#boss-root', function (cls) {
+      runBossBattle(main, cls, CREATURE_CONF, { rootId: 'boss-root', backTo: 'rpg', onEnd: pveOnEnd });
+    });
+  }
+
+  function pveOnEnd(won) {
+    var AIA = window.AIA, st = AIA.getState();
+    if (won) {
+      if (AIA.markGameBoss) AIA.markGameBoss('rpg');
+      AIA.addXP(SOLO_BOSS_XP, 'Boss PvE vaincu');
+      if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
+      try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-solo', target: CREATURE_CONF.name }); } catch (e) {}
+      return { title: CREATURE_CONF.name + ' terrass&eacute; !', html: '<p>+' + SOLO_BOSS_XP + ' XP + badge <strong>Boss Slayer</strong> 🐲</p>' };
+    }
+    AIA.addXP(20, 'Combat boss PvE');
+    return { title: 'Le boss r&eacute;siste...', html: '<p>+20 XP. Reviens plus fort — tu peux le r&eacute;affronter quand tu veux.</p>' };
   }
 
   window.AIA = window.AIA || {};
@@ -963,7 +1146,10 @@
   window.AIA.startChallenge = startChallenge;
   window.AIA.renderRPG = renderRPG;
   window.AIA.RPG_CLASSES = RPG_CLASSES;
-  window.AIA.renderBossArena = renderBossArena;
-  window.AIA.startBossBattle = startBossBattle;
-  window.AIA.BOSS = BOSS;
+  window.AIA.showProfPopup = showProfPopup;
+  window.AIA.renderProfClassSelect = renderProfClassSelect;
+  window.AIA.renderPveBossSelect = renderPveBossSelect;
+  window.AIA.runBossBattle = runBossBattle;
+  window.AIA.PROF_CONF = PROF_CONF;
+  window.AIA.CREATURE_CONF = CREATURE_CONF;
 })();

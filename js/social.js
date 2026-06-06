@@ -224,7 +224,7 @@
         'reviewed': '⭐', 'step-done': '✅', 'badge-unlocked': '🏅',
         'voted': '♥️', 'demo-done': '🛠️', 'highlight-done': '⚡',
         'campaign-export': '📤', 'theme-picked': '🎯',
-        'boss-win': '🏆', 'boss-try': '🤖'
+        'boss-win': '🏆', 'boss-try': '🤖', 'boss-solo': '👹'
       };
       feedEl.innerHTML = '<div class="wall-feed">' +
         items.map(function (item) {
@@ -253,8 +253,9 @@
       case 'highlight-done': return 'a complete <strong>' + escapeHtml(item.target) + '</strong>';
       case 'campaign-export': return 'a exporte sa campagne 🚢';
       case 'theme-picked': return 'a choisi son projet : <strong>' + escapeHtml(item.target) + '</strong>';
-      case 'boss-win': return 'a <strong>VAINCU l\'IA Supr&ecirc;me</strong> 🏆 — exploit rare !';
-      case 'boss-try': return 'a os&eacute; d&eacute;fier <strong>l\'IA Supr&ecirc;me</strong> 🤖';
+      case 'boss-win': return 'a <strong>BATTU le Prof</strong> 🏆 — exploit l&eacute;gendaire !';
+      case 'boss-try': return 'a os&eacute; d&eacute;fier <strong>le Prof</strong> 🤖';
+      case 'boss-solo': return 'a vaincu un boss solo : <strong>' + escapeHtml(item.target) + '</strong> 👹';
       default: return 'a fait quelque chose...';
     }
   }

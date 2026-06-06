@@ -103,6 +103,8 @@
     { id: 'helper', icon: '🤝', name: 'Aidant', desc: 'Commenter / encourager 5 pairs', rarity: 'rare' },
     { id: 'rpg-winner', icon: '⚔️', name: 'Duelliste', desc: 'Premiere victoire en RPG PvP', rarity: 'common' },
     { id: 'campaign-shipper', icon: '🚢', name: 'Campaign Shipper', desc: 'Exporter sa campagne en JSON', rarity: 'common' },
+    { id: 'prof-slayer', icon: '🧠', name: 'Tombeur du Prof', desc: 'Battre le Prof (IA quasi imbattable) en duel', rarity: 'legendary' },
+    { id: 'boss-hunter', icon: '👹', name: 'Chasseur de Boss', desc: 'Vaincre les 4 boss solo des mini-jeux', rarity: 'epic' },
     { id: 'legend', icon: '🦄', name: 'Legende IDRAC', desc: 'Tous les badges epic + 1000 XP', rarity: 'legendary' }
   ];
 
@@ -185,9 +187,16 @@
     streak: { count: 0, lastDate: null }, gameNotes: '', gameDeliverables: {},
     toolsExplored: [], avatar: null, currentPage: 'dashboard', demosCompleted: [],
     reactions: {},
-    // Duel contre l'admin (IA Supreme) : tentative unique pour tout le seminaire.
+    // Duel contre le Prof (IA quasi imbattable) : tentative unique pour tout le seminaire.
     bossDuel: null,            // { used:true, result:'win'|'loss', ts:'...' }
-    pvpPenaltyUntil: 0         // timestamp ms : malus 0,75x sur les gains XP jusqu'a cette heure
+    pvpPenaltyUntil: 0,        // timestamp ms : malus 0,75x sur les gains XP jusqu'a cette heure
+    // Boss SOLO (PvE) des mini-jeux : debloques apres 3 parties reussies, 1 victoire = bossDone.
+    gameProgress: {
+      rpg:       { wins: 0, bossDone: false },
+      quiz:      { wins: 0, bossDone: false },
+      battle:    { wins: 0, bossDone: false },
+      challenge: { wins: 0, bossDone: false }
+    }
   };
 
   var Storage = {
@@ -458,6 +467,24 @@
   function recordBossDuel(result) { state.bossDuel = { used: true, result: result, ts: new Date().toISOString() }; saveStateNow(); }
   function getBossDuel() { return state.bossDuel; }
 
+  // Boss SOLO des mini-jeux : suivi des parties reussies + statut "boss vaincu".
+  var BOSS_UNLOCK_WINS = 3;
+  function getGameProgress() {
+    if (!state.gameProgress) state.gameProgress = { rpg:{wins:0,bossDone:false}, quiz:{wins:0,bossDone:false}, battle:{wins:0,bossDone:false}, challenge:{wins:0,bossDone:false} };
+    return state.gameProgress;
+  }
+  function bumpGameProgress(game) {
+    var gp = getGameProgress(); if (!gp[game]) gp[game] = { wins:0, bossDone:false };
+    gp[game].wins = (gp[game].wins || 0) + 1; saveState(); return gp[game].wins;
+  }
+  function markGameBoss(game) {
+    var gp = getGameProgress(); if (!gp[game]) gp[game] = { wins:0, bossDone:false };
+    gp[game].bossDone = true;
+    var all = ['rpg','quiz','battle','challenge'].every(function (g) { return gp[g] && gp[g].bossDone; });
+    if (all) awardBadge('boss-hunter');
+    saveState();
+  }
+
   function addXP(amount, reason) {
     if (!state.xp) state.xp = { total: 0, history: [] };
     if (!Array.isArray(state.xp.history)) state.xp.history = [];
@@ -565,7 +592,7 @@
       wall:function(){if(window.AIA&&window.AIA.renderWall)window.AIA.renderWall(main);},
       inbox:function(){if(window.AIA&&window.AIA.renderInbox)window.AIA.renderInbox(main);},
       shop:function(){if(window.AIA&&window.AIA.renderShop)window.AIA.renderShop(main);},
-      arena:renderArena, boss:function(){if(window.AIA&&window.AIA.renderBossArena)window.AIA.renderBossArena(document.getElementById('main-content'));},
+      arena:renderArena,
       'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -1206,39 +1233,20 @@
 
   function renderArena(){
     var main=document.getElementById('main-content');
-    // Carte "Defier l'Admin" (IA Supreme) — tentative unique sur tout le seminaire
-    var bd = state.bossDuel;
-    var bossCard;
-    if (bd && bd.used) {
-      var bdWon = bd.result === 'win';
-      bossCard = '<div class="arena-mode-card glass-card boss-card done '+(bdWon?'boss-won':'boss-lost')+'">'+
-        '<div class="mode-icon">🤖</div><h3>L\'IA Supr&ecirc;me</h3>'+
-        '<p>'+(bdWon?'Vous avez TERRASS&Eacute; le boss 🏆 — bonus x2 encaiss&eacute; !':'D&eacute;faite courageuse. Le malus s\'est dissip&eacute;.')+'</p>'+
-        '<div class="boss-card-badge">'+(bdWon?'✅ Vaincu':'💀 Tentative utilis&eacute;e')+' &bull; 1 seule fois</div></div>';
-    } else {
-      bossCard = '<div class="arena-mode-card glass-card boss-card challenge" id="btn-start-boss">'+
-        '<div class="boss-card-glow"></div>'+
-        '<div class="mode-icon">🤖</div><h3>D&eacute;fier l\'IA Supr&ecirc;me</h3>'+
-        '<p>Le boss de l\'Admin. Coriace. <strong>Une seule tentative</strong> pour tout le s&eacute;minaire.</p>'+
-        '<div class="boss-card-stakes">🏆 Victoire = gains du duel <strong>x2</strong> &bull; 💀 D&eacute;faite = <strong>-25%</strong> sur 2h</div></div>';
-    }
-
     main.innerHTML='<div class="page-header"><h1>Arena <span class="gradient-text">Multijoueur</span></h1>'+
       '<p class="page-subtitle">Battles, challenges et quiz en temps reel</p></div>'+
       '<div class="arena-modes">'+
       '<div class="arena-mode-card glass-card" data-navigate="battle"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Affrontez un autre etudiant : soumettez vos prompts, la classe vote</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div>'+
-      '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe marketing et combattez en tour par tour !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Gagnez des points PvP</div></div>'+
-      bossCard+'</div>';
+      '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe, affrontez la classe ou <strong>d&eacute;fiez le Prof</strong> !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Boss solo &bull; Duel du Prof</div></div>'+
+      '</div>';
     var q=document.getElementById('btn-start-quiz');
     if(q) q.addEventListener('click',function(){if(window.AIA&&window.AIA.startQuiz)window.AIA.startQuiz(main);});
     var ch=document.getElementById('btn-start-challenge');
     if(ch) ch.addEventListener('click',function(){if(window.AIA&&window.AIA.startChallenge)window.AIA.startChallenge(main);});
     var rpg=document.getElementById('btn-start-rpg');
     if(rpg) rpg.addEventListener('click',function(){navigateTo('rpg');});
-    var boss=document.getElementById('btn-start-boss');
-    if(boss) boss.addEventListener('click',function(){navigateTo('boss');});
   }
 
   function renderRoom(){
@@ -1715,10 +1723,12 @@
   window.AIA.deleteStudentState=deleteStudentState; window.AIA.hashPass=hashPass;
   window.AIA.hashAccountPass=hashAccountPass; // SHA-256 sale par compte (async)
   window.AIA.getAccountKey=getAccountKey; window.AIA.saveStateNow=saveStateNow;
-  // Duel admin (IA Supreme)
+  // Duel Prof (IA quasi imbattable) + boss solo des mini-jeux
   window.AIA.startPvpPenalty=startPvpPenalty; window.AIA.recordBossDuel=recordBossDuel;
   window.AIA.getBossDuel=getBossDuel; window.AIA.isPvpPenaltyActive=isPvpPenaltyActive;
   window.AIA.pvpPenaltyMinutesLeft=pvpPenaltyMinutesLeft;
+  window.AIA.getGameProgress=getGameProgress; window.AIA.bumpGameProgress=bumpGameProgress;
+  window.AIA.markGameBoss=markGameBoss; window.AIA.BOSS_UNLOCK_WINS=BOSS_UNLOCK_WINS;
   window.AIA.createAccount=createAccount; window.AIA.loginAccount=loginAccount;
   window.AIA.getActivityRef=getActivityRef;
   window.AIA.getActivityShareUrl=getActivityShareUrl;
