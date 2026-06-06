@@ -1120,6 +1120,17 @@
   window.AIA = window.AIA || {};
   window.AIA.PRODUCT_THEMES = PRODUCT_THEMES;
   window.AIA.PHASES_GUIDE = PHASES_GUIDE;
+  // Contexte de la session courante (jour/demi-journee + phase/demos recommandees) pour le fil conducteur du dashboard.
+  window.AIA.getSessionContext = function () {
+    var t = getCurrentTiming();
+    if (!t) return null;
+    var ctx = (TIMING_MAP[t.dayNum] && TIMING_MAP[t.dayNum][t.session]) || null;
+    return {
+      dayNum: t.dayNum, session: t.session,
+      phase: ctx ? ctx.phase : null, step: ctx ? ctx.step : null,
+      label: ctx ? ctx.label : '', demos: (ctx && ctx.demos) ? ctx.demos.slice() : []
+    };
+  };
   window.AIA.showThemeSelection = showThemeSelection;
   window.AIA.renderBusinessGameNew = renderBusinessGame;
   window.AIA.pickRandomThemes = pickRandomThemes;

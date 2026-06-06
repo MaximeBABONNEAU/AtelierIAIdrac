@@ -33,10 +33,42 @@
 
   function getWB() {
     var st = window.AIA.getState();
-    if (!st.workbook) st.workbook = { fields: {}, finalized: {} };
+    if (!st.workbook) st.workbook = { fields: {}, finalized: {}, pinned: [] };
     if (!st.workbook.fields) st.workbook.fields = {};
     if (!st.workbook.finalized) st.workbook.finalized = {};
+    if (!Array.isArray(st.workbook.pinned)) st.workbook.pinned = [];
     return st.workbook;
+  }
+
+  /* ===== Epinglage : centralise toute production (demo, asset, jeu) dans le Carnet ===== */
+  // item = { kind, source, sourceLabel, title, content }
+  function pinToCarnet(item) {
+    var AIA = window.AIA;
+    if (!item || (!item.content && !item.title)) return false;
+    var wb = getWB();
+    var key = (item.source || '') + '|' + (item.title || '') + '|' + (item.content || '').slice(0, 40);
+    var exists = wb.pinned.some(function (p) { return p.key === key; });
+    if (exists) { if (AIA.showToast) AIA.showToast('Deja epingle dans le Carnet', 'info'); return false; }
+    wb.pinned.push({
+      id: 'pin-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      key: key,
+      kind: item.kind || 'note',
+      source: item.source || '',
+      sourceLabel: item.sourceLabel || 'Production',
+      title: item.title || '',
+      content: item.content || '',
+      time: new Date().toISOString()
+    });
+    if (AIA.saveState) AIA.saveState();
+    if (AIA.addXP) AIA.addXP(5, 'Production epinglee au Carnet');
+    if (AIA.showToast) AIA.showToast('📌 Epingle au Carnet ! (+5 XP)', 'success');
+    return true;
+  }
+
+  function removePinned(id) {
+    var wb = getWB();
+    wb.pinned = wb.pinned.filter(function (p) { return p.id !== id; });
+    if (window.AIA.saveState) window.AIA.saveState();
   }
 
   function escapeHtml(s) {
@@ -211,10 +243,46 @@
     }
     html += '</div>';
 
+    // Productions epinglees (depuis les demos, le jeu, etc.)
+    html += renderPinnedSection(wb);
+
     html += '</div>';
 
     main.innerHTML = html;
     wireWorkbook(main);
+  }
+
+  function renderPinnedSection(wb) {
+    var pins = wb.pinned || [];
+    var sectionOptions = SECTIONS.map(function (s) {
+      return '<option value="' + s.id + '">' + escapeHtml(s.title) + '</option>';
+    }).join('');
+    var h = '<div class="wb-section glass-card"><div class="wb-section-head"><h3>📌 Productions epinglees</h3>' +
+      '<span class="wb-pin-count">' + pins.length + '</span></div>' +
+      '<p class="wb-hint">Tout ce que vous avez epingle depuis les <strong>demos IA</strong> et le <strong>Business Game</strong>. Reutilisez-le dans vos sections.</p>';
+    if (!pins.length) {
+      h += '<div class="wb-empty-note">Rien d\'epingle pour le moment. Dans une demo IA, cliquez sur <strong>📌 Epingler au Carnet</strong> pour sauvegarder un resultat ici.</div>';
+    } else {
+      h += '<div class="wb-pins">';
+      // Plus recent en premier
+      pins.slice().reverse().forEach(function (p) {
+        h += '<div class="wb-pin" data-pin-id="' + p.id + '">' +
+          '<div class="wb-pin-head">' +
+          '<span class="wb-pin-source">' + escapeHtml(p.sourceLabel || 'Production') + '</span>' +
+          '<button class="wb-pin-remove" data-pin-remove="' + p.id + '" title="Retirer">✕</button>' +
+          '</div>' +
+          (p.title ? '<div class="wb-pin-title">' + escapeHtml(p.title) + '</div>' : '') +
+          '<div class="wb-pin-content">' + nl2br(p.content || '') + '</div>' +
+          '<div class="wb-pin-actions">' +
+          '<select class="wb-pin-target" data-pin-target="' + p.id + '">' + sectionOptions + '</select>' +
+          '<button class="btn-ghost btn-sm wb-pin-insert" data-pin-insert="' + p.id + '">↳ Inserer dans la section</button>' +
+          '</div>' +
+          '</div>';
+      });
+      h += '</div>';
+    }
+    h += '</div>';
+    return h;
   }
 
   function wireWorkbook(main) {
@@ -296,6 +364,37 @@
       a.click(); URL.revokeObjectURL(url);
       AIA.showToast('Carnet exporte', 'success');
     });
+
+    // Productions epinglees : retirer
+    main.querySelectorAll('.wb-pin-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        removePinned(this.getAttribute('data-pin-remove'));
+        AIA.showToast('Epingle retire', 'info');
+        renderWorkbook(main);
+      });
+    });
+
+    // Productions epinglees : inserer dans une section de redaction
+    main.querySelectorAll('.wb-pin-insert').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var pinId = this.getAttribute('data-pin-insert');
+        var wb = getWB();
+        var pin = wb.pinned.filter(function (p) { return p.id === pinId; })[0];
+        if (!pin) return;
+        var sel = main.querySelector('.wb-pin-target[data-pin-target="' + pinId + '"]');
+        var targetId = sel ? sel.value : 'execSummary';
+        var ta = main.querySelector('.wb-textarea[data-section="' + targetId + '"]');
+        if (!ta) return;
+        var addition = (pin.title ? pin.title + '\n' : '') + (pin.content || '');
+        ta.value = (ta.value ? ta.value + '\n\n' : '') + addition;
+        saveField(targetId, ta.value);
+        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ta.style.transition = 'box-shadow 0.5s';
+        ta.style.boxShadow = '0 0 20px rgba(245,183,49,0.6)';
+        setTimeout(function () { ta.style.boxShadow = ''; }, 1800);
+        AIA.showToast('Insere dans la section', 'success');
+      });
+    });
   }
 
   /* ===== PREVIEW (clean printable support) ===== */
@@ -337,6 +436,15 @@
           return '<div class="wb-asset">' + (isImg ? '<img src="' + escapeHtml(url) + '">' : '🔗 ') + '<a href="' + escapeHtml(url) + '" target="_blank">' + escapeHtml(label) + '</a></div>';
         }).join('') + '</div></div>';
     }
+    var pins = wb.pinned || [];
+    if (pins.length) {
+      doc += '<div class="wb-doc-section"><h2>📌 Productions epinglees</h2>' +
+        pins.map(function (p) {
+          return '<div class="wb-doc-pin">' +
+            '<div class="wb-doc-pin-src">' + escapeHtml(p.sourceLabel || 'Production') + (p.title ? ' — ' + escapeHtml(p.title) : '') + '</div>' +
+            '<div class="wb-doc-text">' + nl2br(p.content || '') + '</div></div>';
+        }).join('') + '</div>';
+    }
     doc += '<div class="wb-doc-footer">Genere sur AI Marketing Academy &bull; IDRAC Business School &bull; ' + dateStr + '</div>';
     doc += '</div>';
 
@@ -356,4 +464,5 @@
   window.AIA = window.AIA || {};
   window.AIA.renderWorkbook = renderWorkbook;
   window.AIA.WORKBOOK_SECTIONS = SECTIONS;
+  window.AIA.pinToCarnet = pinToCarnet;
 })();

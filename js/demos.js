@@ -60,6 +60,48 @@
     return div.innerHTML;
   }
 
+  /* ---------- Pin-to-Carnet : bouton + handler delegue (micro-etape 3) ---------- */
+  // Genere un bouton "Epingler au Carnet" pour un resultat de demo.
+  // SECURITE : title/content peuvent contenir du texte saisi par l'etudiant.
+  // encodeURIComponent les rend surs en attribut HTML (encode " < > & en %xx) ;
+  // le handler delegue fait decodeURIComponent puis passe a pinToCarnet, qui stocke
+  // brut ; le rendu (workbook nl2br -> escapeHtml) re-echappe a l'affichage.
+  // NE PAS remplacer par escapeHtml ici : cela casserait le round-trip decodeURIComponent.
+  function pinBtn(source, sourceLabel, title, content) {
+    return '<button class="btn-outline btn-xs demo-pin-btn" ' +
+      'data-pin-source="' + escapeHtml(source) + '" ' +
+      'data-pin-label="' + escapeHtml(sourceLabel) + '" ' +
+      'data-pin-title="' + encodeURIComponent(title || '') + '" ' +
+      'data-pin-content="' + encodeURIComponent(content || '') + '">📌 Epingler au Carnet</button>';
+  }
+  // Enveloppe standard : bouton + lien vers le Carnet, sous un resultat de demo.
+  function pinBar(source, sourceLabel, title, content) {
+    return '<div class="demo-pin-bar">' +
+      '<span class="demo-pin-hint">💡 Gardez ce resultat pour votre projet :</span> ' +
+      pinBtn(source, sourceLabel, title, content) +
+      ' <a class="btn-ghost btn-xs" href="#" data-navigate="workbook">📓 Voir le Carnet</a>' +
+      '</div>';
+  }
+  // Handler delegue (attache une seule fois) : tout .demo-pin-btn epingle au Carnet.
+  if (!window.__aiaDemoPinWired) {
+    window.__aiaDemoPinWired = true;
+    document.addEventListener('click', function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest('.demo-pin-btn') : null;
+      if (!btn) return;
+      e.preventDefault();
+      if (btn.disabled) return;
+      var item = {
+        kind: 'demo',
+        source: btn.getAttribute('data-pin-source') || '',
+        sourceLabel: btn.getAttribute('data-pin-label') || 'Demo IA',
+        title: decodeURIComponent(btn.getAttribute('data-pin-title') || ''),
+        content: decodeURIComponent(btn.getAttribute('data-pin-content') || '')
+      };
+      var ok = window.AIA && window.AIA.pinToCarnet && window.AIA.pinToCarnet(item);
+      if (ok) { btn.textContent = '📌 Epingle ✓'; btn.disabled = true; btn.classList.add('pinned'); }
+    });
+  }
+
   /* ======== DEMO 1: PROMPT PLAYGROUND ======== */
   function renderDemoPrompt(main, inline) {
     var header = inline ? '' : '<div class="page-header">' + backBtn() +
@@ -161,6 +203,10 @@
             scoreB: sB.total
           });
         }
+
+        var bestTxt = (sA.total >= sB.total ? a : b) || a || b;
+        var bestScore = Math.max(sA.total, sB.total);
+        html += pinBar('demo-prompt', 'Prompt Playground', 'Meilleur prompt (' + bestScore + '/100)', bestTxt);
 
         res.innerHTML = html;
         markDemoComplete('demo-prompt');
@@ -287,7 +333,10 @@
           '<div class="bar-row"><span>Positif</span><div class="bar-track"><div class="bar-fill" style="width:' + pPct + '%;background:#2ecc71"></div></div><span>' + pPct + '%</span></div>' +
           '<div class="bar-row"><span>Neutre</span><div class="bar-track"><div class="bar-fill" style="width:' + neuPct + '%;background:#f5b731"></div></div><span>' + neuPct + '%</span></div>' +
           '<div class="bar-row"><span>Negatif</span><div class="bar-track"><div class="bar-fill" style="width:' + nPct + '%;background:#e74c3c"></div></div><span>' + nPct + '%</span></div>' +
-          '</div>' + highlightHtml + '</div>';
+          '</div>' + highlightHtml + '</div>' +
+          pinBar('demo-sentiment', 'Analyse de sentiment',
+            'Sentiment : ' + sentiment + ' (' + pPct + '% pos / ' + nPct + '% neg)',
+            'Texte analyse : "' + text + '"\nResultat : ' + sentiment + ' — confiance ' + confLabel + ' (' + conf + '%)');
 
         if (window.AIA.submitActivity) {
           window.AIA.submitActivity('demo-sentiment', {
@@ -488,6 +537,8 @@
         confidence = Math.min(99.9, confidence);
         var significant = confidence >= 95;
 
+        var valA = (document.getElementById('ab-val-a') || {}).value || 'Variante A';
+        var valB = (document.getElementById('ab-val-b') || {}).value || 'Variante B';
         res.innerHTML = '<div class="ab-results-grid">' +
           '<div class="ab-result-card ' + (winner === 'A' ? 'winner' : '') + '">' +
           '<h4>Variante A</h4><div class="ab-metric">' + crA + '%</div><div>Taux de conversion</div>' +
@@ -500,7 +551,10 @@
           (significant ? 'Gagnant : Variante ' + winner : 'Resultat non significatif') + '</div>' +
           '<div>Uplift : +' + lift + '% | Confiance : ' + confidence + '% | Z-score : ' + zScore.toFixed(2) + '</div>' +
           (significant ? '' : '<p style="margin-top:0.5rem;color:var(--gold);font-size:0.82rem">&#9888;&#65039; Confiance < 95%. Continuez le test avec plus de visiteurs avant de conclure.</p>') +
-          '<p style="margin-top:0.8rem;color:var(--text-muted);font-size:0.82rem">Outils pro : Google Optimize, VWO, Evolv AI, Eppo, LaunchDarkly</p></div>';
+          '<p style="margin-top:0.8rem;color:var(--text-muted);font-size:0.82rem">Outils pro : Google Optimize, VWO, Evolv AI, Eppo, LaunchDarkly</p></div>' +
+          pinBar('demo-abtest', 'A/B Test (' + tabType + ')',
+            'Gagnant : Variante ' + winner + ' (+' + lift + '%, conf. ' + confidence + '%)',
+            'A : "' + valA + '" -> ' + crA + '%\nB : "' + valB + '" -> ' + crB + '%\nGagnant : ' + winner + ' (uplift +' + lift + '%, confiance ' + confidence + '%)');
 
         if (window.AIA.submitActivity) {
           window.AIA.submitActivity('demo-abtest', {
@@ -615,7 +669,10 @@
           (parseFloat(density) > 3 ? '<li>&#9888;&#65039; Sur-optimisation detectee ! Reduisez la repetition du mot-cle</li>' : '') +
           '<li>Ajoutez des liens internes (3-5 par article) et 1-2 liens externes de qualite</li>' +
           '<li>Utilisez des variantes semantiques : synonymes, questions, expressions longue traine</li>' +
-          '<li>Ajoutez des images avec des attributs alt contenant le mot-cle</li></ul></div>';
+          '<li>Ajoutez des images avec des attributs alt contenant le mot-cle</li></ul></div>' +
+          pinBar('demo-seo', 'Analyse SEO',
+            'SEO ' + grade + ' (' + pct + '/100) — ' + keyword,
+            'Mot-cle : ' + keyword + '\nScore : ' + pct + '/100 (' + grade + ')\nMeta description : ' + (meta || '(vide)') + '\nDensite : ' + density + '% sur ' + wordCount + ' mots');
 
         if (window.AIA.submitActivity) {
           window.AIA.submitActivity('demo-seo', {

@@ -766,6 +766,92 @@
     }
   }
 
+  // ===== Fil conducteur : prochaine action + checklist du jour (micro-etape 3) =====
+  var DEMO_LABELS = {
+    'demo-prompt':'✍️ Prompt Playground','demo-chatbot':'💬 Chatbot Marketing','demo-vqa':'👁️ Analyse Visuelle IA',
+    'demo-translate':'🌍 Traduction','demo-image':"🎨 Generation d'Images",'demo-logo':'🆎 Generateur de Logos',
+    'demo-bg-remove':'🖼️ Suppression de Fond','demo-upscale':'🔍 Upscaler','demo-sentiment':'😊 Analyse de Sentiment',
+    'demo-music':'🎵 Generation Musicale','demo-tts':'🗣️ Voix Off IA','demo-avatar':'🎬 Avatar Video',
+    'demo-abtest':'📊 A/B Testing','demo-seo':'🔍 SEO Analyzer','demo-speech':'🎙️ Transcription'
+  };
+  function gamePhaseProgress(){
+    var PG = (window.AIA && window.AIA.PHASES_GUIDE) || {};
+    var done=0,total=0;
+    Object.keys(PG).forEach(function(pk){
+      var unlocked = !window.AIA.isItemUnlocked || window.AIA.isItemUnlocked('phases',pk);
+      if(!unlocked) return;
+      (PG[pk].steps||[]).forEach(function(s){ total++; if(state.gameDeliverables && state.gameDeliverables[s.id]) done++; });
+    });
+    return {done:done,total:total};
+  }
+  function workbookFilledCount(){
+    var wb = state.workbook;
+    if(!wb || !wb.fields) return 0;
+    var secs = (window.AIA && window.AIA.WORKBOOK_SECTIONS) || [];
+    return secs.filter(function(s){ return wb.fields[s.id] && wb.fields[s.id].trim().length>20; }).length;
+  }
+  function computeDayChecklist(){
+    var today = new Date().toISOString().split('T')[0];
+    var sc = (window.AIA && window.AIA.getSessionContext) ? window.AIA.getSessionContext() : null;
+    var recDemos = (sc && sc.demos) || [];
+    var demosDone = recDemos.filter(function(id){ return state.demosCompleted.indexOf(id)!==-1; });
+    var gp = gamePhaseProgress();
+    var wbCount = workbookFilledCount();
+    return [
+      { key:'avatar', icon:'🎨', label:'Creer ton avatar', done: !!state.avatar, route:'avatar' },
+      { key:'checkin', icon:'☀️', label:'Faire ton check-in du jour', done: !!(state.streak && state.streak.lastDate===today), action:'checkin' },
+      { key:'project', icon:'🎯', label:'Choisir ton projet fil rouge', done: !!state.productTheme, route:'business-game' },
+      { key:'game', icon:'🎮', label:'Business Game — etapes ('+gp.done+'/'+gp.total+')', done: gp.total>0 && gp.done>=gp.total, route:'business-game' },
+      { key:'demos', icon:'🛠️', label:'Tester les demos du jour ('+demosDone.length+'/'+(recDemos.length||0)+')', done: recDemos.length>0 && demosDone.length>=recDemos.length, route:'demos' },
+      { key:'carnet', icon:'📓', label:'Structurer ton Carnet ('+wbCount+' section'+(wbCount>1?'s':'')+')', done: wbCount>=1, route:'workbook' }
+    ];
+  }
+  function computeNextAction(){
+    var items = computeDayChecklist();
+    var pending = items.filter(function(i){ return !i.done; });
+    return pending.length ? pending[0] : null;
+  }
+  function actionAttr(i){ return i.action ? ' data-action="'+i.action+'"' : ' data-navigate="'+i.route+'"'; }
+  function renderNextActionBanner(){
+    var next = computeNextAction();
+    if(!next){
+      return '<div class="next-action done glass-card"><span class="na-icon">🎉</span>'+
+        '<div class="na-body"><div class="na-label">Tout est fait pour aujourd\'hui — bravo !</div>'+
+        '<div class="na-sub">Continue ton Carnet ou explore les demos bonus.</div></div>'+
+        '<button class="btn-outline btn-sm" data-navigate="workbook">📓 Carnet</button></div>';
+    }
+    return '<div class="next-action glass-card">'+
+      '<span class="na-icon">'+next.icon+'</span>'+
+      '<div class="na-body"><div class="na-eyebrow">👉 Ta prochaine action</div>'+
+      '<div class="na-label">'+next.label+'</div></div>'+
+      '<button class="btn-primary btn-sm na-cta"'+actionAttr(next)+'>Y aller →</button></div>';
+  }
+  function renderDayChecklist(){
+    var items = computeDayChecklist();
+    var doneCount = items.filter(function(i){return i.done;}).length;
+    var h = '<details class="day-checklist glass-card"'+(doneCount<items.length?' open':'')+'>'+
+      '<summary><span class="dc-title">✅ Checklist du jour</span><span class="dc-count">'+doneCount+'/'+items.length+'</span></summary>'+
+      '<div class="dc-items">';
+    items.forEach(function(i){
+      h += '<div class="dc-item'+(i.done?' done':'')+'"'+actionAttr(i)+'>'+
+        '<span class="dc-check">'+(i.done?'✅':'⬜')+'</span>'+
+        '<span class="dc-icon">'+i.icon+'</span>'+
+        '<span class="dc-label">'+i.label+'</span>'+
+        (i.done?'':'<span class="dc-go">→</span>')+
+        '</div>';
+    });
+    h += '</div></details>';
+    return h;
+  }
+  function wireCheckinTriggers(main){
+    main.querySelectorAll('[data-action="checkin"]').forEach(function(el){
+      el.addEventListener('click', function(e){
+        e.preventDefault();
+        if(window.AIA && window.AIA.showMorningCheckin) window.AIA.showMorningCheckin();
+      });
+    });
+  }
+
   function renderDashboard(){
     var main=document.getElementById('main-content'), info=getLevelInfo(state.xp.total);
     var tA=0,cA=0;
@@ -775,6 +861,8 @@
     main.innerHTML=
       '<div class="page-header"><h1>Bienvenue <span class="gradient-text">'+(state.user?state.user.name:'')+'</span> !</h1>'+
       '<p class="page-subtitle">Jour '+getCurrentDay()+' sur 4 &bull; '+CONFIG.school+'</p></div>'+
+      renderNextActionBanner()+
+      renderDayChecklist()+
       highlightsBanner+
       '<div class="xp-card glass-card"><div class="xp-ring" style="--pct:'+info.progress+'%"><div class="xp-ring-inner">'+info.level+'</div></div>'+
       '<div class="xp-info"><div class="xp-title">'+state.xp.total+' XP</div><div class="xp-level-name">'+info.title+'</div>'+
@@ -790,6 +878,7 @@
       '<div class="days-grid">'+renderDayCards()+'</div>'+
       '<h2 style="font-size:1.1rem;font-weight:700;margin-bottom:1rem">Activite Recente</h2>'+renderActivityFeed();
     if (window.AIA && window.AIA.wireHighlightCTAs) window.AIA.wireHighlightCTAs(main);
+    wireCheckinTriggers(main);
   }
 
   function renderGameSpotlight(){
@@ -1021,6 +1110,25 @@
     var DAY_ICONS={1:'🌱',2:'🎨',3:'📢',4:'🚀'};
     var html='<div class="page-header"><h1>Demos <span class="gradient-text">IA Interactives</span></h1>'+
       '<p class="page-subtitle">'+demos.length+' outils IA — '+demos.filter(function(d){return d.tag==='HuggingFace';}).length+' embeds HuggingFace + outils integres. Organises par jour de formation.</p></div>';
+
+    // Bandeau : demos recommandees pour la session en cours (fil conducteur)
+    var sc = (window.AIA && window.AIA.getSessionContext) ? window.AIA.getSessionContext() : null;
+    var recIds = (sc && sc.demos) || [];
+    if (recIds.length) {
+      var recDone = recIds.filter(function(id){ return state.demosCompleted.indexOf(id)!==-1; }).length;
+      html += '<div class="demos-reco glass-card">'+
+        '<div class="demos-reco-head">🎯 <strong>A faire maintenant</strong> &bull; '+(sc.label||'')+' <span class="demos-reco-count">'+recDone+'/'+recIds.length+'</span></div>'+
+        '<p class="demos-reco-sub">Testez ces demos puis <strong>📌 epinglez vos resultats au Carnet</strong> pour nourrir votre projet.</p>'+
+        '<div class="demos-reco-chips">'+
+        recIds.map(function(id){
+          var dn = state.demosCompleted.indexOf(id)!==-1;
+          var unlocked = isItemUnlocked('demos', id);
+          var lbl = DEMO_LABELS[id] || id;
+          var attr = unlocked ? ' data-navigate="'+id+'"' : '';
+          return '<button class="demos-reco-chip'+(dn?' done':'')+(unlocked?'':' locked')+'"'+attr+'>'+(dn?'✅ ':(unlocked?'':'🔒 '))+lbl+'</button>';
+        }).join('')+
+        '</div></div>';
+    }
     [1,2,3,4].forEach(function(day){
       var dayDemos=demos.filter(function(d){return d.day===day;});
       if(dayDemos.length===0) return;

@@ -1358,6 +1358,77 @@ body {
 .game-next-banner .btn-primary { white-space: nowrap; }
 @keyframes gnb-pop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ===== Micro-etape 3 : fil conducteur (prochaine action + checklist) ===== */
+.next-action {
+  display: flex; align-items: center; gap: 0.9rem; padding: 0.9rem 1.1rem; margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(245,183,49,0.14), rgba(212,52,63,0.08));
+  border: 1px solid rgba(245,183,49,0.4);
+}
+.next-action.done { background: linear-gradient(135deg, rgba(46,204,113,0.14), rgba(46,204,113,0.05)); border-color: rgba(46,204,113,0.4); }
+.na-icon { font-size: 1.8rem; line-height: 1; }
+.na-body { flex: 1; min-width: 0; }
+.na-eyebrow { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold); font-weight: 700; }
+.na-label { font-size: 0.98rem; font-weight: 700; margin-top: 0.15rem; }
+.na-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.15rem; }
+.next-action .btn-primary, .next-action .btn-outline { white-space: nowrap; }
+
+.day-checklist { margin-bottom: 1.4rem; padding: 0.5rem 0.9rem; }
+.day-checklist > summary {
+  cursor: pointer; list-style: none; display: flex; align-items: center; justify-content: space-between;
+  padding: 0.4rem 0; font-weight: 600; font-size: 0.9rem;
+}
+.day-checklist > summary::-webkit-details-marker { display: none; }
+.dc-count { font-size: 0.78rem; color: var(--text-muted); background: rgba(255,255,255,0.06); padding: 0.1rem 0.5rem; border-radius: 999px; }
+.dc-items { display: flex; flex-direction: column; gap: 0.3rem; padding: 0.5rem 0 0.3rem; }
+.dc-item {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.6rem; border-radius: var(--radius-xs);
+  cursor: pointer; transition: background 0.15s; border: 1px solid transparent;
+}
+.dc-item:hover { background: rgba(255,255,255,0.05); border-color: var(--border-glass); }
+.dc-item.done { opacity: 0.6; }
+.dc-item.done .dc-label { text-decoration: line-through; }
+.dc-check { font-size: 0.95rem; }
+.dc-icon { font-size: 1rem; }
+.dc-label { flex: 1; font-size: 0.85rem; }
+.dc-go { color: var(--gold); font-weight: 700; }
+
+/* Demos recommandees (page demos) */
+.demos-reco { padding: 0.9rem 1.1rem; margin-bottom: 1.4rem; border: 1px solid rgba(245,183,49,0.35); }
+.demos-reco-head { font-size: 0.95rem; }
+.demos-reco-count { font-size: 0.75rem; color: var(--text-muted); background: rgba(255,255,255,0.06); padding: 0.1rem 0.5rem; border-radius: 999px; margin-left: 0.3rem; }
+.demos-reco-sub { font-size: 0.8rem; color: var(--text-muted); margin: 0.4rem 0 0.7rem; }
+.demos-reco-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.demos-reco-chip {
+  background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text);
+  padding: 0.4rem 0.7rem; border-radius: 999px; font-size: 0.8rem; cursor: pointer; transition: all 0.15s;
+}
+.demos-reco-chip:hover { border-color: var(--gold); transform: translateY(-1px); }
+.demos-reco-chip.done { border-color: rgba(46,204,113,0.5); color: var(--green); }
+.demos-reco-chip.locked { opacity: 0.5; cursor: not-allowed; }
+
+/* Bouton "Epingler au Carnet" sous les resultats de demo */
+.demo-pin-bar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; padding: 0.7rem 0.9rem;
+  background: rgba(245,183,49,0.07); border: 1px dashed rgba(245,183,49,0.4); border-radius: var(--radius-xs);
+}
+.demo-pin-hint { font-size: 0.8rem; color: var(--text-muted); }
+.demo-pin-btn.pinned { border-color: rgba(46,204,113,0.6); color: var(--green); cursor: default; }
+
+/* Productions epinglees (Carnet) */
+.wb-pin-count { font-size: 0.78rem; color: var(--text-muted); background: rgba(255,255,255,0.06); padding: 0.1rem 0.55rem; border-radius: 999px; }
+.wb-pins { display: flex; flex-direction: column; gap: 0.7rem; }
+.wb-pin { background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-xs); padding: 0.7rem 0.8rem; }
+.wb-pin-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem; }
+.wb-pin-source { font-size: 0.72rem; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: 0.03em; }
+.wb-pin-remove { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; line-height: 1; padding: 0.2rem; }
+.wb-pin-remove:hover { color: var(--red); }
+.wb-pin-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 0.25rem; }
+.wb-pin-content { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; white-space: pre-wrap; max-height: 140px; overflow: auto; }
+.wb-pin-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; flex-wrap: wrap; }
+.wb-pin-target { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border-glass); border-radius: var(--radius-xs); padding: 0.3rem 0.5rem; font-size: 0.78rem; }
+.wb-doc-pin { margin-bottom: 0.8rem; }
+.wb-doc-pin-src { font-weight: 700; font-size: 0.85rem; color: #333; }
+
 .game-final-cta {
   margin-top: 2rem; padding: 1.5rem; text-align: center;
   background: linear-gradient(135deg, rgba(245,183,49,0.1), rgba(212,52,63,0.08));
