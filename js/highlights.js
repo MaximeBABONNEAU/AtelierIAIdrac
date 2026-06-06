@@ -511,6 +511,7 @@
     var db = AIA.db, myKey = st.user && st.user.accountKey;
     var zone = inline ? document.getElementById('ltn-rank-zone') : null;
     var render = function (rows) {
+      if (inline && !zone) return; // l'etudiant a quitte la page avant le retour Firebase : ne pas ecraser la page courante
       rows.sort(function (a, b) { return b.score - a.score || (a.ts < b.ts ? -1 : 1); });
       var medals = ['🥇', '🥈', '🥉'];
       var html = '<div class="ltn-rank"><h3 class="ltn-rank-title">🏆 Classement live — ' + escapeHtml(h.title) + '</h3>';
@@ -720,6 +721,7 @@
     var db = AIA.db, myKey = st.user && st.user.accountKey;
     var zone = inline ? document.getElementById('boss-rank-zone') : null;
     var render = function (rows) {
+      if (inline && !zone) return; // l'etudiant a quitte la page avant le retour Firebase : ne pas ecraser la page courante
       rows.sort(function (a, b) { return b.score - a.score || (a.ts < b.ts ? -1 : 1); });
       var medals = ['🥇', '🥈', '🥉'];
       var html = '<div class="ltn-rank"><h3 class="ltn-rank-title">🏆 Classement Boss — ' + escapeHtml(h.title) + '</h3>';
