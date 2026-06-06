@@ -1429,6 +1429,48 @@ body {
 .wb-doc-pin { margin-bottom: 0.8rem; }
 .wb-doc-pin-src { font-weight: 700; font-size: 0.85rem; color: #333; }
 
+/* ===== Micro-etape 4 : Lightning Challenge competitif + classement ===== */
+.ltn-card { padding: 1.3rem; margin-bottom: 1rem; }
+.ltn-brief { background: rgba(245,183,49,0.08); border-left: 3px solid var(--gold); padding: 0.7rem 0.9rem; border-radius: var(--radius-xs); margin-bottom: 0.8rem; font-size: 0.9rem; line-height: 1.5; }
+.ltn-rules { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1rem; }
+.ltn-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; margin-top: 0.8rem; }
+.ltn-wc { font-size: 0.78rem; color: var(--text-muted); margin-left: auto; }
+.ltn-timer {
+  font-size: 2.6rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
+  color: var(--cyan); margin-bottom: 0.6rem; letter-spacing: 0.04em;
+}
+.ltn-timer.urgent { color: var(--red); animation: ltn-blink 1s steps(2) infinite; }
+@keyframes ltn-blink { 50% { opacity: 0.4; } }
+.ltn-input { width: 100%; background: rgba(0,0,0,0.3); color: var(--text); border: 1px solid var(--border-glass); border-radius: var(--radius-xs); padding: 0.8rem; font-size: 0.9rem; line-height: 1.5; resize: vertical; }
+.ltn-result { display: flex; align-items: center; justify-content: center; gap: 1.2rem; margin: 0.5rem 0; }
+.ltn-grade { font-size: 3rem; font-weight: 800; line-height: 1; }
+.ltn-score { font-size: 2rem; font-weight: 800; }
+.ltn-score span { font-size: 1rem; color: var(--text-muted); font-weight: 600; }
+.ltn-fb { text-align: center; color: var(--text-muted); font-size: 0.86rem; margin-bottom: 0.8rem; }
+.ltn-yourprompt { background: rgba(255,255,255,0.03); border: 1px solid var(--border-glass); border-radius: var(--radius-xs); padding: 0.7rem 0.9rem; font-size: 0.84rem; line-height: 1.5; margin-bottom: 0.9rem; max-height: 160px; overflow: auto; }
+.ltn-rank-zone { margin: 0.6rem 0; }
+
+.ltn-rank-title { font-size: 1rem; margin-bottom: 0.8rem; text-align: center; }
+.ltn-empty { text-align: center; color: var(--text-muted); padding: 1rem; }
+.ltn-podium { display: flex; justify-content: center; align-items: flex-end; gap: 0.6rem; margin-bottom: 1rem; }
+.ltn-pod { flex: 1; max-width: 130px; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 0.7rem 0.4rem; }
+.ltn-pod-1 { order: 2; transform: translateY(-12px); border-color: rgba(245,183,49,0.6); background: rgba(245,183,49,0.1); }
+.ltn-pod-2 { order: 1; }
+.ltn-pod-3 { order: 3; }
+.ltn-pod.me { box-shadow: 0 0 0 2px var(--cyan) inset; }
+.ltn-pod-medal { font-size: 1.6rem; }
+.ltn-pod-name { font-size: 0.78rem; font-weight: 600; margin: 0.2rem 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ltn-pod-score { font-size: 1.2rem; font-weight: 800; color: var(--gold); }
+.ltn-myrank { text-align: center; font-size: 0.88rem; margin-bottom: 0.8rem; padding: 0.5rem; background: rgba(0,209,255,0.08); border-radius: var(--radius-xs); }
+.ltn-rank-list { display: flex; flex-direction: column; gap: 0.25rem; }
+.ltn-rank-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.6rem; border-radius: var(--radius-xs); font-size: 0.85rem; }
+.ltn-rank-row:nth-child(odd) { background: rgba(255,255,255,0.03); }
+.ltn-rank-row.me { background: rgba(0,209,255,0.12); font-weight: 700; }
+.ltn-rk { width: 2rem; color: var(--text-muted); font-weight: 700; }
+.ltn-rn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ltn-rs { font-weight: 800; color: var(--gold); }
+.ltn-rank-foot { font-size: 0.76rem; color: var(--text-muted); text-align: center; margin-top: 0.8rem; }
+
 .game-final-cta {
   margin-top: 2rem; padding: 1.5rem; text-align: center;
   background: linear-gradient(135deg, rgba(245,183,49,0.1), rgba(212,52,63,0.08));

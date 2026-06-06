@@ -501,6 +501,7 @@
       battle:function(){if(window.AIA&&window.AIA.renderBattle)window.AIA.renderBattle(main);},
       rpg:function(){if(window.AIA&&window.AIA.renderRPG)window.AIA.renderRPG(main);},
       highlights:function(){if(window.AIA&&window.AIA.renderHighlightsPage)window.AIA.renderHighlightsPage(main);},
+      lightning:function(){if(window.AIA&&window.AIA.renderLightningChallenge)window.AIA.renderLightningChallenge(main);},
       resources:function(){if(window.AIA&&window.AIA.renderResources)window.AIA.renderResources(main);},
       journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
       workbook:function(){if(window.AIA&&window.AIA.renderWorkbook)window.AIA.renderWorkbook(main);},

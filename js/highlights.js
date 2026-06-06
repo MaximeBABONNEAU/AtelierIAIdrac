@@ -156,10 +156,31 @@
     return (parseInt(ts[0]) * 60 + parseInt(ts[1])) - (parseInt(cs[0]) * 60 + parseInt(cs[1]));
   }
 
-  /* ============ BANNER WIDGET (Dashboard) ============ */
-  function isHighlightUnlocked(id) {
+  /* ============ DISPONIBILITE MIXTE (auto par horaire + override admin) ============ */
+  // Retourne l'etat explicite pose par l'admin (true/false) ou null si aucun.
+  function adminUnlockOverride(id) {
     var AIA = window.AIA;
-    return AIA && AIA.isItemUnlocked ? AIA.isItemUnlocked('highlights', id) : true;
+    var u = AIA && AIA.getUnlocks ? AIA.getUnlocks() : null;
+    if (u && u.highlights && Object.prototype.hasOwnProperty.call(u.highlights, id)) return !!u.highlights[id];
+    return null;
+  }
+  // Ouverture automatique : le temps fort s'ouvre des que son horaire est atteint (jour courant ou passe).
+  function isHighlightAutoOpen(h, dayTime) {
+    if (!dayTime) return false;
+    if (h.day < dayTime.dayNum) return true;
+    if (h.day > dayTime.dayNum) return false;
+    return dayTime.hhmm >= h.timeStart;
+  }
+  // MIXTE : si l'admin a pose un override explicite, il prime ; sinon ouverture auto par horaire.
+  function isHighlightAvailable(h, dayTime) {
+    var ov = adminUnlockOverride(h.id);
+    if (ov !== null) return ov;
+    return isHighlightAutoOpen(h, dayTime || nowDayTime());
+  }
+  // Compat : ancienne signature par id (utilisee par wireHighlightCTAs).
+  function isHighlightUnlocked(id) {
+    var h = HIGHLIGHTS.find(function (x) { return x.id === id; });
+    return h ? isHighlightAvailable(h, nowDayTime()) : true;
   }
 
   function renderHighlightsBanner() {
@@ -167,14 +188,14 @@
     var dt = nowDayTime();
     if (!dt) return '';
     var next = getNextHighlight(dt);
-    if (next && !isHighlightUnlocked(next.highlight.id)) {
+    if (next && !isHighlightAvailable(next.highlight, dt)) {
       var h0 = next.highlight;
       return '<div class="highlights-banner locked type-' + h0.type + '">' +
         '<div class="hb-icon">🔒</div>' +
         '<div class="hb-info">' +
-        '<div class="hb-label">⏸️ TEMPS FORT VERROUILLE</div>' +
+        '<div class="hb-label">⏸️ TEMPS FORT A VENIR</div>' +
         '<h3>' + escapeHtml(h0.title) + '</h3>' +
-        '<p>L\'admin debloquera ce temps fort le moment venu pendant le cours.</p>' +
+        '<p>S\'ouvre automatiquement a ' + h0.timeStart + (h0.day > dt.dayNum ? ' (Jour ' + h0.day + ')' : '') + '. Le formateur peut aussi l\'ouvrir en avance.</p>' +
         '</div>' +
         '<div class="hb-actions"><div class="hb-time">⏰ ' + h0.timeStart + '</div></div>' +
         '</div>';
@@ -251,7 +272,7 @@
         '<h2>Jour ' + day + (isCurrent ? ' &bull; Aujourd\'hui' : '') + '</h2>' +
         '<div class="highlights-list">' +
         dayHighlights.map(function (h) {
-          var isLocked = !isHighlightUnlocked(h.id);
+          var isLocked = !isHighlightAvailable(h, dt);
           var status = isLocked ? 'locked' : (doneMap[h.id] ? 'done' : (isHighlightActive(h, dt) ? 'active' : (isHighlightUpcoming(h, dt) ? 'upcoming' : 'past')));
           var statusIcon = status === 'locked' ? '🔒' : status === 'done' ? '✅' : status === 'active' ? '🔥' : status === 'upcoming' ? '⏳' : '⏸️';
           return '<div class="highlight-card type-' + h.type + ' status-' + status + '">' +
@@ -266,7 +287,7 @@
             '<p class="hc-desc">' + escapeHtml(h.desc) + '</p>' +
             (h.brief ? '<p class="hc-brief"><strong>📋 Brief :</strong> ' + escapeHtml(h.brief) + '</p>' : '') +
             (status === 'locked'
-              ? '<div class="hc-locked">🔒 Verrouille — debloque par l\'admin pendant le cours</div>'
+              ? '<div class="hc-locked">🔒 S\'ouvre a ' + h.timeStart + (h.day > dt.dayNum ? ' (Jour ' + h.day + ')' : '') + ' — ou debloque par le formateur</div>'
               : status === 'active' && !doneMap[h.id]
                 ? '<button class="btn-primary hc-cta" data-highlight-action="' + h.action + '" data-highlight-id="' + h.id + '">Demarrer maintenant →</button>'
                 : status === 'past' && !doneMap[h.id]
@@ -295,6 +316,12 @@
           return;
         }
         var h = HIGHLIGHTS.find(function (x) { return x.id === hid; });
+        // Lightning : experience competitive dediee (chrono + classement). XP donnee a la fin du defi.
+        if (h && h.type === 'lightning') {
+          _activeLightningId = hid;
+          if (AIA.navigateTo) AIA.navigateTo('lightning');
+          return;
+        }
         if (h) {
           var st = AIA.getState();
           st.highlightsCompleted = st.highlightsCompleted || {};
@@ -315,6 +342,208 @@
     return div.innerHTML;
   }
 
+  /* ============ LIGHTNING CHALLENGE (competitif : chrono + classement live) ============ */
+  var _activeLightningId = null;
+  var _lightningTimer = null;
+  var LIGHTNING_SECONDS = 180;
+
+  function currentLightning() {
+    if (_activeLightningId) {
+      var byId = HIGHLIGHTS.find(function (x) { return x.id === _activeLightningId; });
+      if (byId) return byId;
+    }
+    var dt = nowDayTime();
+    var act = HIGHLIGHTS.find(function (h) { return h.type === 'lightning' && isHighlightActive(h, dt); });
+    if (act) return act;
+    var avail = HIGHLIGHTS.filter(function (h) { return h.type === 'lightning' && isHighlightAvailable(h, dt); });
+    if (avail.length) return avail[avail.length - 1];
+    return HIGHLIGHTS.find(function (h) { return h.type === 'lightning'; });
+  }
+
+  // Score transparent 0-100 base sur la structure du prompt (role/cible/action/contraintes/chiffres/longueur).
+  function scoreLightning(text) {
+    if (!text) return 0;
+    var t = String(text).trim(); var lower = t.toLowerCase();
+    var s = 0;
+    if (/(en tant que|tu es|vous etes|expert|specialis|agis comme|ton role)/.test(lower)) s += 15;
+    if (/(cible|audience|pour les|clients?|persona|b2b|b2c|millennial|gen ?z|prospect)/.test(lower)) s += 15;
+    if (/(cree|genere|redige|ecris|analyse|compare|propose|liste|optimise|decris|imagine)/.test(lower)) s += 15;
+    if (/(ton |format|max |mots|caracteres|style|structure|bullet|emoji|nombre de)/.test(lower)) s += 15;
+    var nums = (t.match(/\d+/g) || []).length; s += Math.min(nums * 5, 20);
+    var words = t.split(/\s+/).length; s += words > 60 ? 20 : words > 40 ? 15 : words > 25 ? 10 : words > 12 ? 5 : 2;
+    return Math.min(100, s);
+  }
+
+  function lightningFeedback(score) {
+    if (score >= 80) return { grade: 'A', label: 'Excellent prompt, tres structure !', color: '#2ecc71' };
+    if (score >= 60) return { grade: 'B', label: 'Bon prompt — encore un cran possible.', color: '#f5b731' };
+    if (score >= 40) return { grade: 'C', label: 'Correct, mais a enrichir (cible, contraintes).', color: '#e67e22' };
+    return { grade: 'D', label: 'Trop vague — ajoute role, cible, contraintes, chiffres.', color: '#e74c3c' };
+  }
+
+  function fmtTime(s) { var m = Math.floor(s / 60); var ss = s % 60; return m + ':' + (ss < 10 ? '0' : '') + ss; }
+
+  function postLightningScore(hid, score, cb) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var db = AIA.db, key = st.user && st.user.accountKey;
+    if (!db || !key) { if (cb) cb(false); return; }
+    var name = (st.user && (st.user.name || ((st.user.firstName || '') + ' ' + (st.user.lastName || '')).trim())) || 'Etudiant';
+    var ref = db.ref('highlight_scores/' + hid + '/' + key);
+    ref.once('value', function (snap) {
+      var prev = snap.val();
+      if (prev && prev.score >= score) { if (cb) cb(true); return; }
+      var done = false;
+      var to = setTimeout(function () { if (!done) { done = true; if (cb) cb(true); } }, 4000);
+      ref.set({ name: name, score: score, ts: new Date().toISOString() }, function () {
+        if (done) return; done = true; clearTimeout(to); if (cb) cb(true);
+      });
+    }, function () { if (cb) cb(false); });
+  }
+
+  function renderLightningChallenge(main) {
+    var AIA = window.AIA;
+    if (_lightningTimer) { clearInterval(_lightningTimer); _lightningTimer = null; }
+    var h = currentLightning();
+    _activeLightningId = null; // id consomme : un retour ulterieur repart sur la detection auto (le retry le repose explicitement)
+    if (!h) { main.innerHTML = '<div class="page-header"><h1>Lightning</h1></div><div class="glass-card" style="padding:2rem;text-align:center">Aucun Lightning disponible pour le moment.</div>'; return; }
+    var dt = nowDayTime();
+    if (!isHighlightAvailable(h, dt)) {
+      main.innerHTML = '<div class="page-header"><h1>⚡ ' + escapeHtml(h.title) + '</h1></div>' +
+        '<div class="glass-card" style="text-align:center;padding:2rem">🔒 Ce Lightning s\'ouvre a ' + h.timeStart +
+        '. Reviens quand le formateur lance le defi !<div style="margin-top:1rem"><button class="btn-outline" data-navigate="highlights">← Temps Forts</button></div></div>';
+      return;
+    }
+    main.innerHTML =
+      '<div class="page-header"><h1>⚡ <span class="gradient-text">' + escapeHtml(h.title) + '</span></h1>' +
+      '<p class="page-subtitle">Defi chrono competitif — ton score entre au classement live de la classe.</p></div>' +
+      '<div class="ltn-card glass-card">' +
+      '<div class="ltn-brief"><strong>📋 Brief :</strong> ' + escapeHtml(h.brief || h.desc) + '</div>' +
+      '<div class="ltn-rules">⏱️ ' + LIGHTNING_SECONDS + 's &bull; 🏆 score = qualite du prompt &bull; 📈 classement en direct &bull; +' + h.xp + ' XP</div>' +
+      '<div class="ltn-actions"><button class="btn-primary ltn-start" id="ltn-start">🚀 Lancer le chrono</button>' +
+      '<button class="btn-ghost btn-sm" id="ltn-see-rank">📊 Voir le classement</button></div>' +
+      '</div>';
+    document.getElementById('ltn-start').addEventListener('click', function () { startLightningRound(main, h); });
+    document.getElementById('ltn-see-rank').addEventListener('click', function () { showLightningRanking(main, h, false); });
+  }
+
+  function startLightningRound(main, h) {
+    if (_lightningTimer) { clearInterval(_lightningTimer); _lightningTimer = null; } // anti double-interval
+    var remaining = LIGHTNING_SECONDS;
+    main.innerHTML =
+      '<div class="page-header"><h1>⚡ ' + escapeHtml(h.title) + '</h1></div>' +
+      '<div class="ltn-card glass-card">' +
+      '<div class="ltn-timer" id="ltn-timer">' + fmtTime(remaining) + '</div>' +
+      '<div class="ltn-brief"><strong>📋 :</strong> ' + escapeHtml(h.brief || h.desc) + '</div>' +
+      '<textarea id="ltn-input" class="ltn-input" rows="8" placeholder="Ecris ton meilleur prompt... (role + cible + action + contraintes + chiffres)"></textarea>' +
+      '<div class="ltn-actions"><button class="btn-primary" id="ltn-submit">✅ Soumettre</button>' +
+      '<span class="ltn-wc" id="ltn-wc">0 mots</span></div>' +
+      '</div>';
+    var input = document.getElementById('ltn-input');
+    var wc = document.getElementById('ltn-wc');
+    if (input) {
+      input.focus();
+      input.addEventListener('input', function () { wc.textContent = (this.value.trim() ? this.value.trim().split(/\s+/).length : 0) + ' mots'; });
+    }
+    var submitted = false;
+    var submit = function () {
+      if (submitted) return; submitted = true;
+      if (_lightningTimer) { clearInterval(_lightningTimer); _lightningTimer = null; }
+      finishLightning(main, h, input ? input.value : '', LIGHTNING_SECONDS - remaining);
+    };
+    var sb = document.getElementById('ltn-submit');
+    if (sb) sb.addEventListener('click', submit);
+    _lightningTimer = setInterval(function () {
+      remaining--;
+      var el = document.getElementById('ltn-timer');
+      if (!el) { clearInterval(_lightningTimer); _lightningTimer = null; return; } // page quittee
+      el.textContent = fmtTime(remaining);
+      if (remaining <= 15) el.classList.add('urgent');
+      if (remaining <= 0) submit();
+    }, 1000);
+  }
+
+  function finishLightning(main, h, txt, elapsed) {
+    var AIA = window.AIA;
+    var score = scoreLightning(txt);
+    var fb = lightningFeedback(score);
+    var st = AIA.getState();
+    st.highlightsCompleted = st.highlightsCompleted || {};
+    if (!st.highlightsCompleted[h.id]) {
+      st.highlightsCompleted[h.id] = true;
+      if (AIA.addXP) AIA.addXP(h.xp, 'Lightning : ' + h.title);
+    }
+    if (AIA.saveState) AIA.saveState();
+    main.innerHTML =
+      '<div class="page-header"><h1>⚡ Resultat</h1></div>' +
+      '<div class="ltn-card glass-card">' +
+      '<div class="ltn-result"><div class="ltn-grade" style="color:' + fb.color + '">' + fb.grade + '</div>' +
+      '<div class="ltn-score">' + score + '<span>/100</span></div></div>' +
+      '<p class="ltn-fb">' + fb.label + ' &bull; soumis en ' + elapsed + 's</p>' +
+      '<div class="ltn-yourprompt"><strong>Ton prompt :</strong><br>' + (txt && txt.trim() ? escapeHtml(txt).replace(/\n/g, '<br>') : '<em>(vide)</em>') + '</div>' +
+      '<div class="ltn-rank-zone" id="ltn-rank-zone">📊 Envoi au classement...</div>' +
+      '<div class="ltn-actions"><button class="btn-outline btn-sm" id="ltn-retry">🔁 Reessayer</button>' +
+      (AIA.pinToCarnet ? '<button class="btn-outline btn-sm" id="ltn-pin">📌 Epingler au Carnet</button>' : '') +
+      '<button class="btn-ghost btn-sm" data-navigate="highlights">← Temps Forts</button></div>' +
+      '</div>';
+    var retry = document.getElementById('ltn-retry');
+    if (retry) retry.addEventListener('click', function () { _activeLightningId = h.id; renderLightningChallenge(main); });
+    var pin = document.getElementById('ltn-pin');
+    if (pin) pin.addEventListener('click', function () {
+      AIA.pinToCarnet({ kind: 'highlight', source: h.id, sourceLabel: 'Lightning : ' + h.title, title: 'Prompt (score ' + score + '/100)', content: txt });
+    });
+    // Effet de bord non-critique : ne doit jamais casser l'affichage du resultat.
+    try { if (AIA.pushFeed) AIA.pushFeed({ action: 'highlight-done', target: h.title }); } catch (e) {}
+    postLightningScore(h.id, score, function () { showLightningRanking(main, h, true); });
+  }
+
+  function showLightningRanking(main, h, inline) {
+    var AIA = window.AIA;
+    var st = AIA.getState();
+    var db = AIA.db, myKey = st.user && st.user.accountKey;
+    var zone = inline ? document.getElementById('ltn-rank-zone') : null;
+    var render = function (rows) {
+      rows.sort(function (a, b) { return b.score - a.score || (a.ts < b.ts ? -1 : 1); });
+      var medals = ['🥇', '🥈', '🥉'];
+      var html = '<div class="ltn-rank"><h3 class="ltn-rank-title">🏆 Classement live — ' + escapeHtml(h.title) + '</h3>';
+      if (!rows.length) {
+        html += '<p class="ltn-empty">Personne n\'a encore soumis. Sois le premier !</p>';
+      } else {
+        html += '<div class="ltn-podium">' + rows.slice(0, 3).map(function (r, i) {
+          var me = myKey && r.key === myKey;
+          return '<div class="ltn-pod ltn-pod-' + (i + 1) + (me ? ' me' : '') + '"><div class="ltn-pod-medal">' + medals[i] + '</div>' +
+            '<div class="ltn-pod-name">' + escapeHtml(r.name || 'Etudiant') + (me ? ' (toi)' : '') + '</div>' +
+            '<div class="ltn-pod-score">' + r.score + '</div></div>';
+        }).join('') + '</div>';
+        if (myKey) {
+          var myIdx = rows.findIndex(function (r) { return r.key === myKey; });
+          if (myIdx >= 3) html += '<div class="ltn-myrank">Ton rang : <strong>#' + (myIdx + 1) + '</strong> / ' + rows.length + ' &bull; ' + rows[myIdx].score + ' pts</div>';
+          else if (myIdx >= 0) html += '<div class="ltn-myrank">🎉 Tu es sur le podium !</div>';
+        }
+        html += '<div class="ltn-rank-list">' + rows.slice(0, 10).map(function (r, i) {
+          var me = myKey && r.key === myKey;
+          return '<div class="ltn-rank-row' + (me ? ' me' : '') + '"><span class="ltn-rk">#' + (i + 1) + '</span><span class="ltn-rn">' + escapeHtml(r.name || 'Etudiant') + '</span><span class="ltn-rs">' + r.score + '</span></div>';
+        }).join('') + '</div>';
+      }
+      html += '<p class="ltn-rank-foot">Les meilleurs scores sont mis a l\'honneur par le formateur. Ameliore ton prompt et reessaie !</p></div>';
+      if (zone) { zone.innerHTML = html; }
+      else {
+        main.innerHTML = '<div class="page-header"><h1>⚡ ' + escapeHtml(h.title) + '</h1></div><div class="ltn-card glass-card">' + html +
+          '<div class="ltn-actions"><button class="btn-primary btn-sm" id="ltn-go">🚀 Tenter le defi</button>' +
+          '<button class="btn-ghost btn-sm" data-navigate="highlights">← Temps Forts</button></div></div>';
+        var go = document.getElementById('ltn-go');
+        if (go) go.addEventListener('click', function () { _activeLightningId = h.id; renderLightningChallenge(main); });
+      }
+    };
+    if (!db) { render([]); return; }
+    db.ref('highlight_scores/' + h.id).once('value', function (snap) {
+      var val = snap.val() || {};
+      render(Object.keys(val).map(function (k) { return { key: k, name: val[k].name, score: val[k].score || 0, ts: val[k].ts || '' }; }));
+    }, function () { render([]); });
+  }
+
+  function setActiveLightning(id) { _activeLightningId = id; }
+
   /* ============ EXPORTS ============ */
   window.AIA = window.AIA || {};
   window.AIA.HIGHLIGHTS = HIGHLIGHTS;
@@ -322,4 +551,6 @@
   window.AIA.renderHighlightsPage = renderHighlightsPage;
   window.AIA.wireHighlightCTAs = wireHighlightCTAs;
   window.AIA.getNextHighlight = function () { return getNextHighlight(nowDayTime()); };
+  window.AIA.renderLightningChallenge = renderLightningChallenge;
+  window.AIA.setActiveLightning = setActiveLightning;
 })();
