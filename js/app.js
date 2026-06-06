@@ -368,7 +368,15 @@
   function loadAccountState(accountKey, callback) {
     db.ref('states/' + accountKey).once('value', function (snap) {
       var s = snap.val();
-      if (s) Object.keys(s).forEach(function (k) { if (state.hasOwnProperty(k)) state[k] = s[k]; });
+      // Restaure l'INTEGRALITE de l'etat sauvegarde (campaignData, productTheme, gameValidation,
+      // workbook, reflections, journal...). NE PAS filtrer par hasOwnProperty : ces cles sont
+      // ajoutees dynamiquement et seraient sinon perdues a la reconnexion -> "realisations vides".
+      if (s && typeof s === 'object') {
+        Object.keys(s).forEach(function (k) {
+          if (k === 'user' && state.user) return; // garder l'utilisateur fraichement connecte
+          state[k] = s[k];
+        });
+      }
       if (callback) callback();
     });
   }
@@ -583,6 +591,7 @@
       resources:function(){if(window.AIA&&window.AIA.renderResources)window.AIA.renderResources(main);},
       journal:function(){if(window.AIA&&window.AIA.renderJournal)window.AIA.renderJournal(main);},
       workbook:function(){if(window.AIA&&window.AIA.renderWorkbook)window.AIA.renderWorkbook(main);},
+      notebook:function(){if(window.AIA&&window.AIA.renderNotebook)window.AIA.renderNotebook(document.getElementById('main-content'));},
       checkins:function(){if(window.AIA&&window.AIA.renderCheckinsPage)window.AIA.renderCheckinsPage(main);},
       'assessment-pre':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'pre');},
       'assessment-post':function(){if(window.AIA&&window.AIA.renderAssessment)window.AIA.renderAssessment(main,'post');},

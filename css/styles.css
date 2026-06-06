@@ -1303,6 +1303,56 @@ body {
 .rpg-boss-card.prof.lost { border-color: rgba(231,76,60,0.4); }
 .solo-boss-zone .btn-sm, .rpg-boss-card .btn-sm { flex-shrink: 0; }
 
+/* ===== NOTEBOOK / Portfolio complet ===== */
+.nb-toolbar { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+.nb-root { max-width: 860px; margin: 0 auto; }
+.nb-cover { display: flex; gap: 1rem; align-items: center; padding: 1.4rem; border-radius: var(--radius-xs);
+  background: linear-gradient(135deg, rgba(167,31,40,0.10), rgba(245,183,49,0.08)); border: 1px solid var(--border-glass); margin-bottom: 1rem; }
+.nb-cover-emoji { font-size: 3.2rem; line-height: 1; }
+.nb-cover-cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.nb-cover-name { font-size: 1.7rem; margin: 0.1rem 0; }
+.nb-cover-tag { color: var(--text-secondary); font-size: 0.9rem; }
+.nb-cover-author { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.3rem; }
+.nb-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.6rem; margin-bottom: 1.4rem; }
+.nb-stat { text-align: center; padding: 0.7rem; border-radius: var(--radius-xs); background: var(--bg-secondary); border: 1px solid var(--border-glass); }
+.nb-stat b { display: block; font-size: 1.3rem; color: var(--red-light); }
+.nb-stat span { font-size: 0.7rem; color: var(--text-muted); }
+.nb-phase { margin-bottom: 1.6rem; }
+.nb-phase-title { font-size: 1.1rem; padding-bottom: 0.4rem; border-bottom: 2px solid rgba(167,31,40,0.25); margin-bottom: 0.8rem; }
+.nb-brick { padding: 0.9rem 1rem; border-radius: var(--radius-xs); background: var(--bg-secondary); border: 1px solid var(--border-glass); margin-bottom: 0.7rem; }
+.nb-brick-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.5rem; }
+.nb-brick-head h4 { font-size: 0.95rem; margin: 0; }
+.nb-score { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.nb-score.sc-a { background: rgba(46,204,113,0.18); color: #2ecc71; }
+.nb-score.sc-b { background: rgba(52,152,219,0.18); color: #3498db; }
+.nb-score.sc-c { background: rgba(245,183,49,0.18); color: #f5b731; }
+.nb-score.sc-d { background: rgba(231,76,60,0.18); color: #e74c3c; }
+.nb-badge { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.nb-badge.draft { background: rgba(245,183,49,0.15); color: #f5b731; }
+.nb-badge.empty { background: rgba(120,120,120,0.15); color: var(--text-muted); }
+.nb-field { margin-bottom: 0.6rem; }
+.nb-flabel { font-size: 0.74rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.15rem; }
+.nb-fval { font-size: 0.86rem; line-height: 1.5; color: var(--text-primary); white-space: normal; }
+.nb-assets { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.3rem; }
+.nb-noctnt { font-size: 0.8rem; color: var(--text-muted); }
+.nb-tags-row { font-size: 0.8rem; margin-bottom: 0.4rem; }
+.nb-tags-lbl { color: var(--text-muted); margin-right: 0.3rem; }
+.nb-tag { display: inline-block; font-size: 0.7rem; padding: 0.1rem 0.45rem; margin: 0.1rem; border-radius: 999px; background: rgba(167,31,40,0.10); border: 1px solid rgba(167,31,40,0.2); }
+/* Modale notebook (formateur) */
+.nb-modal { max-width: 820px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; padding: 1.2rem; }
+.nb-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.8rem; }
+.nb-modal-body { overflow-y: auto; }
+@media (max-width: 560px) { .nb-stats { grid-template-columns: repeat(2, 1fr); } }
+/* Impression : n'imprime que le notebook */
+@media print {
+  body * { visibility: hidden !important; }
+  #notebook-root, #notebook-root * { visibility: visible !important; }
+  #notebook-root { position: absolute; left: 0; top: 0; width: 100%; max-width: none; }
+  .no-print { display: none !important; }
+  .nb-modal-overlay { position: static; background: none; padding: 0; }
+  .nb-brick, .nb-cover, .nb-stat { break-inside: avoid; }
+}
+
 /* Leaderboard Item Icons */
 .rank-items { font-size: 0.75rem; margin-left: 0.3rem; }
 .podium-item .rank-items { display: block; margin-top: 0.2rem; margin-left: 0; font-size: 0.85rem; }

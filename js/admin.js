@@ -557,6 +557,7 @@
         '<div><h2>' + esc(name) + '</h2>' +
         '<div class="sd-sub">' + (s.productTheme ? esc(s.productTheme.name) + ' &bull; ' + esc(s.productTheme.category||'') : 'Pas de projet choisi') + '</div></div>' +
         '<div class="sd-xp">' + xpTotal + ' XP</div>' +
+        '<button class="btn-primary btn-sm sd-notebook-btn" style="margin-left:0.6rem">📓 Notebook complet</button>' +
         '</div>' +
         '<div class="sd-body">';
 
@@ -687,6 +688,9 @@
       var ov = document.querySelector('.sd-overlay');
       ov.querySelector('.sd-close').addEventListener('click', function(){ ov.remove(); });
       ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+      // Notebook complet (lecture seule) de l'eleve, pour le formateur
+      var nbBtn = ov.querySelector('.sd-notebook-btn');
+      if (nbBtn && AIA.renderNotebookModal) nbBtn.addEventListener('click', function(){ AIA.renderNotebookModal(s); });
       // Reouverture d'une brique verrouillee (ecrit dans l'etat de l'etudiant)
       ov.querySelectorAll('.sd-reopen').forEach(function (btn) {
         btn.addEventListener('click', function () {
