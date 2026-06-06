@@ -63,14 +63,56 @@
     return new Date().toISOString().split('T')[0];
   }
 
-  function hasCheckinToday(type) {
-    try { return localStorage.getItem('aia_checkin_' + type + '_' + todayISO()) === '1'; }
+  function hasCheckin(type, date) {
+    try { return localStorage.getItem('aia_checkin_' + type + '_' + (date || todayISO())) === '1'; }
     catch (e) { return false; }
   }
-
-  function markCheckinToday(type) {
-    try { localStorage.setItem('aia_checkin_' + type + '_' + todayISO(), '1'); }
+  function markCheckin(type, date) {
+    try { localStorage.setItem('aia_checkin_' + type + '_' + (date || todayISO()), '1'); }
     catch (e) {}
+  }
+  // Compat (ancienne signature)
+  function hasCheckinToday(type) { return hasCheckin(type, todayISO()); }
+
+  /* ===== Calendrier du seminaire : fenetres horaires des popups ===== */
+  function seminarDates() {
+    var CFG = window.AIA && window.AIA.CONFIG;
+    return (CFG && CFG.dates) || [];
+  }
+  // Fin de journee : lundi 16h45, sinon 15h45 (mar/mer/ven). Jeudi off (hors dates).
+  function dayEndTime(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00');
+    return d.getDay() === 1 ? '16:45' : '15:45';
+  }
+  function dtAt(dateStr, hhmm) { return new Date(dateStr + 'T' + hhmm + ':00'); }
+  function withinWindow(now, dateStr, startHHMM, endHHMM) {
+    return now >= dtAt(dateStr, startHHMM) && now < dtAt(dateStr, endHHMM);
+  }
+  var MORNING_START = '08:00', MORNING_END = '13:00';
+  // Retourne la popup a afficher maintenant ({type,date}) selon l'horaire + report, ou null.
+  function pendingCheckin(now) {
+    now = now || new Date();
+    var dates = seminarDates();
+    var todayStr = todayISO();
+    var todayIdx = dates.indexOf(todayStr);
+    var inTodayMorning = todayIdx >= 0 && withinWindow(now, todayStr, MORNING_START, MORNING_END);
+    var out = [];
+    dates.forEach(function (dateStr) {
+      var isToday = dateStr === todayStr;
+      var eveAt = dtAt(dateStr, dayEndTime(dateStr));
+      // MATIN
+      if (!hasCheckin('morning', dateStr)) {
+        if (isToday && inTodayMorning) out.push({ type: 'morning', date: dateStr, at: dtAt(dateStr, MORNING_START) });
+        else if (!isToday && dtAt(dateStr, MORNING_END) <= now && inTodayMorning) out.push({ type: 'morning', date: dateStr, at: dtAt(dateStr, MORNING_START) }); // report
+      }
+      // SOIR (exit ticket) : des l'heure de fin, le jour meme ; sinon report au prochain matin
+      if (!hasCheckin('evening', dateStr)) {
+        if (isToday && now >= eveAt && now < dtAt(dateStr, '23:00')) out.push({ type: 'evening', date: dateStr, at: eveAt });
+        else if (eveAt <= now && !isToday && inTodayMorning) out.push({ type: 'evening', date: dateStr, at: eveAt }); // report
+      }
+    });
+    out.sort(function (a, b) { return a.at - b.at; }); // plus ancien d'abord (les reports passent avant)
+    return out[0] || null;
   }
 
   function saveCheckin(entry) {
@@ -162,17 +204,22 @@
   }
 
   /* ============ MORNING / EVENING CHECK-INS ============ */
+  var _checkinSnoozeUntil = 0; // "Plus tard" repousse la verif periodique
   function maybeShowCheckin() {
-    var hr = new Date().getHours();
-    if (hr >= 8 && hr <= 13 && !hasCheckinToday('morning')) {
-      setTimeout(showMorningCheckin, 1500);
-    } else if (hr >= 16 && hr <= 22 && !hasCheckinToday('evening')) {
-      setTimeout(showEveningCheckin, 1500);
-    }
+    if (document.querySelector('.checkin-overlay') || document.querySelector('.onboarding-overlay')) return;
+    if (Date.now() < _checkinSnoozeUntil) return; // snooze actif (l'etudiant a clique "Plus tard")
+    var pending = pendingCheckin();
+    if (!pending) return;
+    setTimeout(function () {
+      if (pending.type === 'morning') showMorningCheckin(pending.date);
+      else showEveningCheckin(pending.date);
+    }, 1200);
   }
 
-  function showMorningCheckin() {
+  function showMorningCheckin(forDate) {
     if (document.querySelector('.checkin-overlay') || document.querySelector('.onboarding-overlay')) return;
+    forDate = forDate || todayISO();
+    var isLate = forDate !== todayISO(); // report d'un jour precedent non repondu
     var overlay = document.createElement('div');
     overlay.className = 'checkin-overlay';
     overlay.innerHTML =
@@ -207,7 +254,7 @@
         selectedMood = this.getAttribute('data-mood');
       });
     });
-    overlay.querySelector('.checkin-skip').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('.checkin-skip').addEventListener('click', function () { _checkinSnoozeUntil = Date.now() + 15 * 60000; overlay.remove(); });
     overlay.querySelector('.checkin-save').addEventListener('click', function () {
       var goal = overlay.querySelector('#checkin-goal').value.trim();
       if (!selectedMood) { window.AIA.showToast('Choisissez votre humeur', 'warning'); return; }
@@ -215,20 +262,22 @@
       saveCheckin({
         id: 'ck_' + Date.now(),
         type: 'morning',
-        day: (window.AIA.getCurrentTiming ? (window.AIA.getCurrentTiming() || {}).dayNum : null) || 1,
+        day: (seminarDates().indexOf(forDate) + 1) || ((window.AIA.getCurrentTiming ? (window.AIA.getCurrentTiming() || {}).dayNum : null) || 1),
+        forDate: forDate,
         ts: new Date().toISOString(),
         mood: selectedMood,
         goal: goal,
         question: overlay.querySelector('#checkin-question').value.trim()
       });
-      markCheckinToday('morning');
+      markCheckin('morning', forDate);
       window.AIA.showToast('Check-in enregistre ! Bonne journee 🌟', 'success');
       overlay.remove();
     });
   }
 
-  function showEveningCheckin() {
+  function showEveningCheckin(forDate) {
     if (document.querySelector('.checkin-overlay') || document.querySelector('.onboarding-overlay')) return;
+    forDate = forDate || todayISO();
     var overlay = document.createElement('div');
     overlay.className = 'checkin-overlay';
     overlay.innerHTML =
@@ -263,7 +312,7 @@
         selectedMood = this.getAttribute('data-mood');
       });
     });
-    overlay.querySelector('.checkin-skip').addEventListener('click', function () { overlay.remove(); });
+    overlay.querySelector('.checkin-skip').addEventListener('click', function () { _checkinSnoozeUntil = Date.now() + 15 * 60000; overlay.remove(); });
     overlay.querySelector('.checkin-save').addEventListener('click', function () {
       var learned = overlay.querySelector('#checkin-learned').value.trim();
       if (!selectedMood) { window.AIA.showToast('Choisissez votre humeur', 'warning'); return; }
@@ -271,13 +320,14 @@
       saveCheckin({
         id: 'ck_' + Date.now(),
         type: 'evening',
-        day: (window.AIA.getCurrentTiming ? (window.AIA.getCurrentTiming() || {}).dayNum : null) || 1,
+        day: (seminarDates().indexOf(forDate) + 1) || ((window.AIA.getCurrentTiming ? (window.AIA.getCurrentTiming() || {}).dayNum : null) || 1),
+        forDate: forDate,
         ts: new Date().toISOString(),
         mood: selectedMood,
         learned: learned,
         unclear: overlay.querySelector('#checkin-unclear').value.trim()
       });
-      markCheckinToday('evening');
+      markCheckin('evening', forDate);
       window.AIA.showToast('Exit ticket enregistre ! A demain 🌙', 'success');
       overlay.remove();
     });

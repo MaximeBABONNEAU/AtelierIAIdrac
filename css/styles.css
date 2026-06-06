@@ -1007,6 +1007,31 @@ body {
 .demo-launch-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; }
 .demo-launch-btns a { text-decoration: none; }
 
+/* ===== Validation par brique : score + verrouillage (Business Game + Carnet) ===== */
+.sc-a { background: rgba(46,204,113,0.18); color: #2ecc71; }
+.sc-b { background: rgba(245,183,49,0.18); color: var(--gold); }
+.sc-c { background: rgba(230,126,34,0.18); color: #e67e22; }
+.sc-d { background: rgba(231,76,60,0.18); color: #e74c3c; }
+.game-step-scorebadge, .wb-final-badge {
+  font-size: 0.75rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 999px; white-space: nowrap;
+}
+.game-step-scorebadge { margin-left: auto; margin-right: 0.5rem; }
+.game-step-card.locked { border-color: rgba(46,204,113,0.3); background: rgba(46,204,113,0.04); }
+.game-step-validate-note, .wb-validate-note {
+  font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; margin: 0.6rem 0;
+  padding: 0.5rem 0.7rem; background: rgba(245,183,49,0.06); border-left: 2px solid var(--gold); border-radius: var(--radius-xs);
+}
+.game-step-validated {
+  font-size: 0.84rem; padding: 0.6rem 0.8rem; margin-bottom: 0.8rem;
+  background: rgba(46,204,113,0.1); border: 1px solid rgba(46,204,113,0.3); border-radius: var(--radius-xs);
+}
+.game-locked-field, .wb-locked-text { margin-bottom: 0.7rem; }
+.game-locked-label { font-size: 0.74rem; font-weight: 700; color: var(--gold); margin-bottom: 0.2rem; }
+.game-locked-val, .wb-locked-text {
+  font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); white-space: pre-wrap;
+  background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: var(--radius-xs);
+}
+
 /* ========== INLINE DEMO IN ACTIVITY ========== */
 .activity-demo-inline {
   margin: 1.5rem 0; padding: 1.5rem;

@@ -1389,10 +1389,18 @@
         if (window.AIA && window.AIA.maybeShowCheckin) window.AIA.maybeShowCheckin();
       }, 900);
     }
-    if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
+    if (!isAdmin) checkAutoComplete();
+    // Intervals lances UNE SEULE FOIS (enterApp peut etre rappele apres logout/login)
+    if (!isAdmin && !_loopsStarted) {
+      _loopsStarted = true;
+      setInterval(checkAutoComplete, 60000);
+      // Popups check-in/exit-ticket selon l'horaire du seminaire (auto-fire a l'heure de fin)
+      setInterval(function () { if (window.AIA && window.AIA.maybeShowCheckin) window.AIA.maybeShowCheckin(); }, 60000);
+      setInterval(saveState, 30000);
+    }
     window.addEventListener('beforeunload', function () { saveStateNow(); });
-    if (!isAdmin) { setInterval(saveState, 30000); }
   }
+  var _loopsStarted = false;
 
   function resetLoginUI() {
     document.getElementById('role-picker').classList.remove('hidden');

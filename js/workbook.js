@@ -78,6 +78,24 @@
   }
   function nl2br(s) { return escapeHtml(s).replace(/\n/g, '<br>'); }
 
+  /* ===== Auto-evaluation d'une section du Carnet — 0-100 ===== */
+  function scoreSectionText(text) {
+    var t = (text || '').trim();
+    if (!t) return 0;
+    var s = 0;
+    var words = t.split(/\s+/).length;
+    s += words >= 140 ? 50 : words >= 80 ? 38 : words >= 45 ? 26 : words >= 20 ? 14 : 6; // longueur : 0-50
+    var struct = 0;
+    if (/\n/.test(t)) struct += 8;
+    if (/(^|\n)\s*(\d+[\.\)]|[-•*])/.test(t)) struct += 9;
+    if (t.indexOf(':') !== -1) struct += 8;
+    s += Math.min(struct, 25);                                              // structure : 0-25
+    var nums = (t.match(/\d+/g) || []).length;
+    s += Math.min(nums * 5, 25);                                            // specificite : 0-25
+    return Math.max(0, Math.min(100, s));
+  }
+  function wbScoreClass(score) { return score == null ? '' : score >= 80 ? 'sc-a' : score >= 60 ? 'sc-b' : score >= 40 ? 'sc-c' : 'sc-d'; }
+
   /* ===== Compile Business Game data for a phase ===== */
   function compilePhase(phaseKey) {
     var AIA = window.AIA;
@@ -201,10 +219,11 @@
       var compiled = s.phaseKey ? compilePhase(s.phaseKey) : null;
       var fieldVal = wb.fields[s.id] || '';
       var isFinal = !!wb.finalized[s.id];
+      var secScore = (wb.scores && wb.scores[s.id] != null) ? wb.scores[s.id] : null;
       html += '<div class="wb-section glass-card' + (isFinal ? ' finalized' : '') + '" data-section="' + s.id + '">' +
         '<div class="wb-section-head">' +
         '<h3>' + s.icon + ' ' + escapeHtml(s.title) + '</h3>' +
-        (isFinal ? '<span class="wb-final-badge">✅ Finalise</span>' : '') +
+        (isFinal ? '<span class="wb-final-badge ' + wbScoreClass(secScore) + '">🔒 Valide' + (secScore != null ? ' &middot; ' + secScore + '/100' : '') + '</span>' : '') +
         '</div>';
 
       if (compiled && compiled.html) {
@@ -214,17 +233,26 @@
         html += '<div class="wb-empty-note">⚠️ Aucune donnee dans le Business Game pour cette phase. Completez les etapes correspondantes d\'abord.</div>';
       }
 
-      html += '<div class="wb-redaction">' +
-        '<label>✍️ Votre redaction structuree</label>' +
-        '<p class="wb-hint"><strong>Consigne :</strong> ' + escapeHtml(s.hint) + '</p>' +
-        '<textarea class="wb-textarea" data-section="' + s.id + '" data-starter="' + encodeURIComponent(s.starter || '') + '" rows="7" placeholder="' + escapeHtml(s.starter || 'Redigez ici votre version finale, claire et ordonnee...') + '">' + escapeHtml(fieldVal) + '</textarea>' +
-        '<div class="wb-section-actions">' +
-        '<button class="btn-primary btn-sm wb-save" data-section="' + s.id + '">💾 Enregistrer</button>' +
-        (s.starter ? '<button class="btn-ghost btn-sm wb-use-template" data-section="' + s.id + '">📝 Utiliser le modele</button>' : '') +
-        '<button class="btn-ghost btn-sm wb-finalize" data-section="' + s.id + '">' + (isFinal ? 'Rouvrir' : '✅ Marquer finalise') + '</button>' +
-        (s.id === 'learnings' ? '<button class="btn-ghost btn-sm" id="wb-import-reflections">↧ Importer mes reflexions</button>' : '') +
-        '</div>' +
-        '</div>';
+      if (isFinal) {
+        html += '<div class="wb-redaction">' +
+          '<label>✍️ Votre redaction (validee)</label>' +
+          '<div class="wb-locked-text">' + (fieldVal ? nl2br(fieldVal) : '<em>(vide)</em>') + '</div>' +
+          '<p class="wb-hint">🔒 Section validee definitivement' + (secScore != null ? ' (score ' + secScore + '/100)' : '') + '. Demandez au formateur pour la rouvrir.</p>' +
+          '</div>';
+      } else {
+        html += '<div class="wb-redaction">' +
+          '<label>✍️ Votre redaction structuree</label>' +
+          '<p class="wb-hint"><strong>Consigne :</strong> ' + escapeHtml(s.hint) + '</p>' +
+          '<textarea class="wb-textarea" data-section="' + s.id + '" data-starter="' + encodeURIComponent(s.starter || '') + '" rows="7" placeholder="' + escapeHtml(s.starter || 'Redigez ici votre version finale, claire et ordonnee...') + '">' + escapeHtml(fieldVal) + '</textarea>' +
+          '<p class="wb-validate-note">⚠️ <strong>Valider definitivement</strong> note la section (auto-evaluation) et la verrouille comme rendu officiel (+ points/bonus selon la qualite).</p>' +
+          '<div class="wb-section-actions">' +
+          '<button class="btn-primary btn-sm wb-save" data-section="' + s.id + '">💾 Enregistrer brouillon</button>' +
+          (s.starter ? '<button class="btn-ghost btn-sm wb-use-template" data-section="' + s.id + '">📝 Utiliser le modele</button>' : '') +
+          '<button class="btn-outline btn-sm wb-finalize" data-section="' + s.id + '">🔒 Valider definitivement</button>' +
+          (s.id === 'learnings' ? '<button class="btn-ghost btn-sm" id="wb-import-reflections">↧ Importer mes reflexions</button>' : '') +
+          '</div>' +
+          '</div>';
+      }
       html += '</div>';
     });
 
@@ -312,10 +340,17 @@
         var id = this.getAttribute('data-section');
         var wb = getWB();
         var ta = main.querySelector('.wb-textarea[data-section="' + id + '"]');
-        if (!wb.finalized[id] && ta && ta.value.trim().length < 20) { AIA.showToast('Redigez la section avant de la finaliser', 'warning'); return; }
-        if (ta && ta.value.trim().length >= 20) saveField(id, ta.value);
-        wb.finalized[id] = !wb.finalized[id];
+        if (!ta || ta.value.trim().length < 20) { AIA.showToast('Redigez au moins 20 caracteres avant de valider', 'warning'); return; }
+        if (!confirm('Valider DEFINITIVEMENT cette section ? Elle sera notee puis verrouillee comme rendu officiel (le formateur pourra la rouvrir).')) return;
+        saveField(id, ta.value);
+        var sc = scoreSectionText(ta.value);
+        wb.scores = wb.scores || {};
+        wb.scores[id] = sc;
+        wb.finalized[id] = true;
+        var bonus = sc >= 80 ? 15 : sc >= 60 ? 10 : sc >= 40 ? 5 : 0;
+        if (AIA.addXP) AIA.addXP(10 + bonus, 'Carnet : section validee (' + sc + '/100)');
         if (AIA.saveState) AIA.saveState();
+        AIA.showToast('🔒 Section validee ! Score ' + sc + '/100 — +' + (10 + bonus) + ' XP', 'success');
         renderWorkbook(main);
       });
     });

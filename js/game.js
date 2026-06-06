@@ -469,6 +469,30 @@
   function hasLockedPhases() {
     return Object.keys(PHASES_GUIDE).some(function (pk) { return !isPhaseUnlocked(pk); });
   }
+
+  /* ===== Auto-evaluation d'une brique (reponse IA collee) — 0-100 ===== */
+  function scoreBrick(step, data) {
+    data = data || {};
+    var fields = (step && step.fields) || [];
+    var total = fields.length || 1;
+    var filled = 0, allText = '';
+    fields.forEach(function (f) { var v = (data[f.name] || '').trim(); if (v) filled++; allText += ' ' + v; });
+    allText = allText.trim();
+    var s = 0;
+    s += Math.round((filled / total) * 40);                                  // completude : 0-40
+    var words = allText ? allText.split(/\s+/).length : 0;
+    s += words >= 120 ? 25 : words >= 70 ? 18 : words >= 35 ? 12 : words >= 15 ? 6 : 0; // longueur : 0-25
+    var struct = 0;
+    if (/\n/.test(allText)) struct += 5;
+    if (/(^|\n)\s*(\d+[\.\)]|[-•*])/.test(allText)) struct += 5;
+    if (allText.indexOf(':') !== -1) struct += 5;
+    s += Math.min(struct, 15);                                               // structure : 0-15
+    var nums = (allText.match(/\d+/g) || []).length;
+    s += Math.min(nums * 4, 20);                                             // specificite : 0-20
+    return Math.max(0, Math.min(100, s));
+  }
+  function scoreClass(score) { return score >= 80 ? 'sc-a' : score >= 60 ? 'sc-b' : score >= 40 ? 'sc-c' : 'sc-d'; }
+  function brickBonus(score) { return score >= 80 ? 15 : score >= 60 ? 10 : score >= 40 ? 5 : 0; }
   function renderBusinessGame(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -557,18 +581,33 @@
         '<div class="game-progress-bar"><div class="game-progress-fill" style="width:' + phasePct + '%"></div></div>' +
         '<div class="game-steps">' +
         phase.steps.map(function (step, sIdx) {
+          var valInfo = st.gameValidation && st.gameValidation[step.id];
+          var locked = !!(valInfo && valInfo.locked);
+          var score = valInfo ? valInfo.score : null;
           var done = !!st.gameDeliverables[step.id];
           var data = st.campaignData[step.id] || {};
           var promptText = step.prompt.replace(/{theme}/g, theme.name + ' (' + theme.description + ')');
-          return '<div class="game-step-card' + (done ? ' done' : '') + '" data-step-id="' + step.id + '">' +
-            '<div class="game-step-header">' +
-            '<div class="game-step-checkbox">' + (done ? '✅' : '⬜') + '</div>' +
-            '<div class="game-step-title">' +
-            '<h4>Etape ' + (sIdx + 1) + ' : ' + step.title + '</h4>' +
-            '<p>' + step.desc + '</p>' +
-            '</div>' +
-            '<button class="btn-ghost btn-xs game-step-toggle" data-step-id="' + step.id + '">' + (done ? 'Modifier' : 'Demarrer') + '</button>' +
-            '</div>' +
+          var statusIcon = locked ? '🔒' : (done ? '✅' : '⬜');
+          var scoreBadge = (locked && score != null) ? '<span class="game-step-scorebadge ' + scoreClass(score) + '">' + score + '/100</span>' : '';
+          var headerHtml = '<div class="game-step-header">' +
+            '<div class="game-step-checkbox">' + statusIcon + '</div>' +
+            '<div class="game-step-title"><h4>Etape ' + (sIdx + 1) + ' : ' + step.title + '</h4><p>' + step.desc + '</p></div>' +
+            scoreBadge +
+            '<button class="btn-ghost btn-xs game-step-toggle" data-step-id="' + step.id + '">' + (locked ? 'Revoir' : (done ? 'Modifier' : 'Demarrer')) + '</button>' +
+            '</div>';
+          if (locked) {
+            return '<div class="game-step-card locked" data-step-id="' + step.id + '">' + headerHtml +
+              '<div class="game-step-body" style="display:none">' +
+              '<div class="game-step-validated">🔒 <strong>Validee definitivement</strong> &bull; score ' + score + '/100. Pour corriger, demandez au formateur de rouvrir cette brique.</div>' +
+              step.fields.map(function (f) {
+                var v = data[f.name] || '';
+                return '<div class="game-locked-field"><div class="game-locked-label">' + escapeHtml(f.label) + '</div>' +
+                  '<div class="game-locked-val">' + (v ? escapeHtml(v).replace(/\n/g, '<br>') : '<em>(vide)</em>') + '</div></div>';
+              }).join('') +
+              renderAssetsBlock(step.id, data.assets || []) +
+              '</div></div>';
+          }
+          return '<div class="game-step-card' + (done ? ' done' : '') + '" data-step-id="' + step.id + '">' + headerHtml +
             '<div class="game-step-body" style="display:' + (done ? 'none' : 'block') + '">' +
             '<div class="game-step-tool">🛠️ <strong>Outil suggere :</strong> ' + step.aiTool + '</div>' +
             '<div class="game-step-prompt">' +
@@ -579,7 +618,7 @@
             '<a class="btn-outline btn-xs ia-tool-link" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 Ouvrir ChatGPT ↗</a>' +
             '<a class="btn-outline btn-xs ia-tool-link" href="https://claude.ai/" target="_blank" rel="noopener">🧠 Ouvrir Claude ↗</a>' +
             '</div>' +
-            '<p class="game-step-howto">1) Copiez le prompt &bull; 2) Ouvrez un outil IA &bull; 3) Collez et generez &bull; 4) Notez le resultat ci-dessous</p>' +
+            '<p class="game-step-howto">1) Copiez le prompt &bull; 2) Ouvrez un outil IA &bull; 3) <strong>Collez la VRAIE reponse de l\'IA ci-dessous</strong> &bull; 4) Validez pour la noter</p>' +
             '</div>' +
             '<div class="game-step-fields">' +
             step.fields.map(function (f) {
@@ -594,8 +633,9 @@
             }).join('') +
             '</div>' +
             renderAssetsBlock(step.id, data.assets || []) +
+            '<p class="game-step-validate-note">⚠️ <strong>Valider definitivement</strong> note votre brique (auto-evaluation) et la verrouille comme rendu officiel. Vous gagnez les points + un bonus selon la qualite.</p>' +
             '<div class="game-step-actions">' +
-            '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">' + (done ? '✏️ Sauvegarder modifications' : '✅ Valider cette etape (+15 XP)') + '</button>' +
+            '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">🔒 Valider definitivement</button>' +
             '<button class="btn-ghost btn-sm btn-save-draft" data-step-id="' + step.id + '">💾 Sauvegarder brouillon</button>' +
             '</div>' +
             '</div>' +
@@ -662,13 +702,22 @@
       btn.addEventListener('click', function () {
         var stepId = this.getAttribute('data-step-id');
         var ok = saveStepData(stepId, main, true);
-        if (!ok) { AIA.showToast('Remplissez au moins 1 champ avant de valider', 'warning'); return; }
-        // Reset systematique des indices de guidage (evite une banniere obsolete si on re-sauvegarde une etape deja validee)
+        if (!ok) { AIA.showToast('Collez votre reponse IA (au moins 1 champ) avant de valider', 'warning'); return; }
+        if (!confirm('Valider DEFINITIVEMENT cette brique ? Elle sera notee puis verrouillee comme rendu officiel (le formateur pourra la rouvrir si besoin).')) return;
+        // Reset systematique des indices de guidage (evite une banniere obsolete)
         _suggestNextStepId = null; _justCompletedTitle = '';
         var wasDone = !!st.gameDeliverables[stepId];
+        // Auto-evaluation + verrouillage de la brique
+        var stepObj = orderedSteps().find(function (s) { return s.id === stepId; }) || { fields: [] };
+        var bScore = scoreBrick(stepObj, st.campaignData[stepId] || {});
+        st.gameValidation = st.gameValidation || {};
+        st.gameValidation[stepId] = { locked: true, score: bScore, ts: new Date().toISOString() };
         st.gameDeliverables[stepId] = true;
-        if (!wasDone) { AIA.addXP(15); AIA.showToast('Etape validee ! +15 XP', 'success'); }
-        else { AIA.showToast('Modifications sauvegardees', 'success'); }
+        if (!wasDone) {
+          var bonus = brickBonus(bScore);
+          AIA.addXP(15 + bonus, 'Brique validee (' + bScore + '/100)');
+          AIA.showToast('🔒 Brique validee ! Score ' + bScore + '/100 — +' + (15 + bonus) + ' XP', 'success');
+        } else { AIA.showToast('🔒 Brique verrouillee — score ' + bScore + '/100', 'success'); }
         // Phase-completion badge check
         Object.keys(PHASES_GUIDE).forEach(function (pk) {
           var allDone = PHASES_GUIDE[pk].steps.every(function (s) { return st.gameDeliverables[s.id]; });

@@ -619,6 +619,26 @@
       } else html += '<div class="sd-empty">Carnet vide</div>';
       html += '</div>';
 
+      // Briques verrouillees -> reouverture admin
+      var gv = s.gameValidation || {};
+      var lockedItems = [];
+      Object.keys(PHASES).forEach(function (pk) {
+        PHASES[pk].steps.forEach(function (step) {
+          if (gv[step.id] && gv[step.id].locked) lockedItems.push({ kind: 'game', id: step.id, label: step.title, score: gv[step.id].score });
+        });
+      });
+      if (wb.finalized) Object.keys(wb.finalized).forEach(function (sid) {
+        if (wb.finalized[sid]) lockedItems.push({ kind: 'carnet', id: sid, label: 'Carnet — ' + sid, score: (wb.scores && wb.scores[sid]) });
+      });
+      html += '<div class="sd-section"><h3>🔒 Briques verrouillees (' + lockedItems.length + ')</h3>';
+      if (lockedItems.length) {
+        lockedItems.forEach(function (it) {
+          html += '<div class="sd-line">🔒 ' + esc(it.label) + (it.score != null ? ' &middot; ' + it.score + '/100' : '') +
+            ' <button class="btn-ghost btn-xs sd-reopen" data-kind="' + it.kind + '" data-id="' + esc(it.id) + '">🔓 Rouvrir</button></div>';
+        });
+      } else html += '<div class="sd-empty">Aucune brique verrouillee</div>';
+      html += '</div>';
+
       // Reflections
       html += '<div class="sd-section"><h3>🪞 Reflexions</h3>';
       var rKeys = Object.keys(reflections);
@@ -667,6 +687,21 @@
       var ov = document.querySelector('.sd-overlay');
       ov.querySelector('.sd-close').addEventListener('click', function(){ ov.remove(); });
       ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+      // Reouverture d'une brique verrouillee (ecrit dans l'etat de l'etudiant)
+      ov.querySelectorAll('.sd-reopen').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var kind = this.getAttribute('data-kind'), id = this.getAttribute('data-id');
+          if (!AIA.db) { AIA.showToast('Firebase indisponible', 'warning'); return; }
+          if (!confirm('Rouvrir cette brique pour ' + name + ' ? Il/elle pourra la re-editer.')) return;
+          var path = kind === 'game' ? ('states/' + key + '/gameValidation/' + id + '/locked') : ('states/' + key + '/workbook/finalized/' + id);
+          AIA.db.ref(path).set(false, function () {
+            if (kind === 'game') { if (_campaignStates[key] && _campaignStates[key].gameValidation && _campaignStates[key].gameValidation[id]) _campaignStates[key].gameValidation[id].locked = false; }
+            else { if (_campaignStates[key] && _campaignStates[key].workbook && _campaignStates[key].workbook.finalized) _campaignStates[key].workbook.finalized[id] = false; }
+            AIA.showToast('🔓 Brique rouverte pour ' + name, 'success');
+            renderStudentDetail(key);
+          });
+        });
+      });
     }
 
 
