@@ -1483,6 +1483,40 @@ body {
 .sc-ctx-title { font-size: 1rem; font-weight: 700; margin: 0.1rem 0; }
 .sc-ctx-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.45; }
 
+/* ===== Micro-etape 6 : Cockpit formateur live ===== */
+.cockpit-announce-row { display: flex; gap: 0.6rem; margin-top: 0.6rem; }
+.cockpit-announce-row .demo-input { flex: 1; }
+.cockpit-status { font-size: 0.8rem; color: var(--green); margin-top: 0.5rem; min-height: 1rem; }
+.cockpit-count { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-left: 0.4rem; }
+.cockpit-flag { font-size: 1rem; }
+.cockpit-attention { background: rgba(231,76,60,0.08); }
+.cockpit-attention:hover { background: rgba(231,76,60,0.12); }
+.cockpit-msg-btn { font-size: 1rem; }
+.dot.idle { background: var(--text-muted); }
+/* Thread 1-a-1 (modal reutilise .sd-overlay/.sd-modal) */
+.cockpit-thread { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; padding: 0.8rem; background: rgba(0,0,0,0.2); border-radius: var(--radius-xs); margin: 0.6rem 0; }
+.cockpit-bubble { max-width: 80%; padding: 0.5rem 0.8rem; border-radius: 14px; font-size: 0.85rem; line-height: 1.4; }
+.cockpit-bubble.mine { align-self: flex-end; background: var(--gold); color: #1a1a2e; border-bottom-right-radius: 4px; }
+.cockpit-bubble.theirs { align-self: flex-start; background: rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
+.cockpit-thread-input { display: flex; gap: 0.5rem; }
+.cockpit-thread-input .demo-input { flex: 1; }
+
+/* Banniere d'annonce cote etudiant */
+.announce-banner {
+  position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 0.7rem; max-width: 92%; width: max-content;
+  background: linear-gradient(135deg, rgba(212,52,63,0.96), rgba(245,183,49,0.94));
+  color: #1a1a2e; padding: 0.7rem 1.1rem; border-radius: 999px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4); z-index: 9000; font-size: 0.88rem;
+  animation: announce-in 0.4s ease;
+}
+.announce-banner.hiding { opacity: 0; transform: translateX(-50%) translateY(10px); transition: all 0.4s; }
+.announce-icon { font-size: 1.2rem; }
+.announce-text { font-weight: 500; }
+.announce-close { background: rgba(0,0,0,0.18); border: none; color: #1a1a2e; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-size: 0.75rem; flex-shrink: 0; }
+@keyframes announce-in { from { opacity: 0; transform: translateX(-50%) translateY(20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+@media print { .announce-banner { display: none; } }
+
 .game-final-cta {
   margin-top: 2rem; padding: 1.5rem; text-align: center;
   background: linear-gradient(135deg, rgba(245,183,49,0.1), rgba(212,52,63,0.08));

@@ -29,6 +29,7 @@
       '</div>' +
       '<div class="admin-tabs">' +
       '<button class="admin-tab active" data-tab="overview">Vue d\'ensemble</button>' +
+      '<button class="admin-tab" data-tab="cockpit">🛰️ Cockpit live</button>' +
       '<button class="admin-tab" data-tab="unlocks">🔓 Deverrouillage</button>' +
       '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
       '<button class="admin-tab" data-tab="campaigns">🎯 Campagnes</button>' +
@@ -89,9 +90,11 @@
 
     function renderTab(tab) {
       var content = document.getElementById('admin-content');
-      // Clean up any previous live listener from the campaigns tab
+      // Clean up any previous live listener from the campaigns / cockpit tabs
       if (_campaignsListener && AIA.db) { try { AIA.db.ref('states').off('value', _campaignsListener); } catch(e){} _campaignsListener = null; }
+      if (_cockpitListener && AIA.db) { try { AIA.db.ref('students').off('value', _cockpitListener); } catch(e){} _cockpitListener = null; }
       if (tab === 'overview') renderOverview(content);
+      else if (tab === 'cockpit') renderCockpit(content);
       else if (tab === 'unlocks') renderUnlocks(content);
       else if (tab === 'accounts') renderAccounts(content);
       else if (tab === 'campaigns') renderCampaigns(content);
@@ -103,6 +106,137 @@
     }
 
     var _campaignsListener = null;
+    var _cockpitListener = null;
+
+    /* ======== COCKPIT TAB — pilotage live (monitoring + communication) ======== */
+    function fmtAgo(ts) {
+      if (!ts) return 'jamais';
+      var m = Math.floor((Date.now() - ts) / 60000);
+      if (m < 1) return "a l'instant";
+      if (m < 60) return 'il y a ' + m + ' min';
+      return 'il y a ' + Math.floor(m / 60) + 'h';
+    }
+    function pageLabel(p) {
+      var map = { dashboard: 'Accueil', 'business-game': 'Business Game', demos: 'Demos', workbook: 'Carnet', lightning: 'Lightning', showcase: 'Showcase', highlights: 'Temps Forts', leaderboard: 'Classement', arena: 'Arene', journal: 'Journal', avatar: 'Avatar', profile: 'Profil', resources: 'Ressources' };
+      return map[p] || p || '?';
+    }
+    function renderCockpit(el) {
+      if (!AIA.db) { el.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Firebase non connecte.</div>'; return; }
+      el.innerHTML =
+        '<div class="admin-section glass-card">' +
+        '<h3>📣 Annonce a toute la classe</h3>' +
+        '<div class="cockpit-announce-row">' +
+        '<input type="text" id="cockpit-msg" class="demo-input" placeholder="Ex: On passe au Showcase dans 5 min, finalisez votre persona !" maxlength="180">' +
+        '<button class="btn-primary" id="cockpit-send">Envoyer</button></div>' +
+        '<div id="cockpit-announce-status" class="cockpit-status"></div>' +
+        '</div>' +
+        '<div class="admin-section glass-card">' +
+        '<h3>🛰️ Suivi live de la classe <span id="cockpit-count" class="cockpit-count"></span></h3>' +
+        '<p style="color:var(--text-muted)">Les etudiants en difficulte (inactifs &gt; 6 min ou en retard) remontent en haut.</p>' +
+        '<div id="cockpit-live"><div class="loading-pulse" style="padding:2rem;text-align:center">Chargement...</div></div>' +
+        '</div>';
+      var send = document.getElementById('cockpit-send');
+      if (send) send.addEventListener('click', function () {
+        var inp = document.getElementById('cockpit-msg');
+        var msg = (inp.value || '').trim();
+        if (msg.length < 2) { AIA.showToast('Ecrivez une annonce', 'warning'); return; }
+        AIA.db.ref('announcements').push({ message: msg, ts: Date.now(), from: 'Formateur' }, function () {
+          inp.value = '';
+          var st = document.getElementById('cockpit-announce-status');
+          if (st) st.textContent = '✅ Annonce envoyee a toute la classe';
+          AIA.showToast('Annonce envoyee', 'success');
+        });
+      });
+      // Detacher tout listener cockpit precedent (meme issu d'une closure initAdmin anterieure) pour eviter l'orphelin.
+      if (window.__aiaCockpitOff) { try { window.__aiaCockpitOff(); } catch (e) {} }
+      _cockpitListener = AIA.db.ref('students').on('value', function (snap) { renderCockpitLive(snap.val() || {}); });
+      window.__aiaCockpitOff = function () { try { AIA.db.ref('students').off('value', _cockpitListener); } catch (e) {} _cockpitListener = null; };
+    }
+
+    function renderCockpitLive(students) {
+      var liveEl = document.getElementById('cockpit-live');
+      if (!liveEl) return;
+      var rows = Object.keys(students).map(function (k) {
+        var s = students[k] || {};
+        return { key: k, name: s.name || k, xp: s.xp || 0, progress: s.progress || 0, page: s.page || '?', online: !!s.online, lastSeen: s.lastSeen || 0 };
+      });
+      if (!rows.length) { liveEl.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Aucun etudiant connecte pour le moment.</div>'; return; }
+      var progs = rows.map(function (r) { return r.progress; }).sort(function (a, b) { return a - b; });
+      var median = progs[Math.floor((progs.length - 1) / 2)] || 0; // mediane basse (non biaisee pour n pair)
+      var IDLE_MS = 6 * 60000;
+      rows.forEach(function (r) {
+        // En ligne sans lastSeen encore ecrit (connexion toute fraiche) = pas inactif.
+        var idle = !r.online || (!!r.lastSeen && (Date.now() - r.lastSeen) > IDLE_MS);
+        var behind = median >= 2 && r.progress < median / 2;
+        r.flag = idle ? 'idle' : (behind ? 'behind' : '');
+        r.attention = !!r.flag;
+      });
+      rows.sort(function (a, b) {
+        if (a.attention !== b.attention) return a.attention ? -1 : 1;
+        return (b.lastSeen || 0) - (a.lastSeen || 0);
+      });
+      var nAttention = rows.filter(function (r) { return r.attention; }).length;
+      var cnt = document.getElementById('cockpit-count');
+      if (cnt) cnt.textContent = rows.length + ' connectes' + (nAttention ? ' • ' + nAttention + ' a surveiller' : '');
+      var html = '<table class="admin-table full"><thead><tr><th></th><th>Etudiant</th><th>Statut</th><th>Page</th><th>Progression</th><th>XP</th><th>Vu</th><th></th></tr></thead><tbody>';
+      rows.forEach(function (r) {
+        var flagIcon = r.flag === 'idle' ? '<span class="cockpit-flag idle" title="Inactif">⚠️</span>' : r.flag === 'behind' ? '<span class="cockpit-flag behind" title="En retard">🐢</span>' : '';
+        var dot = r.online ? '<span class="dot online"></span>' : '<span class="dot idle"></span>';
+        html += '<tr class="' + (r.attention ? 'cockpit-attention' : '') + '">' +
+          '<td>' + flagIcon + '</td>' +
+          '<td><strong>' + escapeHtml(r.name) + '</strong></td>' +
+          '<td>' + dot + ' ' + (r.online ? 'en ligne' : 'hors ligne') + '</td>' +
+          '<td>' + escapeHtml(pageLabel(r.page)) + '</td>' +
+          '<td><div class="phase-progress-bar"><div class="phase-progress-fill" style="width:' + Math.min(100, r.progress * 8) + '%"></div></div><span style="font-size:0.68rem;color:var(--text-muted)">' + r.progress + ' act.</span></td>' +
+          '<td>' + r.xp + '</td>' +
+          '<td style="font-size:0.72rem;color:var(--text-muted)">' + fmtAgo(r.lastSeen) + '</td>' +
+          '<td><button class="btn-ghost btn-xs cockpit-msg-btn" data-key="' + escapeHtml(r.key) + '" data-name="' + escapeHtml(r.name) + '">💬</button></td>' +
+          '</tr>';
+      });
+      html += '</tbody></table>';
+      liveEl.innerHTML = html;
+      liveEl.querySelectorAll('.cockpit-msg-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { openQuickMessage(this.getAttribute('data-key'), this.getAttribute('data-name')); });
+      });
+    }
+
+    function openQuickMessage(key, name) {
+      // Fermer + detacher un thread deja ouvert (evite l'accumulation de listeners /inbox).
+      if (window.__aiaThreadOff) { try { window.__aiaThreadOff(); } catch (e) {} }
+      var overlay = document.createElement('div');
+      overlay.className = 'sd-overlay';
+      overlay.innerHTML = '<div class="sd-modal" style="max-width:520px">' +
+        '<div class="sd-head"><h3>💬 ' + escapeHtml(name) + '</h3><button class="sd-close">✕</button></div>' +
+        '<div class="cockpit-thread" id="cockpit-thread"><div class="loading-pulse">Chargement...</div></div>' +
+        '<div class="cockpit-thread-input"><input type="text" id="cockpit-thread-msg" class="demo-input" placeholder="Votre message..." maxlength="300"><button class="btn-primary" id="cockpit-thread-send">Envoyer</button></div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      var threadListener = null;
+      var close = function () { if (threadListener && AIA.db) { try { AIA.db.ref('inbox/' + key).off('value', threadListener); } catch (e) {} } if (window.__aiaThreadOff === close) window.__aiaThreadOff = null; overlay.remove(); };
+      window.__aiaThreadOff = close;
+      overlay.querySelector('.sd-close').addEventListener('click', close);
+      overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+      var threadEl = overlay.querySelector('#cockpit-thread');
+      if (AIA.db) {
+        threadListener = AIA.db.ref('inbox/' + key).on('value', function (snap) {
+          var msgs = snap.val() || {};
+          var arr = Object.keys(msgs).map(function (id) { return msgs[id]; }).sort(function (a, b) { return (a.ts || 0) - (b.ts || 0); });
+          threadEl.innerHTML = arr.length ? arr.map(function (m) {
+            return '<div class="cockpit-bubble ' + (m.from === 'admin' ? 'mine' : 'theirs') + '">' + escapeHtml(m.text || '') + '</div>';
+          }).join('') : '<p style="color:var(--text-muted);text-align:center;padding:1rem">Aucun message. Demarrez la conversation.</p>';
+          threadEl.scrollTop = threadEl.scrollHeight;
+        });
+      }
+      var sendMsg = function () {
+        var inp = overlay.querySelector('#cockpit-thread-msg');
+        var txt = (inp.value || '').trim();
+        if (!txt || !AIA.db) return;
+        AIA.db.ref('inbox/' + key).push({ from: 'admin', text: txt, ts: Date.now() }, function () { inp.value = ''; });
+      };
+      overlay.querySelector('#cockpit-thread-send').addEventListener('click', sendMsg);
+      overlay.querySelector('#cockpit-thread-msg').addEventListener('keydown', function (e) { if (e.key === 'Enter') sendMsg(); });
+    }
+
     /* ======== UNLOCKS TAB — Admin controls the timeline ======== */
     var DEMOS_LIST = [
       // Day 1

@@ -1216,6 +1216,36 @@
     awardBadge('team-player');
   }
 
+  // ===== Annonces formateur -> classe (micro-etape 6) =====
+  var _announcementsListener = null;
+  var _sessionStartTs = Date.now();
+  function escA(s){ var d=document.createElement('div'); d.textContent = s==null?'':String(s); return d.innerHTML; }
+  function initAnnouncements(){
+    if(!db || _announcementsListener) return;
+    _announcementsListener = db.ref('announcements').limitToLast(1).on('child_added', function(snap){
+      var a = snap.val(); if(!a || !a.message) return;
+      var id = snap.key;
+      var lastSeen = null;
+      try { lastSeen = localStorage.getItem('aia_last_announcement'); } catch(e){}
+      if(id === lastSeen) return; // deja vue / rejetee
+      // ignorer les annonces anterieures a l'ouverture de session (pas de spam d'historique)
+      if(a.ts && a.ts < _sessionStartTs - 60000) return;
+      showAnnouncementBanner(a.message, a.from || 'Formateur', id);
+    });
+  }
+  function showAnnouncementBanner(message, from, id){
+    var existing = document.getElementById('announce-banner'); if(existing) existing.remove();
+    var b = document.createElement('div');
+    b.id = 'announce-banner'; b.className = 'announce-banner';
+    b.innerHTML = '<span class="announce-icon">📣</span>' +
+      '<span class="announce-text"><strong>'+escA(from)+' :</strong> '+escA(message)+'</span>' +
+      '<button class="announce-close" aria-label="Fermer">✕</button>';
+    document.body.appendChild(b);
+    var markSeen = function(){ try{ localStorage.setItem('aia_last_announcement', id); }catch(e){} };
+    b.querySelector('.announce-close').addEventListener('click', function(){ markSeen(); b.remove(); });
+    setTimeout(function(){ if(document.getElementById('announce-banner')===b){ markSeen(); b.classList.add('hiding'); setTimeout(function(){ if(b.parentNode) b.remove(); }, 400); } }, 12000);
+  }
+
   var _leaderboardListener = null;
 
   function renderLeaderboard(){
@@ -1336,6 +1366,7 @@
     }
     saveState(); listenDayLocks();
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
+    if (!isAdmin) initAnnouncements();
     renderNavAvatar();
     // Sync admin student-mode banner visibility
     var banner = document.getElementById('admin-as-student-banner');
@@ -1535,6 +1566,10 @@
       if (db && state.user && state.user.accountKey) {
         db.ref('students/' + state.user.accountKey + '/online').set(false);
       }
+      // Detacher le listener d'annonces + reinitialiser la fenetre de session (re-login propre)
+      if (db && _announcementsListener) { try { db.ref('announcements').off('child_added', _announcementsListener); } catch (e) {} }
+      _announcementsListener = null; _sessionStartTs = Date.now();
+      var _ab = document.getElementById('announce-banner'); if (_ab) _ab.remove();
       state.user = null; state.xp = { total: 0, history: [] }; state.progress = {};
       state.badges = []; state.streak = { count: 0, lastDate: null }; state.gameNotes = '';
       state.gameDeliverables = {}; state.toolsExplored = []; state.avatar = null;
