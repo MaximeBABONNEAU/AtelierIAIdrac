@@ -11,9 +11,12 @@
   function createHFEmbed(spaceUrl, label, opts) {
     opts = opts || {};
     var cls = 'hf-embed-container' + (opts.tall ? ' tall' : '');
+    // Lien de secours : si le Space dort, bloque l'iframe ou sature (30 etudiants en meme temps),
+    // l'etudiant peut toujours ouvrir l'outil dans un nouvel onglet (sa propre session).
     return '<div class="' + cls + '">' +
       '<div class="hf-embed-label">' +
       '<span style="font-size:1.1rem">&#129303;</span> ' + label +
+      '<a class="hf-embed-open" href="' + spaceUrl + '" target="_blank" rel="noopener">Ouvrir dans un onglet &#8599;</a>' +
       '</div>' +
       '<iframe src="' + spaceUrl + '" ' +
       'loading="lazy" ' +
@@ -360,7 +363,7 @@
       '<div class="demo-workspace glass-card">' +
       '<h3 style="margin-bottom:0.5rem">&#127912; Stable Diffusion 3 — Generation en temps reel</h3>' +
       '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Generez des visuels marketing directement depuis HuggingFace. Essayez des prompts comme : <em>"Product photography of premium coffee beans, dramatic studio lighting, dark background"</em></p>' +
-      createHFEmbed('https://huggingface.co/spaces/stabilityai/stable-diffusion-3-medium-diffusers', 'Stable Diffusion 3 Medium', { tall: true }) +
+      createHFEmbed('https://stabilityai-stable-diffusion-3-medium.hf.space', 'Stable Diffusion 3 Medium', { tall: true }) +
       '</div>' +
 
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
@@ -406,31 +409,39 @@
 
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">&#129302; Chat IA en Direct — HuggingChat</h3>' +
-      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Discutez avec un modele de langage open-source. Testez des prompts marketing : persona, copywriting, strategie, analyse.</p>' +
-      createHFEmbed('https://huggingface.co/chat/', 'HuggingChat — Modele Open Source', { tall: true }) +
+      '<h3 style="margin-bottom:0.5rem">&#129302; Chat IA — testez vos prompts marketing</h3>' +
+      '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Discutez avec un grand modele de langage. Testez vos prompts marketing : persona, copywriting, strategie, analyse.</p>' +
+      '<div class="demo-launch">' +
+      '<div class="demo-launch-icon">&#128172;</div>' +
+      '<p class="demo-launch-txt">Le chat IA s\'ouvre dans un <strong>nouvel onglet</strong> — chacun sa propre session (ideal a 30 en classe, pas de file d\'attente). Choisis un outil, puis copie une mission ci-dessous et colle-la dedans.</p>' +
+      '<div class="demo-launch-btns">' +
+      '<a class="btn-primary" href="https://huggingface.co/chat/" target="_blank" rel="noopener">&#129303; HuggingChat (gratuit) &#8599;</a>' +
+      '<a class="btn-outline" href="https://chatgpt.com/" target="_blank" rel="noopener">&#128172; ChatGPT &#8599;</a>' +
+      '<a class="btn-outline" href="https://claude.ai/" target="_blank" rel="noopener">&#129504; Claude &#8599;</a>' +
+      '<a class="btn-outline" href="https://gemini.google.com/" target="_blank" rel="noopener">&#10024; Gemini &#8599;</a>' +
+      '</div></div>' +
       '</div>' +
 
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3 style="margin-bottom:0.8rem">&#127919; Missions a Tester</h3>' +
       '<div style="display:flex;flex-direction:column;gap:0.6rem" id="chatbot-missions">' +
 
-      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans l\'outil IA ouvert\',\'success\')" ' +
       'data-p="En tant que directeur marketing d\'une startup de cosmetiques bio, cree un persona detaille de mon client ideal. Inclus : demographics, motivations, pain points, canaux preferes, et un parcours d\'achat type.">' +
       '<strong style="color:var(--cyan)">Mission 1 : Persona Marketing</strong><br>' +
       '<span style="font-size:0.78rem;color:var(--text-secondary)">Generer un persona client complet pour une marque de cosmetiques bio</span></div>' +
 
-      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans l\'outil IA ouvert\',\'success\')" ' +
       'data-p="Redige 3 versions d\'un email de relance panier abandonne pour un e-commerce de mode. Version 1 : ton amical. Version 2 : urgence (stock limite). Version 3 : offre speciale. Max 100 mots chacun. Inclus l\'objet et le CTA.">' +
       '<strong style="color:var(--gold)">Mission 2 : Email Copywriting</strong><br>' +
       '<span style="font-size:0.78rem;color:var(--text-secondary)">3 versions d\'un email de relance panier abandonne (amical, urgent, promo)</span></div>' +
 
-      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans l\'outil IA ouvert\',\'success\')" ' +
       'data-p="Analyse la strategie marketing de Netflix en 2025. Structure ton analyse avec : 1) Positionnement, 2) Canaux de communication, 3) Strategie de contenu, 4) Forces et faiblesses, 5) Recommandations d\'amelioration. Sois concis et factuel.">' +
       '<strong style="color:var(--green)">Mission 3 : Analyse Strategique</strong><br>' +
       '<span style="font-size:0.78rem;color:var(--text-secondary)">Analyser la strategie marketing de Netflix avec un framework structure</span></div>' +
 
-      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans le chat ci-dessus\',\'success\')" ' +
+      '<div class="tip" style="padding:0.8rem;cursor:pointer;border:1px solid var(--border-glass)" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-p\'));window.AIA.showToast(\'Prompt copie ! Collez-le dans l\'outil IA ouvert\',\'success\')" ' +
       'data-p="Cree un calendrier editorial pour le compte Instagram d\'une boulangerie artisanale pour le mois de juin. 4 posts par semaine. Pour chaque post inclus : jour, type de contenu (photo/reel/carousel), legende, hashtags (5 max), et hook de la premiere ligne.">' +
       '<strong style="color:var(--pink)">Mission 4 : Calendrier Editorial</strong><br>' +
       '<span style="font-size:0.78rem;color:var(--text-secondary)">Creer un calendrier editorial Instagram complet pour une boulangerie</span></div>' +
