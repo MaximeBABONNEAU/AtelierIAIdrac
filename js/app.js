@@ -29,8 +29,8 @@
     disablePublicRegistration: true, // Admin must create accounts via admin panel
     allowedHosts: ALLOWED_HOSTS,
     storagePrefix: 'aia_',
-    dates: ['2026-06-08','2026-06-09','2026-06-10','2026-06-11'],
-    dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Jeudi 11 Juin'],
+    dates: ['2026-06-08','2026-06-09','2026-06-10','2026-06-12'],
+    dateLabels: ['Lundi 8 Juin','Mardi 9 Juin','Mercredi 10 Juin','Vendredi 12 Juin'],
     mentorName: 'Maxime BABONNEAU',
     school: 'IDRAC Business School',
     firebaseConfig: {
@@ -260,10 +260,11 @@
 
   // === Granular per-item locks managed by admin (Firebase /config/unlocks) ===
   // Default: EVERYTHING LOCKED. Admin progressively unlocks during the course.
+  // Default : Jour 1 deverrouille (evite le mur vide), J2-J4 sous controle admin
   var unlocks = {
-    demos: {},
-    highlights: {},
-    phases: {},
+    demos: { 'demo-prompt': true, 'demo-chatbot': true, 'demo-vqa': true, 'demo-translate': true },
+    highlights: { 'lightning-d1-am': true, 'showcase-d1-pm': true, 'boss-d1': true },
+    phases: { 'phase1': true },
     activities: {}
   };
   var _unlocksListener = null;
@@ -520,6 +521,7 @@
     if (page && page.indexOf('demo-') === 0 && !isItemUnlocked('demos', page)) {
       showToast('🔒 Demo verrouillee — l\'admin l\'a pas encore debloquee', 'warning');
       page = 'demos';
+      state.currentPage = page; // keep saved page in sync with the redirect
     }
     var fn=pages[page]; if(fn) fn();
     // Inject reflection block after demo pages render
