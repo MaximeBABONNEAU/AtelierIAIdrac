@@ -1199,26 +1199,52 @@
     if(window.AIA&&window.AIA.initAdmin) window.AIA.initAdmin();
   }
 
+  // Guided first-run banner (tres guide)
+  function showGuideBanner(title, sub){
+    hideGuideBanner();
+    var b = document.createElement('div');
+    b.id = 'guide-banner';
+    b.innerHTML = '<div class="gb-text"><strong>' + title + '</strong><span>' + sub + '</span></div>' +
+      '<button class="btn-primary btn-sm" id="gb-continue">Continuer le parcours →</button>';
+    document.body.appendChild(b);
+    var btn = document.getElementById('gb-continue');
+    if (btn) btn.addEventListener('click', function () {
+      if (window.AIA && typeof window.AIA._firstRunSequence === 'function') window.AIA._firstRunSequence();
+    });
+  }
+  function hideGuideBanner(){
+    var b = document.getElementById('guide-banner'); if (b) b.remove();
+  }
+
   function enterApp(name, isAdmin, accountKey) {
+    var _welcome = document.getElementById('page-welcome'); if (_welcome) _welcome.style.display = 'none';
     document.getElementById('page-login').classList.add('hidden');
     document.getElementById('app-shell').classList.remove('hidden');
     if (!isAdmin) {
       awardBadge('first-login'); updateStreak();
     }
-    saveState(); listenDayLocks(); navigateTo(state.currentPage || 'dashboard');
+    saveState(); listenDayLocks();
     showToast('Bienvenue ' + name + ' !', 'success'); initFirebase();
     renderNavAvatar();
     // Sync admin student-mode banner visibility
     var banner = document.getElementById('admin-as-student-banner');
     if (banner) banner.style.display = (isAdmin && adminAsStudent) ? 'flex' : 'none';
-    // Quick wins: first-time onboarding tour + morning/evening check-in
-    setTimeout(function () {
-      if (window.AIA && window.AIA.maybeStartOnboarding) window.AIA.maybeStartOnboarding();
-      // Defer check-in slightly to avoid clashing with onboarding
+
+    var isFirstLogin = !isAdmin && !state.onboardingDone;
+    if (isFirstLogin) {
+      // MICRO-PARCOURS J1 : Avatar -> Tour -> Check-in -> Projet (tres guide)
+      navigateTo('avatar');
+      showGuideBanner('Etape 1/4 — Creez votre avatar', 'Personnalisez votre personnage, puis cliquez sur "Continuer le parcours".');
+      window.AIA._firstRunSequence = function () {
+        hideGuideBanner();
+        if (window.AIA.maybeStartOnboarding) window.AIA.maybeStartOnboarding(); // Etape 2 : Tour
+      };
+    } else {
+      navigateTo(state.currentPage || 'dashboard');
       setTimeout(function () {
         if (window.AIA && window.AIA.maybeShowCheckin) window.AIA.maybeShowCheckin();
-      }, 800);
-    }, 600);
+      }, 900);
+    }
     if (!isAdmin) { checkAutoComplete(); setInterval(checkAutoComplete, 60000); }
     window.addEventListener('beforeunload', function () { saveStateNow(); });
     if (!isAdmin) { setInterval(saveState, 30000); }
@@ -1232,10 +1258,46 @@
     document.getElementById('student-register-form').classList.add('hidden');
   }
 
+  function populateNameList(){
+    var sel = document.getElementById('login-name-select');
+    if (!sel) return;
+    if (!db) {
+      sel.innerHTML = '<option value="">— Hors-ligne : utilisez la saisie manuelle —</option>';
+      var ml = document.getElementById('login-manual-group'); var nl = document.getElementById('login-namelist-group');
+      if (ml && nl) { ml.classList.remove('hidden'); nl.classList.add('hidden'); }
+      return;
+    }
+    db.ref('accounts').once('value', function (snap) {
+      var accts = snap.val() || {};
+      var list = Object.keys(accts).map(function (k) {
+        return { ln: accts[k].lastName || '', fn: accts[k].firstName || '' };
+      }).filter(function (a) { return a.ln || a.fn; });
+      list.sort(function (a, b) { return (a.lastName + a.fn).localeCompare ? (a.ln + a.fn).localeCompare(b.ln + b.fn) : 0; });
+      if (!list.length) {
+        sel.innerHTML = '<option value="">— Aucun compte : demandez au formateur —</option>';
+        return;
+      }
+      sel.innerHTML = '<option value="">— Choisissez votre nom —</option>' +
+        list.map(function (a) {
+          return '<option value="' + escapeAttr(JSON.stringify({ ln: a.ln, fn: a.fn })) + '">' + (a.fn + ' ' + a.ln).trim() + '</option>';
+        }).join('');
+    });
+  }
+  function escapeAttr(s){ return String(s).replace(/"/g, '&quot;'); }
+
   function initAuth(){
+    // Welcome screen -> reveal login
+    var welcome = document.getElementById('page-welcome');
+    var startBtn = document.getElementById('btn-welcome-start');
+    if (startBtn) startBtn.addEventListener('click', function () {
+      if (welcome) welcome.style.display = 'none';
+      var login = document.getElementById('page-login'); if (login) login.style.display = '';
+    });
+
     document.getElementById('role-student').addEventListener('click', function () {
       document.getElementById('role-picker').classList.add('hidden');
       document.getElementById('student-login-panel').classList.remove('hidden');
+      populateNameList();
     });
     document.getElementById('role-admin').addEventListener('click', function () {
       document.getElementById('role-picker').classList.add('hidden');
@@ -1274,11 +1336,35 @@
       document.getElementById('student-login-form').classList.remove('hidden');
     });
 
+    // Toggle between name dropdown and manual entry
+    var toggleManual = document.getElementById('btn-toggle-manual');
+    if (toggleManual) toggleManual.addEventListener('click', function () {
+      var nl = document.getElementById('login-namelist-group');
+      var ml = document.getElementById('login-manual-group');
+      var manualVisible = !ml.classList.contains('hidden');
+      if (manualVisible) {
+        ml.classList.add('hidden'); nl.classList.remove('hidden');
+        this.textContent = 'Mon nom n\'est pas dans la liste';
+      } else {
+        ml.classList.remove('hidden'); nl.classList.add('hidden');
+        this.textContent = '← Revenir a la liste des noms';
+      }
+    });
+
     document.getElementById('btn-student-login').addEventListener('click', function () {
-      var ln = document.getElementById('login-lastname').value.trim();
-      var fn = document.getElementById('login-firstname').value.trim();
+      var ln, fn;
+      var manualGroup = document.getElementById('login-manual-group');
+      var usingManual = manualGroup && !manualGroup.classList.contains('hidden');
+      if (usingManual) {
+        ln = document.getElementById('login-lastname').value.trim();
+        fn = document.getElementById('login-firstname').value.trim();
+      } else {
+        var sel = document.getElementById('login-name-select');
+        var opt = sel && sel.value ? JSON.parse(sel.value) : null;
+        if (opt) { ln = opt.ln; fn = opt.fn; }
+      }
       var pw = document.getElementById('login-password').value;
-      if (!ln || !fn) return showToast('Entrez votre nom et prenom', 'warning');
+      if (!ln || !fn) return showToast('Selectionnez votre nom dans la liste', 'warning');
       if (!pw) return showToast('Mot de passe requis', 'warning');
       showToast('Connexion...', 'info');
       loginAccount(ln, fn, hashPass(pw), function (result) {
@@ -1400,6 +1486,8 @@
   window.AIA.refreshAllTimers=refreshAllTimers;
   window.AIA.renderActivityLinks=renderActivityLinks;
   window.AIA.LINK_LABELS=LINK_LABELS;
+  window.AIA.showGuideBanner=showGuideBanner;
+  window.AIA.hideGuideBanner=hideGuideBanner;
   window.AIA.submitActivity=submitActivity; window.AIA.isActivityUnlocked=isActivityUnlocked;
   window.AIA.dayLocks=dayLocks; window.AIA.db=null;
   window.AIA.isItemUnlocked=isItemUnlocked;

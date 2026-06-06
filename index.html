@@ -19,8 +19,28 @@
     <button id="btn-exit-student-mode" class="btn-outline btn-sm">Revenir admin</button>
   </div>
 
+  <!-- ========== ECRAN D'ACCUEIL IMMERSIF ========== -->
+  <div id="page-welcome" class="welcome-screen">
+    <div class="welcome-inner">
+      <div class="welcome-badge">IDRAC Business School</div>
+      <h1 class="welcome-title">AI Marketing <span class="gradient-text">Academy</span></h1>
+      <p class="welcome-pitch">4 jours pour maitriser l'IA generative appliquee au marketing — et construire, de A a Z, la campagne complete d'un produit fictif.</p>
+      <div class="welcome-days">
+        <div class="welcome-day"><span class="wd-num">J1</span><span class="wd-lbl">Fondations & Prompts</span></div>
+        <div class="welcome-day"><span class="wd-num">J2</span><span class="wd-lbl">Visuel & Marque</span></div>
+        <div class="welcome-day"><span class="wd-num">J3</span><span class="wd-lbl">Campagne Pub</span></div>
+        <div class="welcome-day"><span class="wd-num">J4</span><span class="wd-lbl">Pitch & Lancement</span></div>
+      </div>
+      <p class="welcome-meta">15 demos IA &bull; Business Game fil rouge &bull; Carnet de campagne exportable</p>
+      <button class="btn-primary welcome-cta" id="btn-welcome-start">Commencer l'aventure
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+      <p class="welcome-mentor">Anime par <strong>Maxime BABONNEAU</strong></p>
+    </div>
+  </div>
+
   <!-- ========== LOGIN ========== -->
-  <div id="page-login" class="login-container">
+  <div id="page-login" class="login-container" style="display:none">
     <div class="login-card glass-card">
       <div class="login-logo">
         <div class="logo-badge">IDRAC</div>
@@ -48,13 +68,18 @@
         </button>
         <div id="student-login-form">
           <h3 class="panel-title">Connexion Etudiant</h3>
-          <div class="form-group">
-            <label for="login-lastname">Nom</label>
-            <input type="text" id="login-lastname" placeholder="Ex: Dupont" required autocomplete="family-name" maxlength="30">
+          <div class="form-group" id="login-namelist-group">
+            <label for="login-name-select">👋 Selectionnez votre nom</label>
+            <select id="login-name-select" class="demo-input">
+              <option value="">— Chargement de la classe… —</option>
+            </select>
+            <p class="login-help-hint">Trouvez votre nom dans la liste, puis tapez votre mot de passe ci-dessous.</p>
           </div>
-          <div class="form-group">
-            <label for="login-firstname">Prenom</label>
-            <input type="text" id="login-firstname" placeholder="Ex: Marie" required autocomplete="given-name" maxlength="30">
+          <div class="form-group hidden" id="login-manual-group">
+            <label for="login-lastname">Nom</label>
+            <input type="text" id="login-lastname" placeholder="Ex: Dupont" autocomplete="family-name" maxlength="30">
+            <label for="login-firstname" style="margin-top:0.5rem">Prenom</label>
+            <input type="text" id="login-firstname" placeholder="Ex: Marie" autocomplete="given-name" maxlength="30">
           </div>
           <div class="form-group">
             <label for="login-password">Mot de passe</label>
@@ -64,6 +89,7 @@
             <span>Se connecter</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           </button>
+          <button class="btn-ghost btn-block btn-sm" id="btn-toggle-manual" style="margin-top:0.6rem">Mon nom n'est pas dans la liste</button>
           <div class="login-divider"><span>ou</span></div>
           <button class="btn-outline btn-block" id="btn-show-register">Creer un compte</button>
         </div>

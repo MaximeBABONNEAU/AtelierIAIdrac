@@ -142,8 +142,22 @@
     var overlay = document.querySelector('.onboarding-overlay');
     if (overlay) overlay.remove();
     if (markDone) {
+      var wasFirstRun = !isOnboardingDone();
       markOnboardingDone();
       if (window.AIA && window.AIA.showToast) window.AIA.showToast('Tour termine ! Profitez de l\'atelier 🚀', 'success');
+      // MICRO-PARCOURS J1 (suite) : Etape 3 Check-in, puis Etape 4 Projet
+      if (wasFirstRun && window.AIA) {
+        setTimeout(function () {
+          showMorningCheckin();
+          if (window.AIA.showGuideBanner) {
+            window.AIA.showGuideBanner('Etape 4/4 — Choisissez votre projet', 'Apres le check-in, lancez votre Business Game (le fil rouge des 4 jours).');
+            window.AIA._firstRunSequence = function () {
+              if (window.AIA.hideGuideBanner) window.AIA.hideGuideBanner();
+              if (window.AIA.navigateTo) window.AIA.navigateTo('business-game');
+            };
+          }
+        }, 600);
+      }
     }
   }
 
