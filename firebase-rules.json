@@ -25,7 +25,7 @@
     },
 
     "accounts": {
-      ".read": "auth != null",
+      ".read": true,
       "$accountKey": {
         ".write": "auth != null && (newData.exists() && newData.hasChildren(['firstName', 'lastName', 'passwordHash', 'createdAt']) || !newData.exists())",
         ".validate": "$accountKey.matches(/^[a-z0-9_]{3,80}$/)",

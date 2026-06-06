@@ -1175,7 +1175,7 @@
               if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
               AIA.hashAccountPass(key, newPw).then(function (ph) {
                 accts[key].passwordHash = ph;
-                AIA.saveAccountsToFirebase(accts);
+                AIA.db.ref('accounts/' + key).update({ passwordHash: ph }); // ecriture par-compte (regles)
                 AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
               });
             });
@@ -1200,7 +1200,7 @@
               if (!a) return;
               if (!confirm('Supprimer le compte de ' + a.firstName + ' ' + a.lastName + ' ? Cette action est irreversible.')) return;
               delete accts[key];
-              AIA.saveAccountsToFirebase(accts);
+              AIA.db.ref('accounts/' + key).remove(); // suppression par-compte (regles)
               AIA.deleteStudentState(key);
               AIA.showToast('Compte supprime : ' + a.firstName + ' ' + a.lastName, 'info');
               renderAccounts(el);
@@ -1212,8 +1212,7 @@
             btnResetAllPw.addEventListener('click', function () {
               if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
               var keys = Object.keys(accts);
-              Promise.all(keys.map(function (k) { return AIA.hashAccountPass(k, 'idrac2026').then(function (ph) { accts[k].passwordHash = ph; }); })).then(function () {
-                AIA.saveAccountsToFirebase(accts);
+              Promise.all(keys.map(function (k) { return AIA.hashAccountPass(k, 'idrac2026').then(function (ph) { accts[k].passwordHash = ph; return AIA.db.ref('accounts/' + k).update({ passwordHash: ph }); }); })).then(function () {
                 AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
               });
             });
@@ -1233,8 +1232,7 @@
           if (btnDeleteAll) {
             btnDeleteAll.addEventListener('click', function () {
               if (!confirm('SUPPRIMER TOUS les comptes etudiants ? Cette action est IRREVERSIBLE.')) return;
-              for (var k in accts) { AIA.deleteStudentState(k); }
-              AIA.saveAccountsToFirebase({});
+              for (var k in accts) { AIA.deleteStudentState(k); AIA.db.ref('accounts/' + k).remove(); } // par-compte (regles)
               AIA.showToast('Tous les comptes supprimes', 'info');
               renderAccounts(el);
             });
