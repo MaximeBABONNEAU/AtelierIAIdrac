@@ -327,6 +327,7 @@
         var xpEarned = userWins ? 12 : 5;
         AIA.addXP(xpEarned, 'Battle de prompts');
         if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
+        if (evalResult.total >= 80) { try { if (AIA.pushFeed) AIA.pushFeed({ action: 'grade-a', target: brief.title, score: evalResult.total }); } catch (e) {} }
         if (AIA.bumpGameProgress) AIA.bumpGameProgress('battle'); // progression vers le Brief Legendaire
       }
 

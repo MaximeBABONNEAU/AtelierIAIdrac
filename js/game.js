@@ -611,6 +611,8 @@
             .replace(/\[adjectifs charte\]/gi, _tone)
             .replace(/{persona}/g, _persona).replace(/{tone}/g, _tone)
             .replace(/{positioning}/g, _posi).replace(/{name}/g, _bname);
+          // "Noter par l'IA" : prompt d'auto-critique a coller dans une vraie IA (feedback qualitatif reel)
+          var critiquePrompt = 'Tu es un jury marketing exigeant (atelier IDRAC). Evalue mon livrable pour l etape "' + step.title + '". Donne : une note sur 100, 3 points forts, 3 axes d amelioration concrets et actionnables, puis une version amelioree. Mon livrable :\n[colle ici ta production]';
           var statusIcon = locked ? '🔒' : (done ? '✅' : '⬜');
           var scoreBadge = (locked && score != null) ? '<span class="game-step-scorebadge ' + scoreClass(score) + '">' + score + '/100</span>' : '';
           var headerHtml = '<div class="game-step-header">' +
@@ -648,6 +650,7 @@
             '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(promptText) + '">📋 Copier le prompt</button>' +
             '<a class="btn-outline btn-xs ia-tool-link" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 Ouvrir ChatGPT ↗</a>' +
             '<a class="btn-outline btn-xs ia-tool-link" href="https://claude.ai/" target="_blank" rel="noopener">🧠 Ouvrir Claude ↗</a>' +
+            '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(critiquePrompt) + '">🤖 Prompt de notation IA</button>' +
             '</div>' +
             '<p class="game-step-howto">1) Copiez le prompt &bull; 2) Ouvrez un outil IA &bull; 3) <strong>Collez la VRAIE reponse de l\'IA ci-dessous</strong> &bull; 4) Validez pour la noter</p>' +
             '</div>' +

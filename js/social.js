@@ -224,7 +224,7 @@
         'reviewed': '⭐', 'step-done': '✅', 'badge-unlocked': '🏅',
         'voted': '♥️', 'demo-done': '🛠️', 'highlight-done': '⚡',
         'campaign-export': '📤', 'theme-picked': '🎯',
-        'boss-win': '🏆', 'boss-try': '🤖', 'boss-solo': '👹'
+        'boss-win': '🏆', 'boss-try': '🤖', 'boss-solo': '👹', 'grade-a': '🅰️'
       };
       feedEl.innerHTML = '<div class="wall-feed">' +
         items.map(function (item) {
@@ -256,6 +256,7 @@
       case 'boss-win': return 'a <strong>BATTU le Prof</strong> 🏆 — exploit l&eacute;gendaire !';
       case 'boss-try': return 'a os&eacute; d&eacute;fier <strong>le Prof</strong> 🤖';
       case 'boss-solo': return 'a vaincu un boss solo : <strong>' + escapeHtml(item.target) + '</strong> 👹';
+      case 'grade-a': return 'a decroche un <strong>Grade A</strong> (' + escapeHtml(String(item.score == null ? '' : item.score)) + '/100) sur « ' + escapeHtml(item.target || '') + ' » 🔥';
       default: return 'a fait quelque chose...';
     }
   }

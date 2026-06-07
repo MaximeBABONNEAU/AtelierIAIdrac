@@ -451,11 +451,13 @@
   function initParticles() {
     var c = document.getElementById('particles-canvas');
     if (!c) return;
-    var ctx = c.getContext('2d'), pts = [], n = 50;
+    // UX#7 : respecter prefers-reduced-motion (perf laptops + confort) -> pas d'animation
+    try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { c.style.display = 'none'; return; } } catch (e) {}
+    var ctx = c.getContext('2d'), pts = [], n = 50, raf = null;
     function resize() { c.width = window.innerWidth; c.height = window.innerHeight; }
     resize(); window.addEventListener('resize', resize);
     for (var i = 0; i < n; i++) pts.push({ x: Math.random()*c.width, y: Math.random()*c.height, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4, r: Math.random()*2+0.5 });
-    (function draw() {
+    function draw() {
       ctx.clearRect(0,0,c.width,c.height);
       pts.forEach(function(p){ p.x+=p.vx; p.y+=p.vy; if(p.x<0)p.x=c.width; if(p.x>c.width)p.x=0; if(p.y<0)p.y=c.height; if(p.y>c.height)p.y=0;
         ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fillStyle='rgba(167,31,40,0.25)'; ctx.fill(); });
@@ -464,8 +466,11 @@
         if(d<120){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y);
           ctx.strokeStyle='rgba(167,31,40,'+(0.08*(1-d/120))+')'; ctx.lineWidth=0.5; ctx.stroke(); }
       }
-      requestAnimationFrame(draw);
-    })();
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    // Pause quand l'onglet est masque (economie CPU/batterie sur les laptops)
+    document.addEventListener('visibilitychange', function(){ if (document.hidden) { if (raf) { cancelAnimationFrame(raf); raf = null; } } else if (!raf) { draw(); } });
   }
 
   function showToast(msg, type) {
@@ -542,12 +547,29 @@
       applied = Math.round(amount * PVP_PENALTY_FACTOR);
       reason = (reason || '') + ' ⚠️ malus -25%';
     }
+    var _prevLvl = getLevelInfo(state.xp.total || 0).level;
     state.xp.total = (state.xp.total || 0) + applied;
     state.xp.history.unshift({amount:applied,reason:reason||'',date:new Date().toISOString()});
     if(state.xp.history.length>50) state.xp.history.length=50;
     updateXPDisplay(); showXPPopup(applied,reason);
+    if(applied>0 && getLevelInfo(state.xp.total).level>_prevLvl) showLevelUp(getLevelInfo(state.xp.total).level);
     if(state.xp.total>=500) awardBadge('xp-500');
     saveState();
+  }
+  // Celebration de passage de niveau (moment de fierte, effet "waouh" en salle)
+  function showLevelUp(level){
+    var info = getLevelInfo(state.xp.total);
+    var ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99998;pointer-events:none';
+    ov.innerHTML = '<div class="levelup-box" style="background:linear-gradient(135deg,#A71F28,#f5b731);color:#fff;padding:1.6rem 2.6rem;border-radius:18px;text-align:center;box-shadow:0 14px 55px rgba(167,31,40,0.55)">'+
+      '<div style="font-size:2.6rem;line-height:1">🎉</div><div style="font-weight:800;font-size:1.45rem;margin-top:.3rem">Niveau '+level+' !</div>'+
+      '<div style="opacity:.95;font-size:0.95rem">'+(info.title||'')+'</div></div>';
+    document.body.appendChild(ov);
+    var box = ov.querySelector('.levelup-box');
+    box.style.transition = 'transform .45s cubic-bezier(0.22,1,0.36,1),opacity .45s'; box.style.transform = 'scale(0.6)'; box.style.opacity = '0';
+    requestAnimationFrame(function(){ box.style.transform = 'scale(1)'; box.style.opacity = '1'; });
+    setTimeout(function(){ if(box){ box.style.transform = 'scale(0.9)'; box.style.opacity = '0'; } }, 2300);
+    setTimeout(function(){ if(ov.parentNode) ov.parentNode.removeChild(ov); }, 2800);
   }
   function updateXPDisplay(){ var el=document.getElementById('nav-xp-amount'); if(el) el.textContent=state.xp.total; }
   function showXPPopup(amount,reason){
@@ -592,6 +614,9 @@
     state.streak.lastDate=today;
     if(state.streak.count>=3) awardBadge('streak-3');
     saveState();
+    // Bonus de connexion quotidienne (rituel "reviens demain") — escalade J1->J4
+    var _dayBonus = [10,20,30,50][Math.min(getCurrentDay()-1,3)] || 10;
+    addXP(_dayBonus, '🔥 Connexion jour ' + getCurrentDay() + ' (serie ' + state.streak.count + ')');
   }
 
   function navigateTo(page){
