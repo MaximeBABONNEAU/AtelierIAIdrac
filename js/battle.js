@@ -701,7 +701,7 @@
         card.addEventListener('click', function () {
           var classId = this.getAttribute('data-class');
           var cls = RPG_CLASSES.find(function (c) { return c.id === classId; });
-          if (cls) startRPGBattle(main, cls, pvp);
+          if (cls) promptBattle(main, cls, null, { rootId: 'rpg-root', isPvp: true, pvp: pvp });
         });
       });
       // Boss : Prof (popup pros/cons) + boss PvE (si debloque)
@@ -709,6 +709,177 @@
       if (bp) bp.addEventListener('click', function () { showProfPopup(main); });
       wireBossZone('rpg', function () { renderPveBossSelect(main); });
     });
+  }
+
+  /* =====================================================================
+     COMBAT PAR PROMPTS — force l'usage reel de modeles IA (ChatGPT/Claude/...)
+     Chaque tour : une mission marketing -> ecrire un VRAI prompt -> score = degats.
+     Utilise par le PvP (entrainement) ET les boss (Prof, creature).
+     ===================================================================== */
+  var AI_TOOLS = [
+    { name: 'ChatGPT', icon: '🤖', pre: true, base: 'https://chatgpt.com/?q=' },
+    { name: 'Claude', icon: '🧠', pre: true, base: 'https://claude.ai/new?q=' },
+    { name: 'Gemini', icon: '✨', pre: false, base: 'https://gemini.google.com/app' },
+    { name: 'Le Chat', icon: '🐱', pre: false, base: 'https://chat.mistral.ai/chat' }
+  ];
+  var COMBAT_MULT = { 'prompt-mage': 1.25, 'data-ranger': 1.15, 'content-bard': 1.0, 'visual-knight': 0.95 };
+
+  function aiToolsBar(seed) {
+    return '<div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin:0.5rem 0">' +
+      AI_TOOLS.map(function (t) {
+        var href = t.pre ? t.base + encodeURIComponent(seed) : t.base;
+        return '<a class="btn-outline btn-sm" href="' + href + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">' + t.icon + ' ' + t.name + '</a>';
+      }).join('') +
+      '<button type="button" class="btn-outline btn-sm" id="pc-copy">📋 Copier la mission</button></div>';
+  }
+
+  function promptBattle(main, playerClass, enemyConf, opts) {
+    opts = opts || {};
+    var AIA = window.AIA, st = AIA.getState();
+    var rootId = opts.rootId || 'rpg-root';
+    var boss = !!opts.boss;
+    var lvl = AIA.getLevelInfo ? AIA.getLevelInfo(st.xp.total) : { level: 1 };
+    var mult = COMBAT_MULT[playerClass.id] || 1;
+
+    var player = { name: st.user ? st.user.name : 'Vous', cls: playerClass, icon: playerClass.icon,
+      hp: playerClass.baseHP + lvl.level * 5, maxHP: playerClass.baseHP + lvl.level * 5,
+      atk: playerClass.baseATK + Math.floor(lvl.level * 1.5), def: playerClass.baseDEF + lvl.level, tempDef: 0 };
+
+    var enemy, aggr;
+    if (boss) {
+      var diff = enemyConf.diffMult || 1;
+      enemy = { name: enemyConf.name, icon: enemyConf.icon, isBoss: true, skills: enemyConf.skills,
+        hp: Math.round((enemyConf.baseHP + lvl.level * 6) * diff), maxHP: Math.round((enemyConf.baseHP + lvl.level * 6) * diff),
+        atk: Math.round((enemyConf.baseATK + lvl.level * 1.8) * diff), def: Math.round((enemyConf.baseDEF + lvl.level * 1.2) * diff), tempDef: 0 };
+      aggr = enemyConf.aggression || { defend: 0.08, skill: 0.6, healAt: 0.3 };
+    } else {
+      var oc = RPG_CLASSES[Math.floor(Math.random() * RPG_CLASSES.length)];
+      var names = ['Alice', 'Bob', 'Clara', 'David', 'Emma', 'Felix', 'Grace', 'Hugo', 'Iris', 'Jules', 'Kenza', 'Leo'];
+      var sf = 0.85 + Math.random() * 0.3;
+      enemy = { name: names[Math.floor(Math.random() * names.length)], icon: oc.icon, isBoss: false, skills: oc.skills, clsName: oc.name,
+        hp: Math.round((oc.baseHP + lvl.level * 5) * sf), maxHP: Math.round((oc.baseHP + lvl.level * 5) * sf),
+        atk: Math.round((oc.baseATK + lvl.level * 1.5) * sf), def: Math.round((oc.baseDEF + lvl.level) * sf), tempDef: 0 };
+      aggr = { defend: 0.15, skill: 0.5, healAt: 0.35 };
+    }
+
+    var log = [], turn = 1, over = false, lastEval = null;
+    var mission = PROMPT_BRIEFS[Math.floor(Math.random() * PROMPT_BRIEFS.length)];
+
+    function calcDmg(a, d) { return Math.max(1, Math.round((a - Math.floor(d * 0.6)) * (0.85 + Math.random() * 0.3))); }
+    function pickMission() { mission = PROMPT_BRIEFS[Math.floor(Math.random() * PROMPT_BRIEFS.length)]; lastEval = null; }
+
+    function fighter(f, side) {
+      var hpPct = Math.max(0, Math.round(f.hp / f.maxHP * 100));
+      var hpC = hpPct > 50 ? '#2ecc71' : hpPct > 25 ? '#f5b731' : '#e74c3c';
+      return '<div class="rpg-fighter ' + side + (f.isBoss ? ' boss-fighter' : '') + '">' +
+        '<div class="rpg-fighter-icon">' + f.icon + '</div>' +
+        '<div class="rpg-fighter-name">' + escapeHtml(f.name) + '</div>' +
+        '<div class="rpg-fighter-class">' + (f.isBoss ? 'BOSS' : (f.cls ? f.cls.name : f.clsName || '')) + '</div>' +
+        '<div class="rpg-bar"><div class="rpg-bar-fill" style="width:' + hpPct + '%;background:' + hpC + '"></div></div>' +
+        '<div class="rpg-bar-label">HP ' + Math.max(0, f.hp) + '/' + f.maxHP + '</div>' +
+        '<div class="rpg-fighter-stats">ATK ' + f.atk + ' DEF ' + (f.def + f.tempDef) + '</div></div>';
+    }
+
+    function ui() {
+      var root = document.getElementById(rootId); if (!root) return;
+      var missionHtml = !over ?
+        '<div class="pc-mission glass-card" style="padding:1rem;margin-top:0.8rem;border-left:3px solid var(--accent,#6c5ce7)">' +
+        '<div style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted)">🎯 Mission de prompt — ta seule arme : l\'IA</div>' +
+        '<h4 style="margin:0.3rem 0">' + escapeHtml(mission.title) + '</h4>' +
+        '<p style="font-size:0.85rem;color:var(--text-secondary,#cfd2dc);margin:0.2rem 0 0.4rem">' + escapeHtml(mission.brief) + '</p>' +
+        '<div style="font-size:0.72rem;color:var(--text-muted)">Ouvre un modèle IA ci-dessous, teste, puis écris TON meilleur prompt (rôle + contexte + action + format + ton + contraintes) :</div>' +
+        aiToolsBar(mission.brief) +
+        '<textarea id="pc-input" class="demo-textarea" rows="4" placeholder="En tant que [rôle expert], pour [cible/marque], [action] [format]. Ton : [...]. Contraintes : [...]"></textarea>' +
+        '<details style="margin-top:0.4rem"><summary style="cursor:pointer;color:var(--accent,#6c5ce7);font-size:0.8rem">💡 Astuces de prompt</summary><ul style="font-size:0.8rem;margin:0.4rem 0 0;padding-left:1.1rem">' + mission.tips.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ul></details>' +
+        (lastEval ? '<div style="font-size:0.78rem;margin-top:0.4rem;color:var(--text-muted)">Dernier prompt : <strong>' + lastEval.total + '/100</strong>' + (lastEval.missing.length ? ' — il manque : ' + lastEval.missing.slice(0, 3).join(', ') : ' — excellent !') + '</div>' : '') +
+        '</div>' : '';
+      root.innerHTML =
+        '<div class="rpg-battle-header">' + (boss ? '⚔️ ' + escapeHtml(enemy.name).toUpperCase() + ' &bull; ' : '') + 'Tour ' + turn + '</div>' +
+        '<div class="rpg-arena">' + fighter(player, 'left') + '<div class="rpg-vs">VS</div>' + fighter(enemy, 'right') + '</div>' +
+        missionHtml +
+        (!over ? '<div class="rpg-actions" style="margin-top:0.6rem">' +
+          '<button class="btn-primary" id="pc-send">⚔️ Lancer le prompt</button>' +
+          '<button class="rpg-btn defend" id="pc-defend">🛡️ Se concentrer</button>' +
+          '<button class="btn-outline btn-sm" id="pc-skip">🎲 Autre mission</button></div>' : '') +
+        '<div class="rpg-log">' + log.slice(-6).map(function (l) { return '<div class="rpg-log-entry">' + l + '</div>'; }).join('') + '</div>';
+      if (!over) {
+        var se = document.getElementById('pc-send'); if (se) se.addEventListener('click', sendPrompt);
+        var de = document.getElementById('pc-defend'); if (de) de.addEventListener('click', defend);
+        var sk = document.getElementById('pc-skip'); if (sk) sk.addEventListener('click', function () { pickMission(); ui(); });
+        var cp = document.getElementById('pc-copy'); if (cp) cp.addEventListener('click', function () { try { navigator.clipboard.writeText(mission.brief); if (AIA.showToast) AIA.showToast('Mission copiée — colle-la dans ton IA', 'success'); } catch (e) {} });
+      }
+    }
+
+    function enemyTurn() {
+      enemy.tempDef = 0;
+      var hpRatio = enemy.hp / enemy.maxHP, act = 'attack', si = -1;
+      if (hpRatio < aggr.healAt) { var hi = enemy.skills.findIndex(function (s) { return s.heal; }); if (hi >= 0 && Math.random() < 0.7) { act = 'skill'; si = hi; } }
+      if (act === 'attack' && Math.random() < aggr.defend) act = 'defend';
+      if (act === 'attack') { var us = []; enemy.skills.forEach(function (s, i) { if (s.dmg) us.push(i); }); if (us.length && Math.random() < aggr.skill) { act = 'skill'; si = us[Math.floor(Math.random() * us.length)]; } }
+      if (act === 'attack') { var ed = calcDmg(enemy.atk, player.def + player.tempDef); player.hp -= ed; log.push('<strong>' + escapeHtml(enemy.name) + '</strong> attaque — ' + ed + ' dmg'); }
+      else if (act === 'defend') { enemy.tempDef = Math.floor(enemy.def * 0.5); log.push('<strong>' + escapeHtml(enemy.name) + '</strong> se protège'); }
+      else { var esk = enemy.skills[si]; if (esk.dmg) { var esd = calcDmg(esk.dmg, player.def + player.tempDef); player.hp -= esd; log.push((esk.icon || '✨') + ' <strong>' + escapeHtml(enemy.name) + '</strong> ' + esk.name + ' — ' + esd + ' dmg'); } if (esk.heal) { enemy.hp = Math.min(enemy.maxHP, enemy.hp + esk.heal); log.push((esk.icon || '💚') + ' ' + escapeHtml(enemy.name) + ' +' + esk.heal + ' HP'); } if (esk.defBuff) enemy.tempDef += esk.defBuff; }
+    }
+
+    function resolveAndAdvance() {
+      if (enemy.hp <= 0) { finish(true); return; }
+      enemyTurn();
+      player.tempDef = 0;
+      if (player.hp <= 0) { finish(false); return; }
+      turn++; if (turn > 30) { finish(player.hp > enemy.hp); return; }
+      pickMission(); ui();
+    }
+
+    function sendPrompt() {
+      if (over) return;
+      var inp = document.getElementById('pc-input'); if (!inp) return;
+      var txt = (inp.value || '').trim();
+      if (txt.length < 15) { if (AIA.showToast) AIA.showToast('Prompt trop court — min 15 caractères', 'warning'); return; }
+      var ev = evaluatePrompt(txt, mission); lastEval = ev;
+      var dmg = Math.max(1, Math.round((ev.total / 100) * player.atk * 1.8 * mult));
+      var crit = ev.total >= 85; if (crit) dmg = Math.round(dmg * 1.25);
+      enemy.hp -= dmg;
+      log.push((crit ? '🔥 <strong>PROMPT CRITIQUE</strong> ' : '✍️ Prompt ') + '(' + ev.total + '/100) — ' + dmg + ' dmg');
+      if (playerClass.id === 'content-bard' && ev.total >= 70) { player.hp = Math.min(player.maxHP, player.hp + 8); log.push('📝 Content Bard : +8 HP'); }
+      resolveAndAdvance();
+    }
+
+    function defend() {
+      if (over) return;
+      player.tempDef = Math.floor(player.def * 0.6);
+      player.hp = Math.min(player.maxHP, player.hp + 6);
+      log.push('🛡️ <strong>' + escapeHtml(player.name) + '</strong> se concentre (+DEF, +6 HP) — aucun dégât');
+      resolveAndAdvance();
+    }
+
+    function pvpFinish(won) {
+      var pvp = opts.pvp || { battlesToday: 0, wins: 0, losses: 0, points: 0 };
+      var xpGain = won ? 10 : 3, ptsGain = won ? PVP_WIN_POINTS : PVP_LOSE_POINTS;
+      pvp.battlesToday++; if (won) pvp.wins++; else pvp.losses++;
+      pvp.points += ptsGain; pvp.lastBattleDate = new Date().toISOString().split('T')[0];
+      if (typeof savePvpStats === 'function') savePvpStats(pvp);
+      if (won && AIA.bumpGameProgress) AIA.bumpGameProgress('rpg');
+      AIA.addXP(xpGain, won ? 'Victoire PvP (prompt)' : 'Combat PvP (prompt)');
+      if (won && pvp.wins === 1 && AIA.awardBadge) AIA.awardBadge('battle-win');
+      var rem = MAX_BATTLES_PER_DAY - pvp.battlesToday;
+      return { title: won ? 'Victoire !' : 'Défaite', rematch: rem > 0,
+        html: '<p>+' + ptsGain + ' PvP &bull; +' + xpGain + ' XP</p><div class="rpg-result-stats"><span>Total: ' + pvp.points + ' pts</span><span>W/L: ' + pvp.wins + '/' + pvp.losses + '</span><span>Restants: ' + rem + '/' + MAX_BATTLES_PER_DAY + '</span></div>' };
+    }
+
+    function finish(won) {
+      over = true; ui();
+      var res = opts.isPvp ? pvpFinish(won) : (opts.onEnd ? opts.onEnd(won) : { title: won ? 'Victoire' : 'Défaite', html: '' });
+      var root = document.getElementById(rootId); if (!root) return;
+      root.innerHTML += '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
+        '<div class="rpg-result-icon">' + (won ? '🏆' : (boss ? '💀' : '💪')) + '</div>' +
+        '<h3>' + res.title + '</h3>' + (res.html || '') +
+        '<div style="margin-top:0.9rem">' +
+        (opts.isPvp && res.rematch ? '<button class="btn-primary" id="pc-rematch">Nouveau combat</button> ' : '') +
+        '<button class="btn-outline" data-navigate="' + (opts.backTo || 'arena') + '">Retour Arena</button></div></div>';
+      var rm = document.getElementById('pc-rematch'); if (rm) rm.addEventListener('click', function () { renderRPG(main); });
+    }
+
+    ui();
   }
 
   function startRPGBattle(main, playerClass, pvp) {
@@ -1094,7 +1265,7 @@
       var AIA = window.AIA;
       if (AIA.getBossDuel && AIA.getBossDuel() && AIA.getBossDuel().used) { showProfPopup(main); return; }
       if (AIA.recordBossDuel) AIA.recordBossDuel('pending'); // consomme des le lancement (anti-refresh)
-      runBossBattle(main, cls, PROF_CONF, { rootId: 'boss-root', backTo: 'rpg', onEnd: profOnEnd });
+      promptBattle(main, cls, PROF_CONF, { rootId: 'boss-root', backTo: 'rpg', boss: true, onEnd: profOnEnd });
     });
   }
 
@@ -1125,7 +1296,7 @@
       '<p class="boss-pitch">Le gardien des donn&eacute;es. Choisissez votre classe.</p>' +
       '<div class="rpg-class-grid">' + RPG_CLASSES.map(classCard).join('') + '</div></div></div>';
     wireClassCards('#boss-root', function (cls) {
-      runBossBattle(main, cls, CREATURE_CONF, { rootId: 'boss-root', backTo: 'rpg', onEnd: pveOnEnd });
+      promptBattle(main, cls, CREATURE_CONF, { rootId: 'boss-root', backTo: 'rpg', boss: true, onEnd: pveOnEnd });
     });
   }
 
