@@ -490,6 +490,7 @@
       var grade = pct >= 90 ? 'Excellent !' : pct >= 70 ? 'Tres bien !' : pct >= 50 ? 'Pas mal !' : 'A retravailler';
       var emoji = pct >= 90 ? '🏆' : pct >= 70 ? '🌟' : pct >= 50 ? '👍' : '📚';
 
+      var reviseSeed = 'Explique-moi simplement, avec un exemple concret pour chacune, ces notions de marketing IA : prompt engineering (CRAC, few-shot, chain-of-thought), KPIs (CTR, ROAS, taux de conversion), SEO E-E-A-T, A/B testing, persona, et les modeles generatifs texte/image. Puis pose-moi 3 questions pour verifier que j\'ai compris.';
       main.innerHTML = '<div class="page-header">' + backBtn() +
         '<h1>Resultats du <span class="gradient-text">Quiz</span></h1></div>' +
         '<div class="quiz-results glass-card">' +
@@ -497,7 +498,10 @@
         '<div class="result-score">' + score + '/' + questions.length + '</div>' +
         '<div class="result-pct">' + pct + '%</div>' +
         '<div class="result-grade">' + grade + '</div>' +
-        '<div style="margin-top:1.5rem">' +
+        '<div style="margin:1.2rem 0;text-align:left">' +
+        '<div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:0.2rem">🤖 Approfondis le thème avec une vraie IA (au lieu de juste retenir) :</div>' +
+        aiToolsBar(reviseSeed) + '</div>' +
+        '<div style="margin-top:0.5rem">' +
         '<button class="btn-primary" id="btn-quiz-retry">Recommencer</button>' +
         '<button class="btn-outline" data-navigate="arena" style="margin-left:0.5rem">Retour Arena</button>' +
         '</div></div>';
@@ -513,6 +517,8 @@
 
       var retry = document.getElementById('btn-quiz-retry');
       if (retry) retry.addEventListener('click', function () { startQuiz(main); });
+      var cpQ = document.getElementById('pc-copy');
+      if (cpQ) cpQ.addEventListener('click', function () { try { navigator.clipboard.writeText(reviseSeed); if (AIA.showToast) AIA.showToast('Copié — colle dans ton IA', 'success'); } catch (e) {} });
     }
 
     renderQuestion();

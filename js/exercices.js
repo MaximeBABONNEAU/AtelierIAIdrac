@@ -9,6 +9,21 @@
 
   function esc(t) { var d = document.createElement('div'); d.textContent = (t == null ? '' : String(t)); return d.innerHTML; }
 
+  // Liens vers de vrais modeles IA (prerempli avec l'enonce) — force l'usage de l'IA
+  function aiLinks(seed) {
+    var tools = (window.AIA && window.AIA.AI_TOOLS) || [
+      { name: 'ChatGPT', icon: '🤖', pre: true, base: 'https://chatgpt.com/?q=' },
+      { name: 'Claude', icon: '🧠', pre: true, base: 'https://claude.ai/new?q=' },
+      { name: 'Gemini', icon: '✨', pre: false, base: 'https://gemini.google.com/app' }
+    ];
+    return '<div style="font-size:0.72rem;color:var(--text-muted);margin-top:0.4rem">🤖 Résous ce cas avec un vrai modèle IA, puis affine ta réponse :</div>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:0.35rem;margin:0.3rem 0">' +
+      tools.map(function (t) {
+        var href = t.pre ? t.base + encodeURIComponent(seed) : t.base;
+        return '<a class="btn-outline btn-sm" href="' + href + '" target="_blank" rel="noopener noreferrer" style="text-decoration:none">' + t.icon + ' ' + t.name + '</a>';
+      }).join('') + '</div>';
+  }
+
   var XP_PER = 8;          // XP modeste (mini-jeu / activite annexe)
   var MIN_WORDS = 18;      // effort minimal pour valider
 
@@ -56,7 +71,8 @@
         (isDone ? '<span class="ex-badge">✅ Fait</span>' : '') + '</div>' +
         '<p class="ex-scenario">' + esc(ex.scenario) + '</p>' +
         '<p class="ex-question"><strong>' + esc(ex.question) + '</strong></p>' +
-        '<textarea class="ex-answer" data-ex="' + ex.id + '" rows="4" placeholder="Ta reponse...">' + esc((st.exerciseAnswers && st.exerciseAnswers[ex.id]) || '') + '</textarea>' +
+        aiLinks(ex.scenario + ' ' + ex.question) +
+        '<textarea class="ex-answer" data-ex="' + ex.id + '" rows="4" placeholder="Génère avec l\'IA, affine, puis colle ta réponse ici...">' + esc((st.exerciseAnswers && st.exerciseAnswers[ex.id]) || '') + '</textarea>' +
         '<div class="ex-actions"><button class="btn-primary btn-sm btn-ex-validate" data-ex="' + ex.id + '">' + (isDone ? 'Mettre a jour' : 'Valider (+' + XP_PER + ' XP)') + '</button>' +
         '<span class="ex-fb" id="exfb-' + ex.id + '"></span></div>' +
         '</div>';
