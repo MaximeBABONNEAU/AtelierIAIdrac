@@ -597,7 +597,20 @@
           var score = valInfo ? valInfo.score : null;
           var done = !!st.gameDeliverables[step.id];
           var data = st.campaignData[step.id] || {};
-          var promptText = step.prompt.replace(/{theme}/g, theme.name + ' (' + theme.description + ')');
+          // Chainage des livrables : injecter le travail amont (persona/ton/positionnement/nom) dans les prompts aval,
+          // au lieu de laisser des placeholders [persona]/[adjectifs charte] jamais remplis -> campagnes coherentes.
+          var _cd = st.campaignData || {};
+          var _cv = function (s, f, fb) { return (_cd[s] && _cd[s][f] && String(_cd[s][f]).trim()) || fb; };
+          var _persona = _cv('target-persona', 'personaName', 'votre persona cible (defini en Phase 1)');
+          var _tone = _cv('brand-guide', 'tone', 'le ton de votre charte (defini en Phase 2)');
+          var _posi = _cv('market-analysis', 'positioning', '');
+          var _bname = _cv('brand-name', 'finalName', theme.name);
+          var promptText = step.prompt
+            .replace(/{theme}/g, theme.name + ' (' + theme.description + ')')
+            .replace(/\[persona\]/gi, _persona)
+            .replace(/\[adjectifs charte\]/gi, _tone)
+            .replace(/{persona}/g, _persona).replace(/{tone}/g, _tone)
+            .replace(/{positioning}/g, _posi).replace(/{name}/g, _bname);
           var statusIcon = locked ? '🔒' : (done ? '✅' : '⬜');
           var scoreBadge = (locked && score != null) ? '<span class="game-step-scorebadge ' + scoreClass(score) + '">' + score + '/100</span>' : '';
           var headerHtml = '<div class="game-step-header">' +

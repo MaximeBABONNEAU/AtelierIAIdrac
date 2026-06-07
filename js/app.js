@@ -557,6 +557,8 @@
     p.classList.remove('hidden'); setTimeout(function(){p.classList.add('hidden');},1600);
   }
 
+  // Prime XP par rarete : relie les badges (le plus gros gisement de contenu) a la progression + la boutique.
+  var BADGE_XP = { common: 10, rare: 25, epic: 60, legendary: 120 };
   function awardBadge(id){
     if(state.badges.indexOf(id)!==-1) return;
     state.badges.push(id);
@@ -564,6 +566,9 @@
     if(b){ document.getElementById('badge-popup-icon').textContent=b.icon; document.getElementById('badge-popup-name').textContent=b.name; document.getElementById('badge-popup').classList.remove('hidden'); }
     try { if(window.AIA && window.AIA.pushFeed && state.user && !state.user.isAdmin) window.AIA.pushFeed({ action:'badge-unlocked', target: (b?b.name:id) }); } catch(e){}
     saveState();
+    // Recompense XP selon la rarete (awardBadge('xp-500') rappele depuis addXP s'arrete car badge deja possede -> pas de boucle)
+    var _bxp = BADGE_XP[(b && b.rarity) || 'common'] || 10;
+    if (_bxp > 0) addXP(_bxp, 'Badge debloque : ' + (b ? b.name : id));
   }
 
   function completeActivity(actId,xp,reason){
@@ -1398,6 +1403,9 @@
           isMe:state.user&&state.user.accountKey===k});
       }
       _renderLeaderboardData(list);
+    },function(err){
+      var el=document.getElementById('leaderboard-content');
+      if(el) el.innerHTML='<div class="glass-card" style="text-align:center;padding:2rem">⚠️ Connexion interrompue.<br><span style="color:var(--text-muted);font-size:0.85rem">Le classement se mettra a jour des le retour du reseau.</span><br><button class="btn-outline btn-sm" data-navigate="leaderboard" style="margin-top:0.8rem">Reessayer</button></div>';
     });
   }
 
@@ -1571,6 +1579,11 @@
         list.map(function (a) {
           return '<option value="' + escapeAttr(JSON.stringify({ ln: a.ln, fn: a.fn })) + '">' + (a.fn + ' ' + a.ln).trim() + '</option>';
         }).join('');
+    }, function (err) {
+      // WiFi salle instable : ne pas bloquer sur "Chargement..." -> bascule en saisie manuelle
+      sel.innerHTML = '<option value="">— Connexion impossible : utilisez la saisie manuelle —</option>';
+      var ml = document.getElementById('login-manual-group'); var nl = document.getElementById('login-namelist-group');
+      if (ml && nl) { ml.classList.remove('hidden'); nl.classList.add('hidden'); }
     });
   }
   function escapeAttr(s){ return String(s).replace(/"/g, '&quot;'); }

@@ -43,6 +43,12 @@
   --radius-sm: 10px;
   --radius-xs: 6px;
   --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Alias — corrige des variables referencees ~49x mais non definies (login, Arene/RPG, choix de theme, inbox, showcase) */
+  --accent: var(--red-light);
+  --glass-border: var(--border-glass);
+  --text-main: var(--text-primary);
+  --radius-md: var(--radius);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
