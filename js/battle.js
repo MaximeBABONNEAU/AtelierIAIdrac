@@ -205,6 +205,10 @@
         (bossMode ? '' : '<button class="btn-ghost btn-sm" id="btn-new-brief">🎲 Autre sujet</button>') +
         '</div>' +
 
+        '<div class="battle-ai-tools" style="margin:0.2rem 0 0.6rem">' +
+        '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">🤖 Ouvre un vrai modèle IA, teste ton prompt, affine — puis colle/écris ta version ici pour l\'évaluer :</div>' +
+        aiToolsBar(brief.brief) + '</div>' +
+
         '<div class="battle-submit">' +
         '<h3>Votre prompt (objectif : score &gt; ' + (bossMode ? BATTLE_BOSS_TARGET : 75) + '/100)</h3>' +
         '<textarea id="battle-prompt" class="demo-textarea" rows="6" placeholder="En tant que [role], pour [contexte/marque/cible], [action] [format]. Ton : [ton]. Contraintes : [nombre, longueur, eviter]..."></textarea>' +
@@ -229,6 +233,8 @@
         if (nb) nb.addEventListener('click', function () { currentBriefIdx = (currentBriefIdx + 1) % PROMPT_BRIEFS.length; renderUI(); });
         wireBossZone('battle', function () { renderBattle(main, true); });
       }
+      var cpB = document.getElementById('pc-copy');
+      if (cpB) cpB.addEventListener('click', function () { try { navigator.clipboard.writeText(brief.brief); AIA.showToast('Brief copié — colle-le dans ton IA', 'success'); } catch (e) {} });
 
       document.getElementById('btn-battle-submit').addEventListener('click', function () {
         var prompt = ta.value.trim();
@@ -528,11 +534,15 @@
       '<div class="challenge-icon">' + (bossMode ? '🎭' : '🏆') + '</div>' +
       '<h3>' + escapeHtml(challenge.title) + '</h3>' +
       '<p>' + escapeHtml(challenge.brief) + '</p></div>' +
-      '<textarea id="challenge-response" class="demo-textarea" rows="5" placeholder="Votre reponse au challenge..."></textarea>' +
+      '<div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.2rem">🤖 Sers-toi d\'un vrai modèle IA pour générer et affiner ta réponse, puis colle ta meilleure version ici :</div>' +
+      aiToolsBar(challenge.brief) +
+      '<textarea id="challenge-response" class="demo-textarea" rows="5" placeholder="Génère avec l\'IA, affine le résultat, puis colle ta meilleure réponse ici..."></textarea>' +
       '<button class="btn-primary" id="btn-challenge-submit" style="margin-top:1rem">Soumettre ma reponse</button>' +
       '<div id="challenge-results" class="demo-results"></div></div>';
 
     if (!bossMode) wireBossZone('challenge', function () { startChallenge(main, true); });
+    var cpC = document.getElementById('pc-copy');
+    if (cpC) cpC.addEventListener('click', function () { try { navigator.clipboard.writeText(challenge.brief); if (window.AIA.showToast) window.AIA.showToast('Brief copié — colle-le dans ton IA', 'success'); } catch (e) {} });
 
     document.getElementById('btn-challenge-submit').addEventListener('click', function () {
       var response = document.getElementById('challenge-response').value.trim();
@@ -1314,6 +1324,9 @@
   }
 
   window.AIA = window.AIA || {};
+  window.AIA.aiToolsBar = aiToolsBar;
+  window.AIA.AI_TOOLS = AI_TOOLS;
+  window.AIA.promptBattle = promptBattle;
   window.AIA.renderBattle = renderBattle;
   window.AIA.startQuiz = startQuiz;
   window.AIA.startChallenge = startChallenge;
