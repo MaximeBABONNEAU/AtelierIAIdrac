@@ -556,6 +556,14 @@
       '</div>' +
       '</div>';
 
+    // Cahier des charges du projet — debloque apres la selection, explique tous les attendus
+    html += '<details class="game-brief glass-card" open style="margin-bottom:1rem;padding:1rem 1.2rem;border-left:3px solid var(--red)">' +
+      '<summary style="cursor:pointer;font-weight:700">📋 Cahier des charges — ce qui est attendu pour ' + escapeHtml(theme.name) + '</summary>' +
+      '<p style="color:var(--text-muted);font-size:.85rem;margin:.5rem 0">Mission : construire la <strong>campagne marketing complete</strong> de ' + escapeHtml(theme.name) + ' en 4 phases (12 livrables) puis un <strong>site vitrine</strong>. Pour chaque brique : utilise un vrai outil IA, colle ta production, puis valide (notee). <em>Tout se sauvegarde automatiquement.</em></p>' +
+      Object.keys(PHASES_GUIDE).map(function (pk) { var ph = PHASES_GUIDE[pk]; return '<div style="margin:.4rem 0"><strong>' + ph.icon + ' ' + escapeHtml(ph.title) + '</strong><ul style="margin:.2rem 0 .2rem 1.1rem;font-size:.84rem">' + ph.steps.map(function (s) { return '<li>' + escapeHtml(s.title) + ' — <span style="color:var(--text-muted)">' + escapeHtml(s.desc) + '</span></li>'; }).join('') + '</ul></div>'; }).join('') +
+      '<div style="font-size:.84rem;margin-top:.4rem">🌐 <strong>Livrable final</strong> : genere ton <strong>site vitrine</strong> depuis le Carnet. &bull; <a href="consignes.html" target="_blank" rel="noopener" style="color:var(--red-light)">📄 Tous les attendus &amp; criteres detailles ↗</a></div>' +
+      '</details>';
+
     Object.keys(PHASES_GUIDE).forEach(function (pkey, pIdx) {
       var phase = PHASES_GUIDE[pkey];
       var doneInPhase = phase.steps.filter(function (s) { return st.gameDeliverables[s.id]; }).length;
@@ -770,6 +778,17 @@
         if (AIA.saveState) AIA.saveState();
         if (firstTime && ta.value.trim() && AIA.addXP) AIA.addXP(15, 'Bilan de phase');
         AIA.showToast('Bilan de phase enregistre', 'success');
+      });
+    });
+
+    // Auto-sauvegarde : tout champ rempli est persiste en DB (debounce via saveState), sans clic ni validation
+    main.querySelectorAll('[data-step][data-field]').forEach(function (el) {
+      el.addEventListener('input', function () {
+        var sid = this.getAttribute('data-step'), fld = this.getAttribute('data-field');
+        if (st.gameValidation && st.gameValidation[sid] && st.gameValidation[sid].locked) return; // brique verrouillee
+        st.campaignData = st.campaignData || {}; st.campaignData[sid] = st.campaignData[sid] || {};
+        st.campaignData[sid][fld] = this.value;
+        if (AIA.saveState) AIA.saveState();
       });
     });
 
