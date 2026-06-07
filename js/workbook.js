@@ -491,6 +491,7 @@
       a.href = url; a.download = 'site-vitrine-' + (st.productTheme ? st.productTheme.id : 'campagne') + '.html';
       a.click();
       setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      st.vitrineGenerated = true; if (AIA.saveState) AIA.saveState();
       AIA.showToast('Site vitrine genere : apercu ouvert + telecharge (.html). Affine-le ensuite dans Framer / Gamma / Claude.', 'success');
     });
 

@@ -927,14 +927,20 @@
     var demosDone = recDemos.filter(function(id){ return state.demosCompleted.indexOf(id)!==-1; });
     var gp = gamePhaseProgress();
     var wbCount = workbookFilledCount();
-    return [
+    var gameComplete = gp.total>0 && gp.done>=gp.total;
+    var list = [
       { key:'avatar', icon:'🎨', label:'Creer ton avatar', done: !!state.avatar, route:'avatar' },
       { key:'checkin', icon:'☀️', label:'Faire ton check-in du jour', done: !!(state.streak && state.streak.lastDate===today), action:'checkin' },
       { key:'project', icon:'🎯', label:'Choisir ton projet fil rouge', done: !!state.productTheme, route:'business-game' },
-      { key:'game', icon:'🎮', label:'Business Game — etapes ('+gp.done+'/'+gp.total+')', done: gp.total>0 && gp.done>=gp.total, route:'business-game' },
+      { key:'game', icon:'🎮', label:'Business Game — etapes ('+gp.done+'/'+gp.total+')', done: gameComplete, route:'business-game' },
       { key:'demos', icon:'🛠️', label:'Tester les demos du jour ('+demosDone.length+'/'+(recDemos.length||0)+')', done: recDemos.length>0 && demosDone.length>=recDemos.length, route:'demos' },
       { key:'carnet', icon:'📓', label:'Structurer ton Carnet ('+wbCount+' section'+(wbCount>1?'s':'')+')', done: wbCount>=1, route:'workbook' }
     ];
+    // Livrable final : generer le site vitrine (debloque quand le Business Game est complet)
+    if (gameComplete) {
+      list.push({ key:'vitrine', icon:'🌐', label:'Generer ton site vitrine (livrable final)', done: !!state.vitrineGenerated, route:'workbook' });
+    }
+    return list;
   }
   function computeNextAction(){
     var items = computeDayChecklist();
