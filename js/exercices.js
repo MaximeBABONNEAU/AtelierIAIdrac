@@ -105,5 +105,6 @@
   }
 
   window.AIA = window.AIA || {};
+  window.AIA.EXERCISES = EXERCISES;
   window.AIA.renderExercises = renderExercises;
 })();

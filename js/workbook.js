@@ -78,6 +78,57 @@
   }
   function nl2br(s) { return escapeHtml(s).replace(/\n/g, '<br>'); }
 
+  /* ===== P1 : Générateur de SITE VITRINE — un vrai landing HTML depuis la campagne ===== */
+  function generateVitrineHTML() {
+    var st = window.AIA.getState();
+    var cd = st.campaignData || {};
+    var theme = st.productTheme || {};
+    function g(step, field) { return (cd[step] && cd[step][field] && String(cd[step][field]).trim()) || ''; }
+    function lines(s) { return String(s || '').split(/\n+/).map(function (x) { return x.replace(/^\s*\d+[.)\-]\s*/, '').trim(); }).filter(Boolean); }
+    var name = g('brand-name', 'finalName') || theme.name || 'Ma marque';
+    var baseline = g('brand-name', 'baseline') || theme.tagline || '';
+    var desc = g('product-idea', 'description') || theme.description || '';
+    var positioning = g('market-analysis', 'positioning') || theme.usp || '';
+    var heads = lines(g('copy', 'headlines'));
+    var hero = heads[0] ? heads[0].replace(/[«»"]/g, '') : (baseline || name);
+    var body = g('copy', 'bodyCopy') || desc;
+    var ctaRaw = g('copy', 'ctas');
+    var cta = ((ctaRaw.split(/[\/\n]|Secondaire|secondaire/)[0] || 'Découvrir').replace(/^Principal\s*:?\s*/i, '').replace(/[«»"]/g, '').trim()) || 'Découvrir';
+    var feats = lines(g('product-idea', 'differentiation'));
+    if (!feats.length) feats = lines(positioning).slice(0, 3);
+    var persona = g('target-persona', 'personaName');
+    var price = theme.price || '';
+    var hex = (g('logo', 'palette').match(/#[0-9a-fA-F]{3,6}/g) || ['#1f6f54', '#e0653a', '#f4efe6']);
+    var primary = hex[0] || '#1f6f54', accent = hex[1] || '#e0653a', soft = hex[2] || '#f4efe6';
+    var esc = escapeHtml;
+    var icons = ['✨', '⚡', '🌿'];
+    var featCards = (feats.length ? feats : ['Qualité premium', 'Simple et rapide', 'Conçu pour vous']).slice(0, 3).map(function (f, i) {
+      var parts = f.split(/[:\-—]/); var t = parts[0].trim(); var d = parts.slice(1).join(' ').trim();
+      return '<div class="feat"><div class="feat-ic">' + icons[i % 3] + '</div><h3>' + esc(t) + '</h3>' + (d ? '<p>' + esc(d) + '</p>' : '') + '</div>';
+    }).join('');
+    return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + esc(name) + (baseline ? ' — ' + esc(baseline) : '') + '</title>' +
+      '<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">' +
+      '<style>:root{--p:' + primary + ';--a:' + accent + ';--s:' + soft + '}' +
+      '*{margin:0;padding:0;box-sizing:border-box}body{font-family:Montserrat,system-ui,sans-serif;color:#1c1c1c;line-height:1.6}.wrap{max-width:1080px;margin:0 auto;padding:0 24px}' +
+      'header{display:flex;justify-content:space-between;align-items:center;padding:20px 0}.logo{font-weight:800;font-size:1.4rem;color:var(--p)}' +
+      '.btn{display:inline-block;background:var(--p);color:#fff;padding:14px 28px;border-radius:999px;text-decoration:none;font-weight:600;border:none;cursor:pointer}' +
+      '.hero{background:linear-gradient(135deg,var(--s),#fff);padding:80px 0;text-align:center}.hero h1{font-size:3rem;line-height:1.1;margin-bottom:18px}.hero p{font-size:1.2rem;max-width:660px;margin:0 auto 28px;color:#444}' +
+      '.eyebrow{color:var(--a);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-size:.8rem;margin-bottom:12px}' +
+      'section{padding:64px 0}.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}.feat{background:#fff;border:1px solid #eee;border-radius:16px;padding:28px;box-shadow:0 6px 24px rgba(0,0,0,.04)}.feat-ic{font-size:2rem}.feat h3{margin:10px 0 6px;font-size:1.15rem}.feat p{color:#555;font-size:.95rem}' +
+      '.h2{font-size:2rem;text-align:center;margin-bottom:36px}.proof{text-align:center}.stars{color:var(--a);font-size:1.4rem}' +
+      '.price{text-align:center;background:var(--s);border-radius:24px;padding:48px}.price .amt{font-size:2.6rem;font-weight:800;color:var(--p);margin:10px 0}' +
+      '.band{background:var(--p);color:#fff;text-align:center;border-radius:24px;padding:56px 24px}.band h2{font-size:2rem;margin-bottom:10px}.band .btn{background:#fff;color:var(--p);margin-top:18px}' +
+      'footer{padding:40px 0;text-align:center;color:#888;font-size:.85rem}@media(max-width:600px){.hero h1{font-size:2.1rem}}</style></head><body>' +
+      '<div class="wrap"><header><div class="logo">' + (theme.emoji || '◆') + ' ' + esc(name) + '</div><a class="btn" href="#cta">' + esc(cta) + '</a></header></div>' +
+      '<div class="hero"><div class="wrap">' + (baseline ? '<div class="eyebrow">' + esc(baseline) + '</div>' : '') + '<h1>' + esc(hero) + '</h1><p>' + esc(body || positioning) + '</p><a class="btn" href="#cta">' + esc(cta) + '</a></div></div>' +
+      '<section class="wrap"><div class="h2">Pourquoi ' + esc(name) + ' ?</div><div class="feats">' + featCards + '</div></section>' +
+      (positioning ? '<section class="wrap proof"><div class="stars">★★★★★</div><p style="max-width:680px;margin:14px auto;font-size:1.2rem">' + esc(positioning) + '</p>' + (persona ? '<p style="color:#888">— ' + esc(persona) + '</p>' : '') + '</section>' : '') +
+      (price ? '<section class="wrap"><div class="price"><div class="eyebrow">Offre de lancement</div><div class="amt">' + esc(price) + '</div><a class="btn" href="#cta">' + esc(cta) + '</a></div></section>' : '') +
+      '<section class="wrap"><div class="band" id="cta"><h2>' + esc(hero) + '</h2><p>' + esc(baseline || positioning) + '</p><a class="btn" href="#">' + esc(cta) + '</a></div></section>' +
+      '<footer>© ' + esc(name) + ' — Site vitrine généré dans AI Marketing Academy (IDRAC). Démo pédagogique.</footer></body></html>';
+  }
+
   /* ===== Auto-evaluation d'une section du Carnet — 0-100 ===== */
   function scoreSectionText(text) {
     var t = (text || '').trim();
@@ -145,6 +196,20 @@
     }).filter(function (x) { return x.text && x.text.trim(); });
   }
 
+  /* ===== P2 : compile les Cas pratiques (exercices) faits dans le Carnet ===== */
+  function compileExercises() {
+    var st = window.AIA.getState();
+    var ans = st.exerciseAnswers || {};
+    var done = st.exercisesDone || {};
+    var EX = window.AIA.EXERCISES || [];
+    var out = [];
+    EX.forEach(function (ex) {
+      var a = ans[ex.id];
+      if (a && String(a).trim()) out.push({ id: ex.id, title: ex.title, day: ex.day, answer: a, done: !!done[ex.id] });
+    });
+    return out;
+  }
+
   function completion() {
     var wb = getWB();
     var done = SECTIONS.filter(function (s) { return wb.fields[s.id] && wb.fields[s.id].trim().length > 20; }).length;
@@ -201,6 +266,7 @@
       '<button class="btn-outline btn-sm" id="wb-toggle-preview">👁️ Apercu support</button>' +
       '<button class="btn-outline btn-sm" id="wb-print">🖨️ Exporter PDF</button>' +
       '<button class="btn-outline btn-sm" id="wb-export-json">📦 Export JSON</button>' +
+      '<button class="btn-primary btn-sm" id="wb-vitrine">🌐 Générer le site vitrine</button>' +
       '</div></div>' +
 
       '<p class="wb-help">💡 Chaque section recompile automatiquement ce que vous avez produit dans le Business Game. Redigez en dessous votre <strong>version structuree et soignee</strong> — c\'est votre livrable final (+10 XP par section, +50 XP carnet complet).</p>' +
@@ -255,6 +321,16 @@
       }
       html += '</div>';
     });
+
+    var exos = compileExercises();
+    if (exos.length) {
+      html += '<div class="wb-section glass-card"><div class="wb-section-head"><h3>🎯 Cas pratiques realises (' + exos.length + ')</h3></div>' +
+        '<p class="wb-hint">Vos reponses aux cas pratiques de l\'Arene, compilees automatiquement.</p>';
+      exos.forEach(function (e) {
+        html += '<div class="wb-field"><div class="wb-field-label">Jour ' + e.day + ' — ' + escapeHtml(e.title) + (e.done ? ' ✅' : '') + '</div><div class="wb-field-val">' + nl2br(e.answer) + '</div></div>';
+      });
+      html += '</div>';
+    }
 
     var assets = allAssets();
     html += '<div class="wb-section glass-card"><div class="wb-section-head"><h3>🖼️ Galerie d\'assets generes</h3></div>';
@@ -391,13 +467,31 @@
     var exportBtn = document.getElementById('wb-export-json');
     if (exportBtn) exportBtn.addEventListener('click', function () {
       var st = AIA.getState();
-      var data = { theme: st.productTheme, workbook: getWB(), campaignData: st.campaignData, exportedAt: new Date().toISOString() };
+      var data = { theme: st.productTheme, workbook: getWB(), campaignData: st.campaignData, exercises: st.exerciseAnswers || {}, reflections: st.reflections || {}, exportedAt: new Date().toISOString() };
       var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url; a.download = 'carnet-' + (st.productTheme ? st.productTheme.id : 'campagne') + '.json';
       a.click(); URL.revokeObjectURL(url);
       AIA.showToast('Carnet exporte', 'success');
+    });
+
+    var vitrineBtn = document.getElementById('wb-vitrine');
+    if (vitrineBtn) vitrineBtn.addEventListener('click', function () {
+      var st = AIA.getState();
+      if (!st.campaignData || !st.campaignData['brand-name'] || !((st.campaignData['brand-name'].finalName) || '').trim()) {
+        AIA.showToast('Renseigne au moins le nom de marque (Business Game, Phase 2) pour generer la vitrine', 'warning');
+        return;
+      }
+      var htmlStr = generateVitrineHTML();
+      var blob = new Blob([htmlStr], { type: 'text/html;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      var a = document.createElement('a');
+      a.href = url; a.download = 'site-vitrine-' + (st.productTheme ? st.productTheme.id : 'campagne') + '.html';
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 5000);
+      AIA.showToast('Site vitrine genere : apercu ouvert + telecharge (.html). Affine-le ensuite dans Framer / Gamma / Claude.', 'success');
     });
 
     // Productions epinglees : retirer
