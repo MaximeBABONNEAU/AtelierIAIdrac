@@ -78,6 +78,32 @@
   }
   function nl2br(s) { return escapeHtml(s).replace(/\n/g, '<br>'); }
 
+  /* ===== Mise en forme légère (markdown-lite) : ## titres, - listes, **gras** ===== */
+  function mdLite(s) {
+    var rows = String(s || '').split(/\n/);
+    var out = [], inList = false;
+    function inline(t) { return escapeHtml(t).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); }
+    rows.forEach(function (ln) {
+      var m;
+      if ((m = ln.match(/^\s*#{1,6}\s+(.*)$/))) { if (inList) { out.push('</ul>'); inList = false; } out.push('<h4 style="margin:.6rem 0 .2rem;color:var(--red,#a71f28)">' + inline(m[1]) + '</h4>'); }
+      else if ((m = ln.match(/^\s*[-•]\s+(.*)$/))) { if (!inList) { out.push('<ul style="margin:.2rem 0 .2rem 1.1rem">'); inList = true; } out.push('<li>' + inline(m[1]) + '</li>'); }
+      else { if (inList) { out.push('</ul>'); inList = false; } out.push(ln.trim() === '' ? '<br>' : '<div>' + inline(ln) + '</div>'); }
+    });
+    if (inList) out.push('</ul>');
+    return out.join('');
+  }
+
+  /* ===== Exemple « rempli » (démo EcoMush) par section, pour montrer le niveau attendu ===== */
+  var CARNET_EXAMPLES = {
+    execSummary: "EcoMush est un kit de culture de champignons gourmets bio qui aide les citadins foodies à récolter chez eux en 14 jours. À la différence de Prêt à Pousser, nous garantissons une récolte rapide et un emballage 100% compostable. Objectif : 120 ventes au lancement, ROAS > 2.5.",
+    p1: "## Concept\nKit de champignons gourmets bio, récolte garantie en 14 jours.\n## Persona\nSarah, 32 ans, Lyon, foodie éco — motivée par sain + ludique, freinée par « trop compliqué ».\n## Marché\n3 concurrents (Prêt à Pousser, Radis & Co, La Boîte à Champignons) ; tendances DIY food + zéro-déchet ; **positionnement** : récolte 14j garantie, 100% compostable.",
+    p2: "## Nom & baseline\n**EcoMush** — « Cultivez vos saveurs en 14 jours ».\n## Logo\nChampignon stylisé en feuille, flat.\n## Palette\n#2D5F3F / #F4E5BC / #D4624A.\n## Ton\nconvivial, expert, optimiste, ludique, sincère.",
+    p3: "## Concept créatif\nÉmerveillement du vivant à la maison.\n## Headlines\n- Vos champignons gourmets, récoltés sur votre plan de travail\n- 14 jours pour épater vos invités\n## Plan média\nMeta 40% / Google 30% / Influence 20% / Email 10% — **ROAS > 2.5**.",
+    p4: "## Landing\nHero promesse + preuve sociale (4.8/5) + 3 étapes + pricing + FAQ + CTA garanti.\n## Pitch vidéo (60s)\nhook → problème → solution → preuve → CTA.\n## Deck\n10 slides (problème → demande).",
+    learnings: "- Un bon prompt = rôle + contexte + format + contraintes.\n- Le persona guide TOUTES les décisions créatives.\n- L'IA accélère, mais le tri humain et la cohérence de marque restent décisifs.",
+    nextSteps: "- Produire la vraie landing (Framer) + tracking.\n- Tourner 3 vidéos UGC pour Meta.\n- Lancer une pré-commande pour valider la demande."
+  };
+
   /* ===== P1 : Générateur de SITE VITRINE — un vrai landing HTML depuis la campagne ===== */
   function generateVitrineHTML() {
     var st = window.AIA.getState();
@@ -267,6 +293,7 @@
       '<button class="btn-outline btn-sm" id="wb-print">🖨️ Exporter PDF</button>' +
       '<button class="btn-outline btn-sm" id="wb-export-json">📦 Export JSON</button>' +
       '<button class="btn-primary btn-sm" id="wb-vitrine">🌐 Générer le site vitrine</button>' +
+      '<a class="btn-outline btn-sm" href="consignes.html" target="_blank" rel="noopener" style="text-decoration:none">📋 Attendus & criteres</a>' +
       '</div></div>' +
 
       '<p class="wb-help">💡 Chaque section recompile automatiquement ce que vous avez produit dans le Business Game. Redigez en dessous votre <strong>version structuree et soignee</strong> — c\'est votre livrable final (+10 XP par section, +50 XP carnet complet).</p>' +
@@ -299,16 +326,21 @@
         html += '<div class="wb-empty-note">⚠️ Aucune donnee dans le Business Game pour cette phase. Completez les etapes correspondantes d\'abord.</div>';
       }
 
+      if (CARNET_EXAMPLES[s.id]) {
+        html += '<details class="wb-compiled"><summary>💡 Exemple rempli (demo EcoMush) — le niveau attendu</summary>' +
+          '<div class="wb-field-val" style="padding:6px 2px">' + mdLite(CARNET_EXAMPLES[s.id]) + '</div></details>';
+      }
+
       if (isFinal) {
         html += '<div class="wb-redaction">' +
           '<label>✍️ Votre redaction (validee)</label>' +
-          '<div class="wb-locked-text">' + (fieldVal ? nl2br(fieldVal) : '<em>(vide)</em>') + '</div>' +
+          '<div class="wb-locked-text">' + (fieldVal ? mdLite(fieldVal) : '<em>(vide)</em>') + '</div>' +
           '<p class="wb-hint">🔒 Section validee definitivement' + (secScore != null ? ' (score ' + secScore + '/100)' : '') + '. Demandez au formateur pour la rouvrir.</p>' +
           '</div>';
       } else {
         html += '<div class="wb-redaction">' +
           '<label>✍️ Votre redaction structuree</label>' +
-          '<p class="wb-hint"><strong>Consigne :</strong> ' + escapeHtml(s.hint) + '</p>' +
+          '<p class="wb-hint"><strong>Consigne :</strong> ' + escapeHtml(s.hint) + ' &bull; <em>Mise en forme : <code>## titre</code>, <code>- liste</code>, <code>**gras**</code></em></p>' +
           '<textarea class="wb-textarea" data-section="' + s.id + '" data-starter="' + encodeURIComponent(s.starter || '') + '" rows="7" placeholder="' + escapeHtml(s.starter || 'Redigez ici votre version finale, claire et ordonnee...') + '">' + escapeHtml(fieldVal) + '</textarea>' +
           '<p class="wb-validate-note">⚠️ <strong>Valider definitivement</strong> note la section (auto-evaluation) et la verrouille comme rendu officiel (+ points/bonus selon la qualite).</p>' +
           '<div class="wb-section-actions">' +
@@ -552,7 +584,7 @@
       var compiled = s.phaseKey ? compilePhase(s.phaseKey) : null;
       if (!val && !(compiled && compiled.html)) return;
       doc += '<div class="wb-doc-section"><h2>' + s.icon + ' ' + escapeHtml(s.title) + '</h2>';
-      if (val) doc += '<div class="wb-doc-text">' + nl2br(val) + '</div>';
+      if (val) doc += '<div class="wb-doc-text">' + mdLite(val) + '</div>';
       if (compiled && compiled.html && !val) doc += '<div class="wb-doc-compiled">' + compiled.html + '</div>';
       doc += '</div>';
     });

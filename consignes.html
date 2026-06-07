@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Consignes & Attendus — AI Marketing Academy (IDRAC)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--red:#a71f28;--ink:#2a2b2a;--muted:#6c757d;--bg:#f7f7f7;--surface:#fff;--border:#e8e8e8;--green:#28a745;--gold:#e0a800;--soft:#fbecec}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Montserrat,system-ui,sans-serif;color:var(--ink);background:var(--bg);line-height:1.55}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 24px 80px}
+  header.top{background:linear-gradient(180deg,#b44148,#a71f28);color:#fff;border-radius:16px;padding:34px 30px;margin-bottom:26px}
+  .brand{font-weight:800;letter-spacing:.02em;font-size:.85rem;opacity:.9;text-transform:uppercase}
+  header.top h1{font-size:2rem;margin:6px 0 8px;font-weight:900}
+  header.top p{opacity:.95;max-width:680px}
+  .meta{margin-top:14px;font-size:.8rem;opacity:.85}
+  h2.phase{font-size:1.2rem;color:var(--red);margin:30px 0 4px;font-weight:800;border-bottom:2px solid var(--soft);padding-bottom:8px}
+  h2.phase .d{color:var(--muted);font-weight:600;font-size:.85rem}
+  .intro{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 24px;margin-bottom:10px}
+  .intro h3{font-size:1.05rem;margin-bottom:8px}
+  .intro ul{margin:6px 0 0 18px}.intro li{margin-bottom:4px}
+  .card{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:12px;padding:18px 20px;margin:12px 0;page-break-inside:avoid}
+  .card h3{font-size:1.05rem;display:flex;align-items:center;gap:8px}
+  .num{background:var(--red);color:#fff;border-radius:8px;font-size:.8rem;font-weight:800;padding:3px 9px;flex:none}
+  .tool{font-size:.72rem;color:var(--muted);margin:4px 0 10px}
+  .row{display:grid;grid-template-columns:120px 1fr;gap:10px;margin:7px 0;font-size:.9rem}
+  .row .k{font-weight:700;color:var(--red)}
+  .crit{margin:4px 0 0 2px}
+  .crit li{margin:3px 0 3px 18px;font-size:.88rem}
+  .ex{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:.84rem;margin-top:8px}
+  .ex b{color:var(--red)}
+  .pill{display:inline-block;background:#eef;color:#334;border-radius:999px;font-size:.7rem;padding:2px 9px;margin-left:6px}
+  .vitrine{border-left-color:var(--green);background:#f4fbf6}
+  .vitrine .num{background:var(--green)}.vitrine .k{color:var(--green)}
+  .note{background:#fffaf0;border:1px solid #f0e0b0;border-radius:12px;padding:16px 20px;margin-top:24px;font-size:.9rem}
+  .note h3{color:var(--gold);margin-bottom:6px}
+  .toolbar{position:sticky;top:0;background:var(--bg);padding:10px 0;display:flex;gap:10px;justify-content:flex-end;z-index:5}
+  .btn{background:var(--red);color:#fff;border:none;border-radius:999px;padding:10px 20px;font-weight:600;font-family:inherit;cursor:pointer;text-decoration:none;font-size:.85rem}
+  .btn.alt{background:transparent;color:var(--red);border:1.5px solid var(--red)}
+  footer{margin-top:40px;text-align:center;color:var(--muted);font-size:.78rem}
+  @media print{
+    body{background:#fff}.toolbar{display:none}.wrap{max-width:none;padding:0}
+    header.top{border-radius:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .card,.intro,.note{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="toolbar">
+    <button class="btn" onclick="window.print()">🖨️ Projeter / Imprimer (PDF)</button>
+    <a class="btn alt" href="index.html">← Retour à l'app</a>
+  </div>
+
+  <header class="top">
+    <div class="brand">IDRAC Business School · AI Marketing Academy</div>
+    <h1>Consignes & Attendus des productions</h1>
+    <p>Pendant l'atelier, vous construisez <strong>une campagne marketing complète</strong> pour un produit fil rouge, en vous appuyant sur de <strong>vrais outils d'IA</strong> (ChatGPT, Claude, Midjourney…). Voici précisément ce qui est attendu pour chaque livrable.</p>
+    <div class="meta">4 jours · 12 livrables + le site vitrine · tout se compile dans votre <strong>Carnet de Campagne</strong> (export PDF/JSON).</div>
+  </header>
+
+  <div class="intro">
+    <h3>🎯 Comment ça marche</h3>
+    <ul>
+      <li><strong>Choisissez votre produit fil rouge</strong> au démarrage : il sert de fil conducteur sur les 4 jours.</li>
+      <li>À chaque étape : un <strong>prompt pré-rempli</strong> + l'outil IA conseillé. Vous générez, vous triez, vous <strong>copiez votre meilleur contenu dans les champs</strong>, puis vous <strong>validez</strong> (la qualité rapporte des points).</li>
+      <li>Le <strong>Carnet de Campagne</strong> compile automatiquement tout votre travail. Vous y rédigez la <strong>version propre et structurée</strong> de chaque phase — c'est votre <strong>livrable final</strong>.</li>
+      <li>Mise en forme : utilisez <code>## Titre</code>, <code>- liste</code>, <code>**gras**</code> dans le Carnet pour un rendu soigné, puis <strong>Export PDF</strong> et <strong>🌐 Générer le site vitrine</strong>.</li>
+    </ul>
+  </div>
+
+  <h2 class="phase">Phase 1 — Idéation & Marché <span class="d">· Jour 1</span></h2>
+
+  <div class="card">
+    <h3><span class="num">1</span> Concept produit affiné</h3>
+    <div class="tool">Outil conseillé : ChatGPT / Claude</div>
+    <div class="row"><span class="k">Objectif</span><span>Reformuler le concept dans VOS mots et le différencier de la concurrence.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Une description de 50-100 mots + 3 axes de différenciation clairs.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Promesse principale identifiable en 1 phrase</li>
+      <li>3 différenciateurs concrets (pas génériques)</li>
+      <li>Cible évoquée, ton clair</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> « Kit pour cultiver des champignons gourmets bio en 14 jours, sans jardin ni expertise. » Diff. : récolte 14j garantie / variétés rares / zéro déchet.</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">2</span> Persona cible détaillé</h3>
+    <div class="tool">Outil conseillé : ChatGPT + DALL·E (portrait)</div>
+    <div class="row"><span class="k">Objectif</span><span>Créer un buyer persona ultra-précis (1 à 2 max).</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Nom + âge, profil/habitudes, motivations ET freins d'achat.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Persona réaliste et incarné (pas un cliché)</li>
+      <li>Motivations + freins explicites</li>
+      <li>Canaux où il s'informe</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> « Sarah, 32 ans, Lyon, foodie éco — motivée par sain + ludique, freinée par "trop compliqué". »</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">3</span> Analyse marché (concurrence + tendances)</h3>
+    <div class="tool">Outil conseillé : Perplexity / ChatGPT</div>
+    <div class="row"><span class="k">Objectif</span><span>Situer le produit face au marché.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>3 concurrents (forces/faiblesses) + 3 tendances + 1 phrase de positionnement.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Concurrents réels et pertinents</li>
+      <li>Tendances exploitables (pas du remplissage)</li>
+      <li>Positionnement distinctif en 1 phrase</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> positionnement = « Le seul kit de champignons gourmets bio garantissant une récolte en 14 jours, 100% compostable. »</div>
+  </div>
+
+  <h2 class="phase">Phase 2 — Branding & Identité <span class="d">· Jour 2</span></h2>
+
+  <div class="card">
+    <h3><span class="num">4</span> Nom de marque & baseline</h3>
+    <div class="tool">Outil conseillé : ChatGPT / Claude / Namelix</div>
+    <div class="row"><span class="k">Objectif</span><span>Trouver un nom mémorable + une baseline.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Nom final + baseline (5-8 mots) + justification du choix.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Nom court, prononçable, évocateur</li>
+      <li>Baseline qui porte la promesse</li>
+      <li>Choix justifié (≥ 10 candidats générés)</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> « EcoMush » — baseline « Cultivez vos saveurs en 14 jours ».</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">5</span> Logo & univers visuel</h3>
+    <div class="tool">Outil conseillé : Midjourney / DALL·E / Canva</div>
+    <div class="row"><span class="k">Objectif</span><span>Générer un logo + définir la palette et la typo.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Le prompt visuel utilisé + palette (3-5 hex) + typographie + le visuel généré (asset).</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Logo cohérent avec le positionnement</li>
+      <li>Palette en codes hex précis</li>
+      <li>Asset(s) joint(s) au Carnet</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> champignon stylisé en feuille, flat ; palette #2D5F3F / #F4E5BC / #D4624A.</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">6</span> Tone of voice & charte</h3>
+    <div class="tool">Outil conseillé : ChatGPT</div>
+    <div class="row"><span class="k">Objectif</span><span>Fixer le ton et les règles de communication.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>3 valeurs + 5 adjectifs de ton + mots à privilégier / à bannir.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Ton aligné avec la cible et la marque</li>
+      <li>Do/Don't concrets</li>
+      <li>Exemple de phrase « type »</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> ton « convivial, expert, optimiste, ludique, sincère » ; NO : industriel, chimique, jetable.</div>
+  </div>
+
+  <h2 class="phase">Phase 3 — Campagne Marketing <span class="d">· Jour 3</span></h2>
+
+  <div class="card">
+    <h3><span class="num">7</span> Visuels publicitaires (3 formats)</h3>
+    <div class="tool">Outil conseillé : Midjourney / DALL·E / Firefly</div>
+    <div class="row"><span class="k">Objectif</span><span>Produire des visuels de campagne déclinés.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>1 concept créatif + 3 prompts (Instagram, LinkedIn, Display) + les visuels.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Concept porteur d'une émotion claire</li>
+      <li>3 formats adaptés (ratios)</li>
+      <li>Cohérence avec la charte</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> concept « émerveillement du vivant à la maison », 4:5 / 16:9 / 1.91:1.</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">8</span> Textes marketing (headlines + body)</h3>
+    <div class="tool">Outil conseillé : Copy.ai / ChatGPT / Jasper</div>
+    <div class="row"><span class="k">Objectif</span><span>Rédiger les accroches et le corps d'annonce.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>3 headlines + 1 body (50-80 mots) + CTA principal & secondaire.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Headlines orientées bénéfice</li>
+      <li>Body clair, ton de la charte</li>
+      <li>CTA explicites et mesurables</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> « Vos champignons gourmets, récoltés sur votre plan de travail » — CTA « Commander mon kit ».</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">9</span> Plan média & budget</h3>
+    <div class="tool">Outil conseillé : ChatGPT + Meta Ads Library</div>
+    <div class="row"><span class="k">Objectif</span><span>Planifier la diffusion.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Canaux + répartition budget (%) + KPIs cibles + calendrier.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Mix de canaux justifié</li>
+      <li>KPIs chiffrés (CTR, ROAS…)</li>
+      <li>Calendrier réaliste (4-6 semaines)</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> Meta 40% / Google 30% / Influence 20% / Email 10% ; ROAS &gt; 2.5.</div>
+  </div>
+
+  <h2 class="phase">Phase 4 — Pitch & Lancement <span class="d">· Jour 4</span></h2>
+
+  <div class="card">
+    <h3><span class="num">10</span> Landing page (structure)</h3>
+    <div class="tool">Outil conseillé : Figma + ChatGPT (copy)</div>
+    <div class="row"><span class="k">Objectif</span><span>Concevoir la structure de la page de conversion.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Les sections (hero, preuve sociale, features, pricing, FAQ, CTA) avec contenu suggéré.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Hero = promesse + CTA</li>
+      <li>Preuve sociale présente</li>
+      <li>Parcours logique jusqu'au CTA final</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> hero « Cultivez vos saveurs en 14 jours » + 4.8/5 (1200 avis) + pricing + FAQ.</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">11</span> Vidéo pitch (60-90 s)</h3>
+    <div class="tool">Outil conseillé : HeyGen / Synthesia / ElevenLabs</div>
+    <div class="row"><span class="k">Objectif</span><span>Pitcher le produit en vidéo.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Script structuré (hook / problème / solution / preuve / CTA) + lien vidéo.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Hook fort dans les 5 premières secondes</li>
+      <li>Structure claire</li>
+      <li>CTA final explicite</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> « Et si vos champignons poussaient sur votre plan de travail ? »</div>
+  </div>
+
+  <div class="card">
+    <h3><span class="num">12</span> Deck de présentation</h3>
+    <div class="tool">Outil conseillé : Gamma / Tome / PowerPoint + IA</div>
+    <div class="row"><span class="k">Objectif</span><span>Préparer le pitch devant le jury.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Plan de 10 slides max (problème → solution → marché → modèle → demande).</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Récit clair et convaincant</li>
+      <li>1 idée par slide</li>
+      <li>Cohérent avec toute la campagne</li>
+    </ul>
+    <div class="ex"><b>Ex. EcoMush :</b> 10 slides de la couverture au contact, avec traction et go-to-market.</div>
+  </div>
+
+  <h2 class="phase">Production finale</h2>
+
+  <div class="card vitrine">
+    <h3><span class="num">★</span> Site vitrine de la campagne <span class="pill">livrable phare</span></h3>
+    <div class="tool">Dans le Carnet : bouton 🌐 « Générer le site vitrine » · à affiner ensuite sur Framer / Gamma / Claude</div>
+    <div class="row"><span class="k">Objectif</span><span>Aboutir à un <strong>vrai site vitrine</strong> de votre produit, généré à partir de toute votre campagne.</span></div>
+    <div class="row"><span class="k">Attendus</span><span>Une page web (.html) cohérente : marque, baseline, bénéfices, preuve, offre, CTA — exportée et présentable.</span></div>
+    <ul class="crit"><b>Critères de réussite :</b>
+      <li>Reprend nom, baseline, palette et copy de votre campagne</li>
+      <li>Hero clair + CTA + preuve sociale</li>
+      <li>Cohérence visuelle et message bout en bout</li>
+      <li>Site exporté (.html) ou publié, prêt à montrer</li>
+    </ul>
+    <div class="ex"><b>Astuce :</b> le générateur produit une base instantanée depuis votre Carnet ; copiez-la dans une IA (Framer/Gamma/Claude) pour la personnaliser et la publier.</div>
+  </div>
+
+  <div class="note">
+    <h3>📓 Votre Carnet de Campagne = le rendu officiel</h3>
+    <p>Tout se centralise dans le <strong>Carnet</strong> : chaque section recompile automatiquement vos productions du Business Game. Rédigez-y la version propre, mettez en forme (<code>##</code>, <code>-</code>, <code>**gras**</code>), puis <strong>Exportez en PDF</strong> et <strong>générez le site vitrine</strong>. Points : +10 XP / section validée, +50 XP Carnet complet. Un <strong>exemple complet (EcoMush)</strong> est consultable comme modèle.</p>
+  </div>
+
+  <footer>AI Marketing Academy — IDRAC Business School · Maxime BABONNEAU · Document de consignes (à projeter en intro).</footer>
+</div>
+</body>
+</html>
