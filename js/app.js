@@ -210,11 +210,12 @@
     return (lastName.trim() + '_' + firstName.trim()).toLowerCase().replace(/[^a-z0-9_]/g, '');
   }
 
-  function createAccount(lastName, firstName, passwordHash, callback) {
+  function createAccount(lastName, firstName, passwordHash, callback, extra) {
     var key = getAccountKey(lastName, firstName);
     db.ref('accounts/' + key).once('value', function (snap) {
       if (snap.exists()) return callback({ error: 'Ce compte existe deja. Connectez-vous.' });
       var acct = { firstName: firstName.trim(), lastName: lastName.trim(), passwordHash: passwordHash, createdAt: new Date().toISOString(), lastLogin: null };
+      if (extra) { for (var ek in extra) acct[ek] = extra[ek]; }
       db.ref('accounts/' + key).set(acct, function (err) {
         if (err) return callback({ error: 'Erreur de creation du compte.' });
         callback({ key: key, account: acct });
@@ -232,6 +233,45 @@
       db.ref('accounts/' + key).update({ lastLogin: acct.lastLogin });
       callback({ key: key, account: acct });
     });
+  }
+
+  // Changement de mot de passe force a la 1ere connexion (compte cree par le formateur).
+  function forcePasswordChange(key, account, onDone) {
+    var safeFirst = String(account.firstName || '').replace(/[<>&"]/g, '');
+    var ov = document.createElement('div');
+    ov.className = 'pw-change-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(8,10,22,0.82);display:flex;align-items:center;justify-content:center;z-index:99999;padding:1rem';
+    var inStyle = 'width:100%;padding:0.7rem 0.9rem;margin-bottom:0.6rem;border-radius:10px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.06);color:inherit;font-size:0.95rem';
+    ov.innerHTML = '<div class="glass-card" style="max-width:420px;width:100%;padding:1.6rem">' +
+      '<div style="font-size:2rem;margin-bottom:0.2rem">🔐</div>' +
+      '<h2 style="margin:0 0 0.3rem">Premiere connexion</h2>' +
+      '<p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 1rem">Bienvenue ' + safeFirst + ' ! Pour securiser ton compte, choisis un nouveau mot de passe personnel (le mot de passe par defaut ne fonctionnera plus).</p>' +
+      '<input type="password" id="pwc-new" autocomplete="new-password" placeholder="Nouveau mot de passe (min. 6 caracteres)" style="' + inStyle + '">' +
+      '<input type="password" id="pwc-confirm" autocomplete="new-password" placeholder="Confirme le mot de passe" style="' + inStyle + '">' +
+      '<div id="pwc-msg" style="font-size:0.8rem;color:#e74c3c;min-height:1.1rem;margin-bottom:0.5rem"></div>' +
+      '<button class="btn-primary" id="pwc-submit" style="width:100%">Valider et entrer</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+    var msg = ov.querySelector('#pwc-msg');
+    function submit() {
+      var p1 = ov.querySelector('#pwc-new').value;
+      var p2 = ov.querySelector('#pwc-confirm').value;
+      if (!p1 || p1.length < 6) { msg.textContent = 'Au moins 6 caracteres.'; return; }
+      if (p1 !== p2) { msg.textContent = 'Les deux mots de passe ne correspondent pas.'; return; }
+      if (p1 === 'Idrac2026!' || p1.toLowerCase() === 'idrac2026') { msg.textContent = 'Choisis un mot de passe different du mot de passe par defaut.'; return; }
+      var btn = ov.querySelector('#pwc-submit'); btn.disabled = true; btn.textContent = 'Enregistrement...';
+      hashAccountPass(key, p1).then(function (ph) {
+        db.ref('accounts/' + key).update({ passwordHash: ph, mustChangePassword: null, passwordChangedAt: new Date().toISOString() }, function (err) {
+          if (err) { msg.textContent = 'Erreur, reessaie.'; btn.disabled = false; btn.textContent = 'Valider et entrer'; return; }
+          if (ov.parentNode) ov.parentNode.removeChild(ov);
+          showToast('Mot de passe mis a jour ✅', 'success');
+          onDone();
+        });
+      });
+    }
+    ov.querySelector('#pwc-submit').addEventListener('click', submit);
+    ov.querySelector('#pwc-confirm').addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    setTimeout(function () { var f = ov.querySelector('#pwc-new'); if (f) f.focus(); }, 50);
   }
 
   var _saveDebounce = null;
@@ -1615,11 +1655,15 @@
       loginAccount(ln, fn, ph, function (result) {
         if (result.error) return showToast(result.error, 'error');
         var displayName = result.account.firstName + ' ' + result.account.lastName;
-        state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
-        loadAccountState(result.key, function () {
+        function proceed() {
           state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
-          enterApp(result.account.firstName, false, result.key);
-        });
+          loadAccountState(result.key, function () {
+            state.user = { name: displayName, firstName: result.account.firstName, lastName: result.account.lastName, isAdmin: false, accountKey: result.key, loginDate: new Date().toISOString().split('T')[0] };
+            enterApp(result.account.firstName, false, result.key);
+          });
+        }
+        if (result.account.mustChangePassword) { forcePasswordChange(result.key, result.account, proceed); }
+        else { proceed(); }
       });
       });
     });

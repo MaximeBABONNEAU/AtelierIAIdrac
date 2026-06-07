@@ -1124,15 +1124,15 @@
           el.innerHTML =
             '<div class="admin-section glass-card">' +
             '<h3>➕ Creer un compte etudiant</h3>' +
-            '<p style="color:var(--text-muted);margin-bottom:1rem">Creez un compte directement. Mot de passe par defaut : <code>idrac2026</code>.</p>' +
+            '<p style="color:var(--text-muted);margin-bottom:1rem">Creez un compte directement. Mot de passe par defaut : <code>Idrac2026!</code> (l\'etudiant devra le changer a sa 1ere connexion).</p>' +
             '<div class="create-account-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.6rem;align-items:end">' +
             '<div class="form-group" style="margin:0"><label>Nom</label><input type="text" id="new-acct-lastname" placeholder="Dupont"></div>' +
             '<div class="form-group" style="margin:0"><label>Prenom</label><input type="text" id="new-acct-firstname" placeholder="Jean"></div>' +
-            '<div class="form-group" style="margin:0"><label>Mot de passe</label><input type="text" id="new-acct-password" placeholder="idrac2026" value="idrac2026"></div>' +
+            '<div class="form-group" style="margin:0"><label>Mot de passe</label><input type="text" id="new-acct-password" placeholder="Idrac2026!" value="Idrac2026!"></div>' +
             '<button class="btn-primary" id="btn-create-account">Creer le compte</button>' +
             '</div>' +
             '<details style="margin-top:0.8rem"><summary style="cursor:pointer;color:var(--cyan);font-size:0.78rem">📋 Creation par lot (CSV)</summary>' +
-            '<p style="font-size:0.75rem;color:var(--text-muted);margin:0.5rem 0">Format : <code>NOM;Prenom;motdepasse</code> (un par ligne). Mot de passe optionnel (defaut : idrac2026).</p>' +
+            '<p style="font-size:0.75rem;color:var(--text-muted);margin:0.5rem 0">Format : <code>NOM;Prenom;motdepasse</code> (un par ligne). Mot de passe optionnel (defaut : Idrac2026!, changement force a la 1ere connexion).</p>' +
             '<textarea id="batch-accounts" rows="5" placeholder="DUPONT;Jean;jean123\nMARTIN;Marie\nDURAND;Paul;paul2026"></textarea>' +
             '<button class="btn-outline" id="btn-batch-create" style="margin-top:0.5rem">Importer le lot</button>' +
             '</details>' +
@@ -1179,8 +1179,8 @@
               if (!newPw || newPw.length < 4) { AIA.showToast('MDP annule ou trop court (4 car. min)', 'warning'); return; }
               AIA.hashAccountPass(key, newPw).then(function (ph) {
                 accts[key].passwordHash = ph;
-                AIA.db.ref('accounts/' + key).update({ passwordHash: ph }); // ecriture par-compte (regles)
-                AIA.showToast('MDP reinitialise pour ' + a.firstName, 'success');
+                AIA.db.ref('accounts/' + key).update({ passwordHash: ph, mustChangePassword: true }); // ecriture par-compte (regles)
+                AIA.showToast('MDP reinitialise pour ' + a.firstName + ' — il devra le changer a sa prochaine connexion', 'success');
               });
             });
           });
@@ -1214,10 +1214,10 @@
           var btnResetAllPw = document.getElementById('btn-reset-all-pw');
           if (btnResetAllPw) {
             btnResetAllPw.addEventListener('click', function () {
-              if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "idrac2026".')) return;
+              if (!confirm('Reinitialiser TOUS les mots de passe ? Le nouveau MDP sera "Idrac2026!" et chaque etudiant devra le changer a sa prochaine connexion.')) return;
               var keys = Object.keys(accts);
-              Promise.all(keys.map(function (k) { return AIA.hashAccountPass(k, 'idrac2026').then(function (ph) { accts[k].passwordHash = ph; return AIA.db.ref('accounts/' + k).update({ passwordHash: ph }); }); })).then(function () {
-                AIA.showToast('Tous les MDP reinitialises a "idrac2026"', 'success');
+              Promise.all(keys.map(function (k) { return AIA.hashAccountPass(k, 'Idrac2026!').then(function (ph) { accts[k].passwordHash = ph; return AIA.db.ref('accounts/' + k).update({ passwordHash: ph, mustChangePassword: true }); }); })).then(function () {
+                AIA.showToast('Tous les MDP reinitialises a "Idrac2026!"', 'success');
               });
             });
           }
@@ -1248,18 +1248,18 @@
             btnCreate.addEventListener('click', function () {
               var ln = document.getElementById('new-acct-lastname').value.trim();
               var fn = document.getElementById('new-acct-firstname').value.trim();
-              var pw = document.getElementById('new-acct-password').value.trim() || 'idrac2026';
+              var pw = document.getElementById('new-acct-password').value.trim() || 'Idrac2026!';
               if (!ln || !fn) return AIA.showToast('Nom et prenom requis', 'warning');
               if (pw.length < 4) return AIA.showToast('Mot de passe trop court (4 car. min)', 'warning');
               AIA.hashAccountPass(AIA.getAccountKey(ln, fn), pw).then(function (ph) {
               AIA.createAccount(ln, fn, ph, function (result) {
                 if (result.error) return AIA.showToast(result.error, 'error');
-                AIA.showToast('Compte cree : ' + fn + ' ' + ln + ' (MDP: ' + pw + ')', 'success');
+                AIA.showToast('Compte cree : ' + fn + ' ' + ln + ' (MDP: ' + pw + ') — changement force a la 1ere connexion', 'success');
                 document.getElementById('new-acct-lastname').value = '';
                 document.getElementById('new-acct-firstname').value = '';
-                document.getElementById('new-acct-password').value = 'idrac2026';
+                document.getElementById('new-acct-password').value = 'Idrac2026!';
                 renderAccounts(el);
-              });
+              }, { mustChangePassword: true });
               });
             });
           }
@@ -1274,14 +1274,14 @@
               if (!pending) return;
               lines.forEach(function (line) {
                 var parts = line.split(';').map(function (p) { return p.trim(); });
-                var ln = parts[0], fn = parts[1], pw = parts[2] || 'idrac2026';
+                var ln = parts[0], fn = parts[1], pw = parts[2] || 'Idrac2026!';
                 if (!ln || !fn) { fail++; pending--; if (!pending) finishBatch(); return; }
                 AIA.hashAccountPass(AIA.getAccountKey(ln, fn), pw).then(function (ph) {
                   AIA.createAccount(ln, fn, ph, function (res) {
                     if (res.error) fail++; else ok++;
                     pending--;
                     if (!pending) finishBatch();
-                  });
+                  }, { mustChangePassword: true });
                 });
               });
               function finishBatch() {
