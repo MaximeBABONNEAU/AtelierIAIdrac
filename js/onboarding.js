@@ -74,6 +74,19 @@
   // Compat (ancienne signature)
   function hasCheckinToday(type) { return hasCheckin(type, todayISO()); }
 
+  // Anti-farm XP : un check-in (type+date) ne peut etre valide qu'une seule fois.
+  // Verifie le flag localStorage ET l'etat synchronise (state.checkins, source de verite Firebase)
+  // pour bloquer le farming meme apres un vidage du cache ou un changement d'appareil.
+  function alreadyCheckedIn(type, date) {
+    date = date || todayISO();
+    if (hasCheckin(type, date)) return true;
+    try {
+      var st = window.AIA.getState();
+      var arr = Array.isArray(st.checkins) ? st.checkins : [];
+      return arr.some(function (c) { return c && c.type === type && (c.forDate || '') === date; });
+    } catch (e) { return false; }
+  }
+
   /* ===== Calendrier du seminaire : fenetres horaires des popups ===== */
   function seminarDates() {
     var CFG = window.AIA && window.AIA.CONFIG;
@@ -119,7 +132,11 @@
     var AIA = window.AIA;
     var st = AIA.getState();
     if (!Array.isArray(st.checkins)) st.checkins = [];
+    // Idempotence : si ce check-in (type+date) est deja enregistre, on ne re-cree rien
+    // et SURTOUT on ne re-attribue pas les +5 XP (sinon farm via reouverture systematique).
+    if (alreadyCheckedIn(entry.type, entry.forDate)) { markCheckin(entry.type, entry.forDate); return; }
     st.checkins.push(entry);
+    markCheckin(entry.type, entry.forDate);
     if (AIA.saveState) AIA.saveState();
     if (AIA.addXP) AIA.addXP(5, (entry.type === 'morning' ? 'Check-in matin' : 'Exit ticket'));
   }
@@ -219,6 +236,11 @@
   function showMorningCheckin(forDate) {
     if (document.querySelector('.checkin-overlay') || document.querySelector('.onboarding-overlay')) return;
     forDate = forDate || todayISO();
+    // Anti-farm : deja fait pour cette date -> on n'ouvre pas le formulaire (pas de re-gain XP)
+    if (alreadyCheckedIn('morning', forDate)) {
+      if (window.AIA.showToast) window.AIA.showToast('Check-in du matin deja fait pour ce jour ✅', 'info');
+      return;
+    }
     var isLate = forDate !== todayISO(); // report d'un jour precedent non repondu
     var overlay = document.createElement('div');
     overlay.className = 'checkin-overlay';
@@ -278,6 +300,11 @@
   function showEveningCheckin(forDate) {
     if (document.querySelector('.checkin-overlay') || document.querySelector('.onboarding-overlay')) return;
     forDate = forDate || todayISO();
+    // Anti-farm : deja fait pour cette date -> on n'ouvre pas le formulaire (pas de re-gain XP)
+    if (alreadyCheckedIn('evening', forDate)) {
+      if (window.AIA.showToast) window.AIA.showToast('Exit ticket du soir deja fait pour ce jour ✅', 'info');
+      return;
+    }
     var overlay = document.createElement('div');
     overlay.className = 'checkin-overlay';
     overlay.innerHTML =
