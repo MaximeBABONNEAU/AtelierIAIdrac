@@ -1,7 +1,8 @@
 /* ==============================================
-   STEP-GUIDES.JS — Guides enrichis par livrable du Business Game
-   freeTool + altTools + checklist (avoir tout) + guide pas-a-pas + promptExample
-   Genere par agents (4 phases). IDRAC — [AI-assisted]
+   STEP-GUIDES.JS — Guides enrichis par livrable + statut d acces des outils
+   STEP_GUIDE : {freeTool, altTools, checklist, guide, promptExample}
+   TOOL_ACCESS : statut par domaine (free/account/trial/paid) pour badges
+   IDRAC — [AI-assisted]
    ============================================== */
 window.AIA = window.AIA || {};
 window.AIA.STEP_GUIDE = {
@@ -1150,8 +1151,8 @@ window.AIA.STEP_GUIDE = {
     "url": "https://www.canva.com"
    },
    {
-    "label": "Beautiful.ai",
-    "url": "https://www.beautiful.ai"
+    "label": "Canva (Presentations, gratuit)",
+    "url": "https://www.canva.com/"
    }
   ],
   "checklist": [
@@ -1181,5 +1182,719 @@ window.AIA.STEP_GUIDE = {
    "8. Lance le mode présentation pour vérifier les animations et la fluidité, puis partage le lien web (animé) et exporte aussi un PDF de secours."
   ],
   "promptExample": "Tu génères un deck de présentation final ANIMÉ pour une campagne marketing complète sur {theme}. Crée une présentation structurée avec ces slides : 1) titre + baseline, 2) problème/insight marché, 3) proposition de valeur, 4) identité de marque (logo, packaging, couleurs), 5) produit, 6) campagne créative (bannières + social + ad copy), 7) vidéo pitch, 8) jingle de marque, 9) landing page de pré-commande, 10) go-to-market 12 semaines + KPIs, 11) résultats attendus, 12) clôture + call-to-action. Pour chaque slide : un titre court, 2-4 puces percutantes et une suggestion de visuel/asset à placer. Style moderne et animé, charte cohérente, français, public débutant."
+ },
+ "swot": {
+  "freeTool": {
+   "label": "ChatGPT (GPT gratuit)",
+   "url": "https://chatgpt.com",
+   "why": "Ideal pour brainstormer et structurer les 4 quadrants SWOT en quelques minutes, croiser les facteurs pour generer des axes strategiques (SO/ST/WO/WT) et challenger votre analyse. Le tier gratuit suffit largement pour produire une matrice complete et hierarchisee."
+  },
+  "altTools": [
+   {
+    "label": "Miro (plan gratuit + template SWOT)",
+    "url": "https://miro.com/templates/swot-analysis/"
+   },
+   {
+    "label": "Canva (templates SWOT gratuits)",
+    "url": "https://www.canva.com/fr_fr/graphiques/modeles-swot/"
+   }
+  ],
+  "checklist": [
+   "4 Forces internes concretes et factuelles (ressources, brevets, savoir-faire, marque)",
+   "4 Faiblesses internes assumees (cout, notoriete, dependance, lacunes produit)",
+   "4 Opportunites externes du marche (tendances, reglementation, technologie, niches non couvertes)",
+   "4 Menaces externes (concurrents, substituts, evolution des usages, contexte economique)",
+   "Chaque facteur priorise (haute/moyenne/faible importance pour le produit)",
+   "Sources ou hypotheses citees pour chaque facteur externe (credibilite)",
+   "Distinction nette interne (S/W) vs externe (O/T) verifiee",
+   "Matrice visuelle 2x2 propre et lisible (couleurs par quadrant)",
+   "Axe strategique 1 : croisement Forces x Opportunites (strategie offensive SO)",
+   "Axe strategique 2 : croisement Faiblesses x Menaces (strategie defensive WT)",
+   "1 action concrete decoulant de chaque axe strategique",
+   "Synthese de 3 lignes : quel est le principal levier strategique du produit ?"
+  ],
+  "guide": [
+   "1. Ouvre chatgpt.com et decris ton produit fictif en 4-5 lignes (categorie, cible, prix, contexte de marche).",
+   "2. Demande de generer 4 forces, 4 faiblesses, 4 opportunites et 4 menaces, en les classant interne/externe.",
+   "3. Challenge chaque facteur : demande de retirer les banalites et de garder les elements specifiques et factuels.",
+   "4. Priorise : demande de noter chaque facteur de 1 a 3 selon son impact strategique sur le produit.",
+   "5. Demande de croiser les quadrants pour produire une matrice TOWS (SO, ST, WO, WT) avec 1 strategie par croisement.",
+   "6. Selectionne les 2 axes strategiques les plus pertinents (typiquement 1 offensif SO + 1 defensif WT).",
+   "7. Recopie le contenu dans un template SWOT gratuit sur Canva ou Miro pour la mise en forme visuelle 2x2.",
+   "8. Redige une synthese de 3 lignes designant le principal levier strategique a exploiter."
+  ],
+  "promptExample": "Tu es consultant en strategie marketing. Pour le produit fictif suivant : {theme}. Realise une analyse SWOT complete et factuelle. 1) Donne exactement 4 Forces et 4 Faiblesses (facteurs INTERNES), 4 Opportunites et 4 Menaces (facteurs EXTERNES) ; evite les banalites, sois specifique au produit. 2) Note chaque facteur de 1 a 3 selon son impact strategique. 3) Croise les quadrants en matrice TOWS et propose 1 strategie par croisement (SO offensive, ST, WO, WT defensive). 4) Selectionne les 2 axes strategiques prioritaires et donne pour chacun 1 action concrete. 5) Termine par une synthese de 3 lignes sur le principal levier strategique. Presente le tout en tableaux clairs."
+ },
+ "value-proposition": {
+  "freeTool": {
+   "label": "Claude (claude.ai, tier gratuit)",
+   "url": "https://claude.ai",
+   "why": "Excellent pour structurer un Value Proposition Canvas rigoureux : il distingue proprement les jobs/pains/gains du client du cote produit (gain creators/pain relievers/products & services) et verifie la coherence de l'adequation (fit). Sa qualite de raisonnement evite les propositions de valeur creuses."
+  },
+  "altTools": [
+   {
+    "label": "Miro (template Value Proposition Canvas gratuit)",
+    "url": "https://miro.com/templates/value-proposition-canvas/"
+   },
+   {
+    "label": "Canva (templates Value Proposition Canvas gratuits)",
+    "url": "https://www.canva.com/fr_fr/graphiques/"
+   }
+  ],
+  "checklist": [
+   "3-5 Customer Jobs (taches fonctionnelles, sociales et emotionnelles du client)",
+   "3-5 Pains (frustrations, risques, obstacles vecus par le client)",
+   "3-5 Gains (benefices recherches, resultats attendus, surprises positives)",
+   "Pains et gains hierarchises (du plus critique au moins important)",
+   "3-5 Products & Services proposes par votre offre",
+   "3-4 Pain Relievers (comment le produit soulage chaque douleur cle)",
+   "3-4 Gain Creators (comment le produit cree chaque benefice attendu)",
+   "Lien explicite entre chaque pain reliever et un pain client (verification du fit)",
+   "Lien explicite entre chaque gain creator et un gain client (verification du fit)",
+   "Identification du job principal (le plus important pour le client)",
+   "Phrase de proposition de valeur synthetique (1 phrase qui resume le fit)",
+   "Score de fit auto-evalue (faible/moyen/fort) avec justification"
+  ],
+  "guide": [
+   "1. Ouvre claude.ai et decris ton client cible (profil, contexte d'usage) puis ton produit.",
+   "2. Cote CLIENT (cercle) : demande la liste des Customer Jobs, Pains et Gains, hierarchises par importance.",
+   "3. Demande d'identifier le job principal et les 3 pains/gains les plus critiques.",
+   "4. Cote PRODUIT (carre) : liste tes Products & Services, puis demande les Pain Relievers et Gain Creators correspondants.",
+   "5. Demande de mapper chaque pain reliever a un pain et chaque gain creator a un gain (table de fit).",
+   "6. Fais evaluer le niveau d'adequation (fit) et identifier les pains/gains non couverts a combler.",
+   "7. Demande une phrase unique de proposition de valeur resumant l'ensemble.",
+   "8. Reporte les 6 blocs dans le template Value Proposition Canvas gratuit de Miro pour la presentation visuelle."
+  ],
+  "promptExample": "Tu es expert en strategie produit (methode Strategyzer). Pour le produit {theme} et son client cible, construis un Value Proposition Canvas complet. PARTIE CLIENT : liste 3 a 5 Customer Jobs (fonctionnels, sociaux, emotionnels), 3 a 5 Pains, 3 a 5 Gains ; hierarchise pains et gains par importance et identifie le job principal. PARTIE PRODUIT : liste mes Products & Services, puis 3 a 4 Pain Relievers et 3 a 4 Gain Creators. ADEQUATION : presente un tableau qui relie chaque pain reliever a un pain precis et chaque gain creator a un gain precis ; signale les pains/gains non couverts. Termine par une phrase unique de proposition de valeur et un score de fit (faible/moyen/fort) justifie."
+ },
+ "segmentation": {
+  "freeTool": {
+   "label": "Perplexity (recherche gratuite)",
+   "url": "https://www.perplexity.ai",
+   "why": "Parfait pour la segmentation car il combine raisonnement et recherche web sourcee : il aide a construire des segments realistes appuyes sur des donnees de marche reelles (taille, comportements, tendances) plutot que des personas inventes, et justifie le choix de la cible prioritaire avec des criteres chiffres."
+  },
+  "altTools": [
+   {
+    "label": "HubSpot Make My Persona (gratuit)",
+    "url": "https://www.hubspot.com/make-my-persona"
+   },
+   {
+    "label": "Google Sheets (matrice de scoring des segments)",
+    "url": "https://sheets.google.com"
+   }
+  ],
+  "checklist": [
+   "Criteres de segmentation choisis et justifies (demographiques, geographiques, psychographiques, comportementaux)",
+   "3 a 4 segments distincts et nommes (nom evocateur + 1 phrase de description)",
+   "Profil de chaque segment : besoins, motivations, freins, budget",
+   "Taille estimee ou poids relatif de chaque segment (chiffre ou ordre de grandeur)",
+   "Comportement d'achat et canaux preferes par segment",
+   "Niveau d'accessibilite du segment (peut-on l'atteindre facilement ?)",
+   "Attractivite de chaque segment evaluee (potentiel de croissance, rentabilite)",
+   "Matrice de scoring : segments x criteres (attractivite vs capacite a servir)",
+   "Choix explicite de la cible prioritaire (1 segment principal)",
+   "Justification chiffree du choix (pourquoi ce segment plutot qu'un autre)",
+   "Mention d'un segment secondaire eventuel (cible de second rang)",
+   "1 persona synthetique du segment prioritaire (HubSpot Make My Persona)"
+  ],
+  "guide": [
+   "1. Sur Perplexity, decris ton produit {theme} et demande quels criteres de segmentation sont les plus pertinents pour ce marche.",
+   "2. Demande de generer 3 a 4 segments distincts, avec pour chacun profil, besoins, taille estimee et canaux preferes, sources a l'appui.",
+   "3. Verifie les sources citees par Perplexity pour valider les ordres de grandeur (taille de marche, tendances).",
+   "4. Demande une matrice de scoring evaluant chaque segment sur attractivite et capacite a le servir.",
+   "5. Fais recommander la cible prioritaire avec une justification chiffree, et un segment secondaire eventuel.",
+   "6. Reporte la matrice de scoring dans Google Sheets pour la rendre lisible et ajustable.",
+   "7. Construis le persona du segment prioritaire avec HubSpot Make My Persona (gratuit).",
+   "8. Redige la decision de ciblage finale : segment retenu + 2-3 raisons cles."
+  ],
+  "promptExample": "Tu es strategiste marketing data-driven. Pour le produit {theme}, realise une segmentation et un ciblage. 1) Recommande les criteres de segmentation les plus pertinents pour ce marche (demographiques, geographiques, psychographiques, comportementaux) et justifie. 2) Definis 3 a 4 segments distincts : nom evocateur, description en 1 phrase, besoins/motivations/freins, budget, taille estimee (avec sources), canaux preferes. 3) Construis une matrice de scoring notant chaque segment sur attractivite (potentiel, rentabilite) et capacite a le servir (accessibilite, fit produit). 4) Recommande LA cible prioritaire avec une justification chiffree et mentionne un segment secondaire. Cite tes sources pour toutes les donnees de marche."
+ },
+ "objectives-okr": {
+  "freeTool": {
+   "label": "ChatGPT (GPT gratuit)",
+   "url": "https://chatgpt.com",
+   "why": "Tres efficace pour decliner des objectifs SMART et des OKR par etage du funnel (notoriete, consideration, conversion, retention) avec KPIs chiffres realistes et coherents entre eux. Il aide a calibrer les valeurs cibles et a relier chaque Key Result a un objectif mesurable."
+  },
+  "altTools": [
+   {
+    "label": "Notion (templates OKR gratuits)",
+    "url": "https://www.notion.com/templates/category/okr"
+   },
+   {
+    "label": "Google Sheets (tableau OKR / KPI)",
+    "url": "https://sheets.google.com"
+   }
+  ],
+  "checklist": [
+   "1 objectif par etage de funnel : notoriete, consideration, conversion, retention (4 minimum)",
+   "Chaque objectif redige au format SMART (Specifique, Mesurable, Atteignable, Realiste, Temporel)",
+   "Un horizon temporel precise pour chaque objectif (ex : a 3, 6 ou 12 mois)",
+   "2 a 3 Key Results chiffres par Objectif (structure OKR)",
+   "KPI de notoriete chiffre (ex : reach, impressions, taux de notoriete assistee)",
+   "KPI de consideration chiffre (ex : trafic site, taux d'engagement, leads)",
+   "KPI de conversion chiffre (ex : taux de conversion, CAC, nombre de ventes)",
+   "KPI de retention chiffre (ex : taux de retention, churn, NPS, repeat rate)",
+   "Valeurs cibles realistes et coherentes entre les etages (entonnoir logique)",
+   "Outil/source de mesure indique pour chaque KPI (ou et comment on mesure)",
+   "Distinction claire entre metrique de vanite et metrique actionnable",
+   "Tableau de bord recapitulatif (Objectif > KR > KPI > cible > echeance)"
+  ],
+  "guide": [
+   "1. Sur chatgpt.com, rappelle le produit {theme}, sa cible prioritaire et l'horizon temporel (ex : 12 mois).",
+   "2. Demande 1 objectif SMART par etage du funnel : notoriete, consideration, conversion, retention.",
+   "3. Pour chaque objectif, demande 2 a 3 Key Results chiffres (format OKR) avec valeurs cibles realistes.",
+   "4. Fais preciser le KPI associe a chaque KR et l'outil de mesure (Google Analytics, CRM, sondage...).",
+   "5. Demande de verifier la coherence de l'entonnoir (les chiffres se suivent logiquement d'un etage a l'autre).",
+   "6. Fais distinguer les metriques de vanite des metriques actionnables et ajuste si besoin.",
+   "7. Demande un tableau de bord recapitulatif (Objectif > KR > KPI > cible > echeance).",
+   "8. Reporte le tableau dans Notion ou Google Sheets pour le suivi."
+  ],
+  "promptExample": "Tu es responsable marketing growth. Pour le produit {theme} et sa cible prioritaire, sur un horizon de 12 mois, definis des objectifs SMART et OKR par etage du funnel. Donne 1 objectif par etage : NOTORIETE, CONSIDERATION, CONVERSION, RETENTION. Pour chaque objectif : 1) redige-le au format SMART avec une echeance ; 2) ajoute 2 a 3 Key Results chiffres et realistes ; 3) precise le KPI principal et l'outil de mesure ; 4) verifie que les chiffres forment un entonnoir coherent d'un etage a l'autre. Distingue les metriques de vanite des metriques actionnables. Presente le resultat dans un tableau : Objectif | Key Results | KPI | Valeur cible | Echeance | Outil de mesure."
+ },
+ "customer-journey": {
+  "freeTool": {
+   "label": "Miro (plan gratuit + template Customer Journey Map)",
+   "url": "https://miro.com/templates/customer-journey-map/",
+   "why": "Le meilleur outil gratuit pour cartographier visuellement un parcours client multi-etapes : le template gratuit propose deja les colonnes (etapes), les lignes (actions, emotions, points de contact, frictions) et permet de tracer la courbe emotionnelle. Combine avec une IA pour generer le contenu, le rendu est professionnel."
+  },
+  "altTools": [
+   {
+    "label": "Canva (templates Customer Journey Map gratuits)",
+    "url": "https://www.canva.com/fr_fr/graphiques/"
+   },
+   {
+    "label": "ChatGPT (generation du contenu du parcours)",
+    "url": "https://chatgpt.com"
+   }
+  ],
+  "checklist": [
+   "5 etapes du parcours definies : awareness, consideration, purchase, retention, advocacy",
+   "Objectif du client a chaque etape (que cherche-t-il a accomplir ?)",
+   "Actions concretes du client a chaque etape",
+   "Points de contact (touchpoints) listes par etape (site, reseaux sociaux, email, SAV, magasin...)",
+   "Emotion du client a chaque etape (positive/neutre/negative)",
+   "Courbe emotionnelle tracee visuellement le long du parcours",
+   "Moments de friction / points de douleur identifies par etape",
+   "Pensees ou questions du client a chaque etape (verbatim type)",
+   "Au moins 2 opportunites d'amelioration par friction identifiee",
+   "Identification du moment de verite (moment cle determinant pour la conversion ou la fidelite)",
+   "Canaux owned/earned/paid distingues sur les touchpoints",
+   "Synthese : les 2-3 frictions prioritaires a corriger en premier"
+  ],
+  "guide": [
+   "1. Genere d'abord le contenu avec ChatGPT : decris {theme} et sa cible, demande le parcours en 5 etapes (awareness > advocacy).",
+   "2. Pour chaque etape, demande : objectif client, actions, touchpoints, emotion (note de -2 a +2), frictions et pensees du client.",
+   "3. Demande d'identifier le moment de verite et les 2-3 frictions prioritaires a corriger.",
+   "4. Ouvre le template Customer Journey Map gratuit de Miro.",
+   "5. Reporte les 5 etapes en colonnes et les lignes (actions, touchpoints, emotions, frictions) du contenu IA.",
+   "6. Trace la courbe emotionnelle en reliant les notes d'emotion d'une etape a l'autre.",
+   "7. Surligne visuellement les moments de friction (rouge) et le moment de verite.",
+   "8. Ajoute une zone de synthese listant les opportunites d'amelioration prioritaires."
+  ],
+  "promptExample": "Tu es UX strategist. Pour le produit {theme} et sa cible prioritaire, construis une Customer Journey Map detaillee en 5 etapes : AWARENESS, CONSIDERATION, PURCHASE, RETENTION, ADVOCACY. Pour CHAQUE etape, donne dans un tableau : 1) l'objectif du client, 2) ses actions concretes, 3) les points de contact (en distinguant owned/earned/paid), 4) son emotion notee de -2 a +2, 5) ses pensees/questions (verbatim type), 6) les moments de friction. Ensuite : identifie le moment de verite du parcours, decris la courbe emotionnelle globale, et liste les 2 a 3 frictions prioritaires avec 2 opportunites d'amelioration chacune. Format tableau clair, pret a etre reporte dans Miro."
+ },
+ "positioning-statement": {
+  "freeTool": {
+   "label": "Claude (claude.ai, tier gratuit)",
+   "url": "https://claude.ai",
+   "why": "Le meilleur pour rediger un enonce de positionnement precis et distinctif au format Geoffrey Moore (Pour... qui... est... qui... car...). Sa finesse redactionnelle produit des formulations claires et credibles, et il aide a poser 2 axes pertinents pour la carte perceptuelle en evitant les axes correles."
+  },
+  "altTools": [
+   {
+    "label": "ChatGPT (variantes de formulation)",
+    "url": "https://chatgpt.com"
+   },
+   {
+    "label": "Canva (carte perceptuelle / graphique a points gratuit)",
+    "url": "https://www.canva.com/fr_fr/graphiques/"
+   }
+  ],
+  "checklist": [
+   "Cible clairement nommee (Pour [cible]...)",
+   "Besoin ou occasion d'usage precis (qui [besoin/probleme]...)",
+   "Nom de marque/produit (la marque [nom]...)",
+   "Categorie de reference identifiee (est [categorie de marche]...)",
+   "Benefice cle differenciant et unique (qui [benefice cle]...)",
+   "Preuve credible / reason to believe (car [preuve/raison d'y croire])",
+   "Enonce complet redige en 1 a 2 phrases fluides",
+   "2 a 3 variantes de l'enonce testees et comparees",
+   "2 axes pertinents et non correles choisis pour la carte perceptuelle",
+   "Positionnement de la marque place sur la carte perceptuelle",
+   "3 a 5 concurrents positionnes sur la meme carte (espace concurrentiel)",
+   "Identification d'un espace blanc / territoire de differenciation defendable"
+  ],
+  "guide": [
+   "1. Sur claude.ai, rappelle le produit {theme}, sa cible prioritaire, sa proposition de valeur et son SWOT.",
+   "2. Demande de remplir la formule : Pour [cible] qui [besoin], [marque] est [categorie] qui [benefice cle], car [preuve].",
+   "3. Verifie chaque element : la cible est-elle precise, le benefice est-il unique, la preuve est-elle credible ?",
+   "4. Demande 2 a 3 variantes de l'enonce et choisis la plus claire et distinctive.",
+   "5. Demande de proposer 2 axes pertinents et NON correles pour une carte perceptuelle (ex : prix vs sophistication).",
+   "6. Fais positionner ta marque et 3 a 5 concurrents sur ces 2 axes (coordonnees relatives).",
+   "7. Identifie l'espace blanc (zone peu occupee) qui constitue ton territoire de differenciation.",
+   "8. Reproduis la carte perceptuelle dans un graphique a points (scatter) gratuit sur Canva."
+  ],
+  "promptExample": "Tu es expert en strategie de marque. Pour le produit {theme} (cible prioritaire et proposition de valeur connues), redige un enonce de positionnement au format Geoffrey Moore : 'Pour [cible] qui [besoin/occasion], [marque] est [categorie] qui [benefice cle differenciant], car [preuve / reason to believe].' 1) Remplis chaque crochet de facon precise et credible. 2) Propose 3 variantes de l'enonce et recommande la meilleure en justifiant. 3) Propose 2 axes pertinents et NON correles pour une carte perceptuelle. 4) Place ma marque et 3 a 5 concurrents types sur ces 2 axes (donne des coordonnees relatives de 0 a 10). 5) Identifie l'espace blanc / territoire de differenciation defendable. Presente la carte perceptuelle sous forme de tableau de coordonnees pret a tracer."
+ },
+ "brand-archetype": {
+  "freeTool": {
+   "label": "ChatGPT (GPT-4o / o-series, tier gratuit)",
+   "url": "https://chat.openai.com",
+   "why": "Modèle conversationnel gratuit le plus polyvalent pour raisonner sur les 12 archétypes de Jung, croiser traits de personnalité, ton de voix et exemples de marques. Idéal pour itérer en dialogue (challenge ton choix d'archétype, propose un secondaire complémentaire, déduit les implications créatives couleur/typo/copy)."
+  },
+  "altTools": [
+   {
+    "label": "Claude (Anthropic, tier gratuit)",
+    "url": "https://claude.ai"
+   },
+   {
+    "label": "Google Gemini (tier gratuit)",
+    "url": "https://gemini.google.com"
+   }
+  ],
+  "checklist": [
+   "Archétype PRINCIPAL choisi parmi les 12 de Jung (ex : Le Héros, Le Créateur, Le Sage, L'Explorateur, Le Magicien, L'Innocent, Le Rebelle, L'Amoureux, Le Bouffon, Le Souverain, Le Protecteur, L'Homme ordinaire)",
+   "Archétype SECONDAIRE complémentaire choisi (nuance la personnalité, évite le cliché)",
+   "Justification du choix en 3-4 phrases reliée au positionnement du produit et à la cible",
+   "Liste de 5-7 TRAITS de personnalité de marque (adjectifs) découlant de l'archétype",
+   "Définition du TON DE VOIX en 3 axes (ex : chaleureux vs distant, formel vs familier, sérieux vs ludique) avec curseur",
+   "Le désir/motivation fondamental de l'archétype et la peur qu'il combat (moteur narratif)",
+   "3-5 exemples de MARQUES réelles incarnant ce même archétype (preuve et inspiration)",
+   "3 mots à DIRE et 3 mots à BANNIR dans la communication (vocabulaire de marque)",
+   "Implications CRÉATIVES couleur : 2-3 directions chromatiques cohérentes avec l'archétype",
+   "Implications CRÉATIVES typo : style de caractères suggéré (serif/sans, géométrique/humaniste)",
+   "Implications CRÉATIVES imagerie : registre visuel (épuré, brut, onirique, premium...)",
+   "Une phrase-promesse de marque qui résume l'archétype en une ligne mémorable"
+  ],
+  "guide": [
+   "1. Ouvre ChatGPT et colle un prompt décrivant ton produit {theme}, sa cible et sa promesse, en demandant les 3 archétypes de Jung les plus pertinents avec arguments.",
+   "2. Lis les propositions, puis demande à l'IA de comparer les 2 meilleurs et de t'aider à trancher selon ta différenciation concurrentielle.",
+   "3. Fixe l'archétype PRINCIPAL et demande un SECONDAIRE qui le nuance sans le contredire ; valide la combinaison.",
+   "4. Demande la fiche de personnalité : traits, désir fondamental, peur combattue, ton de voix sur 3 curseurs.",
+   "5. Demande 5 marques réelles incarnant cet archétype et ce qu'elles font concrètement (pour t'inspirer sans copier).",
+   "6. Demande le vocabulaire de marque : mots à dire / mots à bannir, et la phrase-promesse en une ligne.",
+   "7. Demande les implications créatives (couleur, typo, imagerie) pour préparer les étapes suivantes de la Phase 2.",
+   "8. Compile le tout dans une fiche d'une page ; relis et corrige les formulations génériques de l'IA pour qu'elles collent à TON produit."
+  ],
+  "promptExample": "Tu es un stratège de marque expert des 12 archétypes de Carl Jung. Mon produit est {theme}. Cible : [décris ta cible]. Promesse : [ta promesse]. 1) Propose les 3 archétypes de Jung les plus pertinents avec un argument chacun. 2) Recommande UN archétype principal + UN secondaire qui le nuance. 3) Donne la fiche de personnalité : 6 traits, le désir fondamental, la peur combattue, et le ton de voix sur 3 curseurs. 4) Cite 5 marques réelles incarnant cet archétype. 5) Liste 3 mots à dire et 3 mots à bannir. 6) Déduis les implications créatives (couleur, typo, imagerie). Termine par une phrase-promesse mémorable en une ligne."
+ },
+ "brand-story": {
+  "freeTool": {
+   "label": "Claude (Anthropic, tier gratuit)",
+   "url": "https://claude.ai",
+   "why": "Excellent en écriture longue et structurée : Claude excelle à tenir un fil narratif émotionnel, respecter une contrainte de longueur (manifeste 100-150 mots) et produire une copy avec rythme et voix de marque. Parfait pour le récit fondateur, le Golden Circle et le manifeste."
+  },
+  "altTools": [
+   {
+    "label": "ChatGPT (tier gratuit)",
+    "url": "https://chat.openai.com"
+   },
+   {
+    "label": "Google Gemini (tier gratuit)",
+    "url": "https://gemini.google.com"
+   }
+  ],
+  "checklist": [
+   "Récit FONDATEUR : l'origine de la marque (déclencheur, problème vécu, étincelle) en 4-6 phrases",
+   "Le CONFLIT / l'ENNEMI que la marque combat (statu quo, frustration client, injustice du marché)",
+   "Le HÉROS de l'histoire = le client (la marque est le guide/mentor, pas le héros)",
+   "La MISSION : ce que la marque veut changer dans le monde, formulée en une phrase",
+   "La VISION : à quoi ressemble le monde si la marque réussit",
+   "Golden Circle — WHY (la croyance/cause profonde, le pourquoi qui inspire)",
+   "Golden Circle — HOW (ce qui rend l'approche unique, le processus distinctif)",
+   "Golden Circle — WHAT (le produit/service concret livré)",
+   "MANIFESTE de marque rédigé en 100-150 mots, ton incarné, rythme et punch",
+   "Un arc émotionnel clair (tension → résolution) lisible dans le récit",
+   "Cohérence avec l'archétype défini à l'étape précédente (ton, vocabulaire)",
+   "Une phrase d'accroche / signature qui pourrait clôturer le manifeste"
+  ],
+  "guide": [
+   "1. Ouvre Claude et fournis le contexte : produit {theme}, cible, archétype principal/secondaire, ton de voix défini précédemment.",
+   "2. Demande d'abord le Golden Circle (Why/How/What) pour ancrer la cause profonde avant de raconter.",
+   "3. Demande le récit fondateur en identifiant clairement le déclencheur et l'ennemi/conflit que la marque combat.",
+   "4. Vérifie que le CLIENT est le héros et la marque le guide ; demande une réécriture si l'IA met la marque en avant.",
+   "5. Demande le manifeste de marque en respectant STRICTEMENT 100-150 mots, ton incarné, phrases courtes et rythmées.",
+   "6. Demande 3 variantes de la phrase de signature finale et choisis la plus mémorable.",
+   "7. Fais relire à l'IA pour traquer le jargon creux et les clichés (synergie, leader, innovant) et les remplacer.",
+   "8. Lis le manifeste à voix haute : si une phrase ne sonne pas, demande une reformulation ciblée."
+  ],
+  "promptExample": "Tu es copywriter de marque, spécialiste du storytelling à la Simon Sinek et Donald Miller (StoryBrand). Produit : {theme}. Cible : [ta cible]. Archétype : [principal + secondaire]. Ton de voix : [tes curseurs]. Livre dans l'ordre : 1) Le Golden Circle (Why = la croyance profonde, How = l'approche unique, What = le produit). 2) Le récit fondateur en 5 phrases avec un déclencheur clair et un ENNEMI/conflit que la marque combat. 3) Positionne le CLIENT comme héros et la marque comme guide. 4) La mission en une phrase et la vision en une phrase. 5) Un MANIFESTE de marque de 100 à 150 mots EXACTEMENT, incarné, phrases courtes et rythmées, avec un arc émotionnel tension→résolution. 6) Une phrase de signature finale, en 3 variantes. Bannis le jargon creux (synergie, leader, disruptif)."
+ },
+ "tagline-system": {
+  "freeTool": {
+   "label": "ChatGPT (tier gratuit)",
+   "url": "https://chat.openai.com",
+   "why": "Très fort pour générer en rafale des accroches courtes, jouer sur les figures de style (allitération, antithèse, rime), et décliner une tagline par canal et par usage. Idéal pour explorer beaucoup d'options puis filtrer selon des règles d'emploi."
+  },
+  "altTools": [
+   {
+    "label": "Claude (tier gratuit)",
+    "url": "https://claude.ai"
+   },
+   {
+    "label": "Google Gemini (tier gratuit)",
+    "url": "https://gemini.google.com"
+   }
+  ],
+  "checklist": [
+   "TAGLINE PRINCIPALE (signature de marque) en 2-6 mots, mémorable et différenciante",
+   "Justification : pourquoi cette tagline, quel bénéfice/émotion elle porte",
+   "Variante COURTE (logo lockup / favicon / app icon) ≤ 3 mots",
+   "Variante PUBLICITÉ / campagne (accroche plus émotionnelle ou aspirationnelle)",
+   "Variante RÉSEAUX SOCIAUX (bio Instagram/LinkedIn, ton plus direct)",
+   "Variante SITE WEB / hero (orientée bénéfice clair pour le visiteur)",
+   "Variante PACKAGING / point de vente (concise, lisible de loin)",
+   "Test de la figure de style employée (rime, allitération, antithèse, rythme)",
+   "RÈGLES D'EMPLOI : quand utiliser la principale vs une variante",
+   "Règle de PLACEMENT par rapport au logo (à côté / dessous / jamais séparé)",
+   "Liste de 3-4 taglines REJETÉES avec la raison du rejet (pédagogie du choix)",
+   "Vérification d'unicité : la tagline n'est pas déjà utilisée par une marque connue"
+  ],
+  "guide": [
+   "1. Ouvre ChatGPT, donne le produit {theme}, l'archétype, le manifeste et la promesse définis avant.",
+   "2. Demande 20 propositions de tagline principale variées en angle (bénéfice, émotion, jeu de mots, défi).",
+   "3. Sélectionne 3 favorites et demande à l'IA d'évaluer mémorabilité, clarté et unicité de chacune.",
+   "4. Choisis LA principale, puis demande de la décliner par canal : courte, pub, réseaux, site, packaging.",
+   "5. Demande quelle figure de style est utilisée et propose une variante alternative par canal.",
+   "6. Demande les règles d'emploi (quand utiliser quelle variante, placement vs logo).",
+   "7. Demande 4 taglines volontairement écartées avec la raison, pour documenter ton raisonnement.",
+   "8. Vérifie l'unicité par une recherche web rapide pour éviter une accroche déjà déposée."
+  ],
+  "promptExample": "Tu es directeur de création publicitaire spécialiste des accroches. Produit : {theme}. Archétype : [le tien]. Promesse : [ta promesse]. 1) Génère 20 taglines principales (2 à 6 mots) en variant l'angle : bénéfice rationnel, émotion, jeu de mots, défi, vision. 2) Sélectionne les 3 meilleures et note chacune sur mémorabilité, clarté et unicité (/10). 3) Pour la meilleure, crée un SYSTÈME : variante courte (≤3 mots pour logo), variante pub/campagne, variante réseaux sociaux, variante site web/hero, variante packaging. 4) Indique la figure de style de chaque. 5) Donne les RÈGLES D'EMPLOI (quel canal → quelle variante, placement par rapport au logo). 6) Liste 4 taglines rejetées avec la raison. Tout en français."
+ },
+ "iconography": {
+  "freeTool": {
+   "label": "Recraft (tier gratuit)",
+   "url": "https://www.recraft.com",
+   "why": "Recraft génère des icônes vectorielles cohérentes en série, avec contrôle du style (line, solid, duotone) et export SVG — rare et précieux pour un set de pictos exploitable. Son tier gratuit suffit pour produire un set cohérent de marque, là où les générateurs raster classiques peinent sur la régularité d'un système d'icônes."
+  },
+  "altTools": [
+   {
+    "label": "Ideogram (tier gratuit, fort sur formes nettes/texte)",
+    "url": "https://ideogram.ai"
+   },
+   {
+    "label": "Microsoft Designer (gratuit avec compte Microsoft)",
+    "url": "https://designer.microsoft.com"
+   }
+  ],
+  "checklist": [
+   "STYLE d'icône défini : line / solid / duotone / rounded (cohérent avec l'archétype)",
+   "GRILLE de construction définie (ex : 24x24 px, zone de sécurité, padding)",
+   "Épaisseur de TRAIT (stroke) constante sur tout le set (ex : 2 px)",
+   "Coins (arrondis vs vifs) cohérents avec la typo et le logo",
+   "Set de 8 à 12 PICTOS clés couvrant les fonctions du produit/parcours utilisateur",
+   "Chaque picto immédiatement reconnaissable à petite taille (test 16-24 px)",
+   "PALETTE limitée appliquée (mono ou 1-2 couleurs de marque max)",
+   "Cohérence d'optique : tailles visuelles harmonisées (pas un picto énorme à côté d'un petit)",
+   "Export en SVG (vectoriel) ou à défaut PNG transparent haute résolution",
+   "Règles d'USAGE : taille minimale, espace de respiration, fonds autorisés/interdits",
+   "Do / Don't illustrés (ne pas déformer, ne pas mélanger les styles, ne pas recolorer hors palette)",
+   "Planche-contact (icon sheet) regroupant tous les pictos avec leur nom"
+  ],
+  "guide": [
+   "1. Définis d'abord le style sur ChatGPT/Claude (line vs solid, arrondi, palette) en cohérence avec l'archétype, puis liste les 10 fonctions à iconifier.",
+   "2. Ouvre Recraft, choisis le mode Icon et fixe un style de référence (ex : line, stroke 2px, coins arrondis).",
+   "3. Génère le premier picto comme RÉFÉRENCE de style, ajuste jusqu'à validation.",
+   "4. Réutilise EXACTEMENT le même prompt de style en ne changeant que le sujet, pour garder la cohérence du set.",
+   "5. Génère les 8-12 pictos un par un, en gardant la même grille, épaisseur et palette.",
+   "6. Vérifie la lisibilité de chaque picto en l'affichant à 16-24 px ; régénère ceux qui deviennent illisibles.",
+   "7. Exporte en SVG (ou PNG transparent), nomme chaque fichier par sa fonction.",
+   "8. Assemble une planche-contact dans Canva avec les règles d'usage et un bloc Do/Don't."
+  ],
+  "promptExample": "A flat {style} icon of [sujet], for the brand {theme}, consistent icon-system style: 2px uniform stroke weight, rounded corners, monochrome [couleur de marque] on transparent background, 24x24 grid with safe padding, minimal and geometric, instantly recognizable at small size, no text, no shadow, vector clean. Keep the exact same line weight and corner radius as the other icons in the set."
+ },
+ "photo-style": {
+  "freeTool": {
+   "label": "Leonardo.ai (tier gratuit, ~150 crédits/jour)",
+   "url": "https://leonardo.ai",
+   "why": "Leonardo offre un vrai tier gratuit quotidien généreux, des modèles photoréalistes (Phoenix, Lightning XL) et surtout des contrôles de direction artistique (style references, presets) parfaits pour fixer une direction imagée reproductible : sujets, cadrage, lumière, palette."
+  },
+  "altTools": [
+   {
+    "label": "FLUX.1 [schnell] sur Hugging Face (gratuit, photoréalisme fort)",
+    "url": "https://huggingface.co/black-forest-labs/FLUX.1-schnell"
+   },
+   {
+    "label": "Ideogram (tier gratuit)",
+    "url": "https://ideogram.ai"
+   }
+  ],
+  "checklist": [
+   "DIRECTION définie : photo réaliste, illustration, 3D, mixte (et pourquoi)",
+   "SUJETS récurrents (personnes, produit en situation, environnements, détails macro)",
+   "CADRAGE privilégié (plans larges/serrés, règle des tiers, espace négatif pour la copy)",
+   "LUMIÈRE caractéristique (naturelle douce, contrastée, golden hour, studio...)",
+   "PALETTE chromatique de l'imagerie alignée sur les couleurs de marque",
+   "AMBIANCE / mood en 3 adjectifs (ex : authentique, lumineux, optimiste)",
+   "TRAITEMENT : grain, saturation, contraste, profondeur de champ",
+   "Représentation et DIVERSITÉ des personnes (inclusivité, réalisme)",
+   "Liste de 4-6 DO (ce qu'on montre toujours)",
+   "Liste de 4-6 DON'T (ce qu'on ne montre jamais : stock cliché, fonds chargés...)",
+   "3 IMAGES exemples générées illustrant la direction (héros, produit, lifestyle)",
+   "Une moodboard / planche assemblant les exemples + annotations de la direction"
+  ],
+  "guide": [
+   "1. Définis la direction imagée par écrit (sujets, lumière, mood, palette) avec ChatGPT/Claude en cohérence avec l'archétype.",
+   "2. Ouvre Leonardo.ai, choisis un modèle photoréaliste (Phoenix/Lightning XL) et règle le format adapté (16:9 héros, 1:1 social).",
+   "3. Rédige un prompt détaillé encodant sujet + cadrage + lumière + palette + mood ; génère la première image héros.",
+   "4. Active une Style Reference ou réutilise les mêmes mots-clés de style pour garantir la cohérence entre images.",
+   "5. Génère une 2e image (produit en situation) et une 3e (lifestyle/détail) avec le MÊME bloc de style.",
+   "6. Trie : garde les 3 images qui respectent le mieux la direction, régénère celles qui dérivent.",
+   "7. Formalise les règles DO / DON'T à partir de ce qui marche et de ce qui sonne faux (stock cliché).",
+   "8. Assemble une moodboard annotée dans Canva (3 images + description de la direction imagée)."
+  ],
+  "promptExample": "Editorial brand photography for {theme}, [sujet : a young person using the product in a bright modern kitchen], shot on 50mm, shallow depth of field, soft natural golden-hour light from a window, color palette dominated by [couleurs de marque], authentic candid mood, optimistic and warm, subtle film grain, negative space on the right for copy, photorealistic, high detail, no text, no logo, 16:9. Keep this exact lighting and color grading consistent across the whole image series."
+ },
+ "brand-applications": {
+  "freeTool": {
+   "label": "Canva (tier gratuit)",
+   "url": "https://www.canva.com",
+   "why": "Canva gratuit couvre TOUTES les applications de marque dans un seul outil : cartes de visite (gabarits + impression), signatures mail, mockups de tote bag/t-shirt/sticker, avatars et bannières aux bons formats par réseau, et templates réutilisables. Insertion directe du logo, des couleurs et de la typo définis dans les étapes précédentes."
+  },
+  "altTools": [
+   {
+    "label": "Mockey.ai (mockups produits/merch gratuits, sans watermark)",
+    "url": "https://mockey.ai"
+   },
+   {
+    "label": "Microsoft Designer (bannières & visuels, gratuit)",
+    "url": "https://designer.microsoft.com"
+   }
+  ],
+  "checklist": [
+   "CARTE DE VISITE recto/verso (logo, nom, fonction, contacts, couleurs de marque)",
+   "SIGNATURE MAIL HTML/image (nom, fonction, logo, liens, cohérente avec la charte)",
+   "Mockup TOTE BAG avec le logo/tagline positionné correctement",
+   "Mockup T-SHIRT (placement et taille du visuel validés)",
+   "Planche de STICKERS (2-3 déclinaisons : logo, picto, tagline)",
+   "AVATAR / photo de profil réseaux (format carré, lisible en petit cercle)",
+   "BANNIÈRE LinkedIn (1584x396) aux couleurs de marque",
+   "BANNIÈRE / cover réseau secondaire (ex : YouTube 2560x1440 ou X 1500x500)",
+   "Au moins 1 TEMPLATE de post social réutilisable (citation/annonce)",
+   "Respect strict de la charte : couleurs HEX exactes, typo, zone de protection du logo",
+   "Versions sur fond clair ET fond foncé pour la lisibilité",
+   "Fichiers exportés aux bons formats (PNG/PDF), nommés clairement, regroupés dans un dossier"
+  ],
+  "guide": [
+   "1. Crée un Kit de marque dans Canva (ou un projet) : importe le logo, saisis les couleurs HEX et la typo définis avant.",
+   "2. Pars d'un gabarit Carte de visite, remplace le contenu, applique tes couleurs/typo, exporte recto/verso en PDF.",
+   "3. Crée la signature mail (gabarit email signature), insère logo + liens, exporte en image ou copie le bloc HTML.",
+   "4. Utilise les gabarits de mockups (ou Mockey.ai) pour appliquer le logo sur tote bag, t-shirt et stickers.",
+   "5. Conçois l'avatar (format 1:1) en testant sa lisibilité dans un petit cercle, puis exporte en PNG.",
+   "6. Crée les bannières aux formats exacts par réseau (LinkedIn 1584x396, etc.) avec couleurs de marque.",
+   "7. Construis 1 template de post réutilisable (placeholders modifiables) pour la cohérence future.",
+   "8. Décline chaque application en version fond clair et fond foncé, puis exporte et range tout dans un dossier nommé."
+  ],
+  "promptExample": "Agis comme directeur artistique. Pour la marque {theme} (couleurs : [HEX], typo : [nom], logo : [description]), liste-moi pour CHAQUE application de marque les spécifications de design précises à reproduire dans Canva : 1) carte de visite recto/verso (hiérarchie, infos, placement logo), 2) signature mail (structure, liens), 3) mockups tote bag / t-shirt / sticker (placement et taille du visuel), 4) avatar réseaux (lisibilité en petit), 5) bannières LinkedIn 1584x396 et X 1500x500 (composition), 6) template de post social réutilisable. Pour chacune : format/dimensions exacts, couleurs à utiliser, zone de protection du logo, et 2 erreurs à éviter. Donne aussi pour chaque application une version fond clair et une version fond foncé."
+ }
+};
+window.AIA.TOOL_ACCESS = {
+ "huggingface.co": {
+  "access": "account",
+  "note": "Compte gratuit = inference, datasets et quota GPU quotidien (ZeroGPU)"
+ },
+ "chatgpt.com": {
+  "access": "account",
+  "note": "Compte gratuit = acces GPT avec limites; modeles avances payants"
+ },
+ "claude.ai": {
+  "access": "account",
+  "note": "Compte gratuit = usage quotidien limite de Claude"
+ },
+ "perplexity.ai": {
+  "access": "account",
+  "note": "Compte gratuit = recherches illimitees; recherche Pro limitee/jour"
+ },
+ "gemini.google.com": {
+  "access": "account",
+  "note": "Gratuit avec compte Google, quotas sur les modeles avances"
+ },
+ "ideogram.ai": {
+  "access": "account",
+  "note": "Freemium : ~10 credits lents/semaine, generations publiques"
+ },
+ "leonardo.ai": {
+  "access": "account",
+  "note": "Freemium : 150 tokens/jour + mode Relaxed illimite sur certains modeles"
+ },
+ "recraft.com": {
+  "access": "account",
+  "note": "Freemium : 30 credits/jour, images publiques et possedees par Recraft"
+ },
+ "looka.com": {
+  "access": "trial",
+  "note": "Design gratuit, mais telechargement du logo payant des 20$"
+ },
+ "canva.com": {
+  "access": "account",
+  "note": "Compte gratuit genereux; fonctions Magic/Pro et certains assets payants"
+ },
+ "namelix.com": {
+  "access": "free",
+  "note": "Generateur de noms gratuit; logo associe (Brandmark) payant"
+ },
+ "suno.com": {
+  "access": "account",
+  "note": "Freemium : 50 credits/jour (~10 chansons), usage non-commercial"
+ },
+ "udio.com": {
+  "access": "account",
+  "note": "Freemium : 10 credits/jour + 100/mois, morceaux publics, pas de droits commerciaux"
+ },
+ "elevenlabs.io": {
+  "access": "account",
+  "note": "Freemium : 10 000 credits/mois (~10 min TTS), attribution requise"
+ },
+ "mubert.com": {
+  "access": "account",
+  "note": "Freemium Ambassador : 25 pistes/mois, perso non-commercial avec attribution"
+ },
+ "runwayml.com": {
+  "access": "trial",
+  "note": "Freemium : 125 credits one-time (non renouveles), videos filigranees"
+ },
+ "klingai.com": {
+  "access": "account",
+  "note": "Freemium : 66 credits/jour, 720p, filigrane"
+ },
+ "lumalabs.ai": {
+  "access": "account",
+  "note": "Freemium : ~1 video courte 720p/jour, filigranee, non-commercial"
+ },
+ "pika.art": {
+  "access": "account",
+  "note": "Freemium : credits mensuels (~80-150), 480p avec filigrane"
+ },
+ "capcut.com": {
+  "access": "account",
+  "note": "Editeur gratuit avec compte; effets/exports premium payants"
+ },
+ "heygen.com": {
+  "access": "account",
+  "note": "Freemium : 3 videos/mois (1 min, 720p), filigrane, 1 avatar"
+ },
+ "framer.com": {
+  "access": "account",
+  "note": "Plan gratuit (sous-domaine framer.website); domaine perso et CMS payants"
+ },
+ "v0.dev": {
+  "access": "trial",
+  "note": "Freemium : 5$ de credits/mois, 7 messages/jour"
+ },
+ "gamma.app": {
+  "access": "trial",
+  "note": "Freemium : 400 credits a vie (non renouveles), filigrane 'Made with Gamma'"
+ },
+ "tome.app": {
+  "access": "paid",
+  "note": "Outil de presentation arrete (avril 2025), pivot vers Lightfield/sales"
+ },
+ "beautiful.ai": {
+  "access": "paid",
+  "note": "Pas de plan gratuit, essai 14 jours avec carte requise puis payant"
+ },
+ "designer.microsoft.com": {
+  "access": "account",
+  "note": "Gratuit avec compte Microsoft : 15 credits IA/mois"
+ },
+ "mockey.ai": {
+  "access": "account",
+  "note": "Freemium : mockups gratuits, telechargements HD/sans filigrane et IA payants"
+ },
+ "pacdora.com": {
+  "access": "account",
+  "note": "Freemium : mockups packaging gratuits, exports HD et 3D premium payants"
+ },
+ "milanote.com": {
+  "access": "account",
+  "note": "Plan gratuit : 100 notes/images et 10 fichiers; illimite payant"
+ },
+ "realtimecolors.com": {
+  "access": "free",
+  "note": "Gratuit, aucun compte requis pour tester palettes/typographies"
+ },
+ "fontjoy.com": {
+  "access": "free",
+  "note": "Gratuit, sans compte : appariement de polices Google Fonts"
+ },
+ "adobe.com/express": {
+  "access": "account",
+  "note": "Plan gratuit avec compte Adobe; Firefly/credits generatifs limites"
+ },
+ "answerthepublic.com": {
+  "access": "account",
+  "note": "Freemium : quelques recherches gratuites/jour, illimite payant"
+ },
+ "brevo.com": {
+  "access": "account",
+  "note": "Plan gratuit : jusqu'a 300 emails/jour, CRM de base"
+ },
+ "carrd.co": {
+  "access": "account",
+  "note": "Gratuit : jusqu'a 3 sites en sous-domaine; domaine perso et formulaires payants"
+ },
+ "copy.ai": {
+  "access": "account",
+  "note": "Freemium : credits/mots gratuits limites par mois"
+ },
+ "create.vista.com": {
+  "access": "account",
+  "note": "Freemium : edition gratuite, telechargements premium et sans filigrane payants"
+ },
+ "durable.co": {
+  "access": "account",
+  "note": "Plan gratuit : sous-domaine, IA et edition; domaine perso payant"
+ },
+ "sheets.google.com": {
+  "access": "account",
+  "note": "Gratuit avec compte Google, tableur en ligne complet"
+ },
+ "trends.google.com": {
+  "access": "free",
+  "note": "Gratuit, sans compte : tendances de recherche"
+ },
+ "hubspot.com": {
+  "access": "account",
+  "note": "CRM et outils gratuits avec compte; fonctions avancees payantes"
+ },
+ "mailchimp.com": {
+  "access": "account",
+  "note": "Plan gratuit : jusqu'a 500 contacts, 1 000 emails/mois"
+ },
+ "mailerlite.com": {
+  "access": "account",
+  "note": "Plan gratuit : 1 000 abonnes, 12 000 emails/mois"
+ },
+ "napkin.ai": {
+  "access": "account",
+  "note": "Freemium : 500 credits IA/semaine, exports avec filigrane"
+ },
+ "notion.so": {
+  "access": "account",
+  "note": "Plan gratuit perso genereux; IA et collaboration avancee payantes"
+ },
+ "pinterest.com": {
+  "access": "account",
+  "note": "Gratuit avec compte; inspiration/moodboards"
+ },
+ "reddit.com": {
+  "access": "free",
+  "note": "Lecture libre sans compte; publier/voter necessite un compte gratuit"
+ },
+ "shopify.com": {
+  "access": "trial",
+  "note": "Pas de plan gratuit permanent : essai (~3 j puis 1$/mois 3 mois), puis abonnement"
+ },
+ "ttsmaker.com": {
+  "access": "free",
+  "note": "Gratuit sans compte : TTS et telechargement, usage commercial autorise"
+ },
+ "miro.com": {
+  "access": "account",
+  "note": "Plan gratuit : 3 tableaux editables, modeles de base"
+ },
+ "midjourney.com": {
+  "access": "paid",
+  "note": "Payant, plus d'essai gratuit; abonnement requis des 10$/mois"
  }
 };

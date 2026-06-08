@@ -158,6 +158,31 @@
     );
   }
 
+  /* ============ MODALE DEMO HUGGING FACE (login HF requis pour le quota GPU) ============ */
+  function openHfDemo(url, title) {
+    var safeTitle = title || 'D&eacute;mo Hugging Face';
+    var banner =
+      '<div class="hf-login-banner" style="background:linear-gradient(90deg,rgba(255,209,102,0.16),rgba(255,159,0,0.10));border:1px solid rgba(255,159,0,0.35);border-radius:12px;padding:.7rem .9rem;margin-bottom:.7rem">' +
+        '<div style="font-weight:700;margin-bottom:.25rem">&#128273; Connecte-toi &agrave; Hugging Face (gratuit) pour g&eacute;n&eacute;rer</div>' +
+        '<div style="font-size:.85rem;color:var(--text-secondary,#cbd);margin-bottom:.55rem">Les d&eacute;mos GPU (FLUX, Stable Diffusion&hellip;) ont besoin d\'un <strong>compte gratuit Hugging Face</strong> pour d&eacute;bloquer ton quota GPU quotidien. Sans connexion, la g&eacute;n&eacute;ration est en file d\'attente ou bloqu&eacute;e.</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:.45rem;align-items:center">' +
+          '<a class="btn-primary btn-xs" href="https://huggingface.co/join" target="_blank" rel="noopener noreferrer">Cr&eacute;er un compte gratuit &#8599;</a>' +
+          '<a class="btn-outline btn-xs" href="https://huggingface.co/login" target="_blank" rel="noopener noreferrer">Se connecter &#8599;</a>' +
+          '<a class="btn-outline btn-xs" href="' + url + '" target="_blank" rel="noopener noreferrer" style="margin-left:auto">&#128194; Ouvrir le Space dans un onglet (connect&eacute; HF) &#8599;</a>' +
+        '</div>' +
+        '<div style="font-size:.76rem;color:var(--text-muted,#9aa);margin-top:.45rem">Astuce : pour vraiment <strong>g&eacute;n&eacute;rer</strong>, ouvre le Space dans un onglet o&ugrave; tu es connect&eacute; &agrave; HF (l\'aper&ccedil;u int&eacute;gr&eacute; ci-dessous limite la connexion).</div>' +
+      '</div>';
+    buildModal(
+      '<h3>&#129303; ' + safeTitle + ' <span style="font-size:.7rem;font-weight:500;color:var(--text-muted,#9aa)">(Hugging Face)</span></h3>' +
+      '<a class="embed-modal-open" href="' + url + '" target="_blank" rel="noopener noreferrer">Ouvrir en grand &#8599;</a>',
+      banner +
+      '<div class="embed-frame-wrap is-site">' +
+        '<iframe src="' + url + '" title="' + safeTitle + '" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"></iframe>' +
+      '</div>' +
+      '<div class="embed-fallback">&#9888;&#65039; Page blanche ou &laquo; Sign in &raquo; ? <a href="' + url + '" target="_blank" rel="noopener noreferrer">Ouvre le Space dans un onglet &#8599;</a> apr&egrave;s t\'&ecirc;tre connect&eacute; &agrave; Hugging Face.</div>'
+    );
+  }
+
   /* ============ GALERIE VIGNETTES POUR UNE ACTIVITE ============ */
   function renderActivityVideos(actId) {
     var vids = ACTIVITY_VIDEOS[actId];
@@ -181,6 +206,7 @@
   window.AIA.ACTIVITY_VIDEOS = ACTIVITY_VIDEOS;
   window.AIA.openVideoModal = openVideoModal;
   window.AIA.openIframeModal = openIframeModal;
+  window.AIA.openHfDemo = openHfDemo;
   window.AIA.closeEmbedModal = closeModal;
   window.AIA.renderActivityVideos = renderActivityVideos;
 })();

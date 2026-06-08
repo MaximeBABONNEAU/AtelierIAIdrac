@@ -140,14 +140,26 @@
     'market-analysis': { type: 'strategy', expected: '3 concurrents (forces/faiblesses) + 3 tendances cles + 1 phrase de positionnement differenciant + 1 carte de positionnement.', tech: [ { label: 'Perplexity', kind: 'llm', url: 'https://www.perplexity.ai/' }, LLM_CHATGPT ] },
     'brand-platform':  { type: 'strategy', expected: 'Mission, vision, promesse (1 phrase), raison d\'y croire (RTB), ennemi de marque, 5 traits de personnalite.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
     'marketing-mix':   { type: 'strategy', expected: 'Les 4P : Product (coeur + 2 extensions), Price (positionnement + mecaniques), Place (3 vagues), Promotion (canaux cles).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'swot':                { type: 'strategy', expected: 'Matrice SWOT complete (Forces/Faiblesses/Opportunites/Menaces, 3-5 items chacun) + 2 axes strategiques croises (SO/ST/WO/WT).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'value-proposition':   { type: 'strategy', expected: 'Value Proposition Canvas : jobs/pains/gains du client + pain relievers/gain creators/produits cote offre + 1 phrase de proposition de valeur.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'segmentation':        { type: 'strategy', expected: '3-4 segments (criteres + taille/attractivite) + choix de la cible prioritaire justifie.', tech: [ LLM_CHATGPT, { label: 'Perplexity', kind: 'llm', url: 'https://www.perplexity.ai/' } ] },
+    'objectives-okr':      { type: 'strategy', expected: 'Objectifs SMART par etage de funnel (notoriete->retention) + KPIs chiffres + 1-2 OKR.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'customer-journey':    { type: 'strategy', expected: 'Parcours client : 5 etapes (awareness->advocacy), emotions, points de contact, frictions, opportunites IA.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'positioning-statement':{ type: 'strategy', expected: 'Enonce de positionnement formel (Pour X qui Y, [marque] est Z qui B, car preuve) + carte perceptuelle 2 axes.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
     // --- Phase 2 : Identite & branding ---
     'brand-name':      { type: 'strategy', expected: '1 nom final court + baseline 5-8 mots + justification. Prononcable, evocateur, .com plausible.', tech: [ LLM_CHATGPT, { label: 'Namelix', kind: 'llm', url: 'https://namelix.com/' } ] },
-    'logo':            { type: 'image', expected: '1 prompt de logo abouti + 3 variantes generees + palette 3-5 couleurs (hex) + typo.', tech: [ HF_FLUX, { label: 'Ideogram (texte)', kind: 'llm', url: 'https://ideogram.ai/' }, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'logo':            { type: 'image', expected: '1 prompt de logo abouti + 3 variantes generees + palette 3-5 couleurs (hex) + typo.', tech: [ HF_FLUX, { label: 'Ideogram (texte)', kind: 'llm', url: 'https://ideogram.ai/' }, { label: 'Leonardo.ai', kind: 'llm', url: 'https://leonardo.ai/' } ] },
     'brand-guide':     { type: 'strategy', expected: '3 valeurs + 5 adjectifs de ton + mots YES/NO + 2 exemples Do/Don\'t. Doit guider la redaction de tous les textes.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
-    'art-direction':   { type: 'image', expected: 'Direction artistique : 3 adjectifs de style, references, lumiere, textures + 1 moodboard genere.', tech: [ HF_FLUX, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
-    'packaging-main':  { type: 'image', expected: '1 concept de packaging du produit phare + mockup studio genere (contenant, couleurs, wordmark).', tech: [ HF_FLUX, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'art-direction':   { type: 'image', expected: 'Direction artistique : 3 adjectifs de style, references, lumiere, textures + 1 moodboard genere.', tech: [ HF_FLUX, { label: 'Leonardo.ai', kind: 'llm', url: 'https://leonardo.ai/' } ] },
+    'packaging-main':  { type: 'image', expected: '1 concept de packaging du produit phare + mockup studio genere (contenant, couleurs, wordmark).', tech: [ HF_FLUX, { label: 'Leonardo.ai', kind: 'llm', url: 'https://leonardo.ai/' } ] },
     'packaging-range': { type: 'image', expected: '2-3 variantes de gamme coherentes (codes couleur/saveur) + visuel des SKU cote a cote.', tech: [ HF_FLUX, HF_SD35 ] },
     'social-templates':{ type: 'image', expected: 'Template Story 9:16 + banniere 16:9 + sticker/picto, palette de marque, typo ronde. Reutilisables.', tech: [ HF_FLUX, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' } ] },
+    'brand-archetype':     { type: 'strategy', expected: 'Archetype principal + secondaire (parmi les 12 de Jung), traits, ton, marques de reference, implications creatives (couleur/typo/copy).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'brand-story':         { type: 'copy', expected: 'Recit fondateur + ennemi de marque + golden circle (why/how/what) + manifeste de marque (100-150 mots).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'tagline-system':      { type: 'copy', expected: 'Tagline principale + 3-5 variantes par canal/usage + regles d\'emploi.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'iconography':         { type: 'image', expected: 'Style des icones + grille + set de 8-12 pictos cles coherents + regles d\'usage. Visuels generes.', tech: [ { label: 'Recraft', kind: 'llm', url: 'https://www.recraft.com/' }, HF_FLUX ] },
+    'photo-style':         { type: 'image', expected: 'Direction imagee : sujets, cadrage, lumiere, couleurs, do/don\'t + 3 visuels de reference generes.', tech: [ HF_SD35, HF_FLUX ] },
+    'brand-applications':  { type: 'image', expected: 'Papeterie (carte de visite, signature mail), merch (tote/tshirt/sticker), avatars & bannieres reseaux. Mockups generes.', tech: [ HF_FLUX, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' } ] },
     // --- Phase 3 : Contenus & assets ---
     'ad-visuals':      { type: 'image', expected: '1 concept creatif + 3 visuels generes (IG 4:5 / LinkedIn 16:9 / Display 1.91:1) coherents.', tech: [ HF_SD35, HF_FLUX ] },
     'copy':            { type: 'copy', expected: '3 headlines + 1 body de 50-80 mots + 1 CTA principal. Benefices avant features.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
@@ -164,7 +176,7 @@
     'gtm-plan':        { type: 'strategy', expected: 'GTM 12 semaines en 3 temps (pre-lancement / lancement / post) + KPIs par etage de funnel.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
     'display-ads':     { type: 'image', expected: 'Set display 3 formats (300x250 / 728x90 / 320x50) + ad copy acquisition/retargeting/challenge + visuels.', tech: [ HF_FLUX, LLM_CHATGPT ] },
     'pitch-video':     { type: 'video', expected: 'Script 60s structure (hook / probleme / solution / preuve / CTA), 8-10 phrases pretes a filmer + video (lien).', tech: [ { label: 'HeyGen', kind: 'llm', url: 'https://www.heygen.com/' }, { label: 'ElevenLabs', kind: 'llm', url: 'https://elevenlabs.io/' } ] },
-    'final-deck':      { type: 'deck', expected: 'Deck slide ANIME de 10-12 slides assemblant TOUS les assets produits (visuels, audio, video, copy). Lien partageable.', tech: [ { label: 'Gamma', kind: 'llm', url: 'https://gamma.app/' }, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' }, { label: 'Tome', kind: 'llm', url: 'https://tome.app/' } ] }
+    'final-deck':      { type: 'deck', expected: 'Deck slide ANIME de 10-12 slides assemblant TOUS les assets produits (visuels, audio, video, copy). Lien partageable.', tech: [ { label: 'Gamma', kind: 'llm', url: 'https://gamma.app/' }, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' } ] }
   };
 
   /* ============ PHASES STRUCTURE (Guided Workflow) ============ */
@@ -246,6 +258,74 @@
             { name: 'place4p', label: 'Place (3 vagues de distribution)', rows: 2, placeholder: '1. DTC (site) 2. Retail selectif 3. Food service / OOH' },
             { name: 'promotion4p', label: 'Promotion (canaux cles)', rows: 2, placeholder: 'Social-first, influence, UGC, echantillonnage, RP...' }
           ]
+        },
+        {
+          id: 'swot',
+          title: 'Analyse SWOT',
+          desc: 'Forces / Faiblesses / Opportunites / Menaces + axes strategiques croises',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Realise une analyse SWOT complete pour "{theme}". Donne 3-5 items par quadrant (Forces, Faiblesses, Opportunites, Menaces), puis croise-les en axes strategiques (SO : forces x opportunites ; ST ; WO ; WT : faiblesses x menaces).',
+          fields: [
+            { name: 'swotSF', label: 'Forces & Faiblesses (internes)', rows: 3, placeholder: 'Forces : ...\nFaiblesses : ...' },
+            { name: 'swotOM', label: 'Opportunites & Menaces (externes)', rows: 3, placeholder: 'Opportunites : ...\nMenaces : ...' },
+            { name: 'swotAxes', label: 'Axes strategiques croises (SO/ST/WO/WT)', rows: 2, placeholder: 'SO : ... / ST : ... / WO : ... / WT : ...' }
+          ]
+        },
+        {
+          id: 'value-proposition',
+          title: 'Proposition de valeur (canvas)',
+          desc: 'Value Proposition Canvas : jobs / pains / gains',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Construis le Value Proposition Canvas de "{theme}" pour [persona]. Cote client : 3 jobs (taches/besoins), 3 pains (frustrations), 3 gains (benefices attendus). Cote offre : pain relievers, gain creators, produits/services. Termine par 1 phrase de proposition de valeur.',
+          fields: [
+            { name: 'vpClient', label: 'Profil client (jobs / pains / gains)', rows: 3, placeholder: 'Jobs : ...\nPains : ...\nGains : ...' },
+            { name: 'vpOffer', label: 'Offre (pain relievers / gain creators / produits)', rows: 3, placeholder: 'Pain relievers : ...\nGain creators : ...\nProduits : ...' },
+            { name: 'vpStatement', label: 'Proposition de valeur (1 phrase)', placeholder: 'Nous aidons [cible] a [job] en [benefice] sans [pain].' }
+          ]
+        },
+        {
+          id: 'segmentation',
+          title: 'Segmentation & ciblage',
+          desc: '3-4 segments + choix de la cible prioritaire',
+          aiTool: 'ChatGPT / Perplexity',
+          prompt: 'Segmente le marche de "{theme}" en 3-4 segments (criteres demographiques, comportementaux, besoins). Pour chacun : taille/attractivite et accessibilite. Recommande la cible prioritaire avec justification.',
+          fields: [
+            { name: 'segSegments', label: '3-4 segments (criteres + attractivite)', rows: 4, placeholder: '1. Segment ... — critere ... — attractivite ...' },
+            { name: 'segTarget', label: 'Cible prioritaire + justification', rows: 2, placeholder: 'On cible ... parce que ...' }
+          ]
+        },
+        {
+          id: 'objectives-okr',
+          title: 'Objectifs SMART / OKR',
+          desc: 'Objectifs par etage de funnel + KPIs chiffres',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Definis les objectifs marketing de "{theme}" par etage de funnel (notoriete, acquisition, conversion, retention). Formule-les en SMART (chiffres + echeance) et propose 1-2 OKR (Objective + 3 Key Results).',
+          fields: [
+            { name: 'okrObjectives', label: 'Objectifs SMART par etage', rows: 4, placeholder: 'Notoriete : ... / Acquisition : ... / Conversion : ... / Retention : ...' },
+            { name: 'okrKrs', label: 'OKR (Objective + Key Results)', rows: 3, placeholder: 'O : ... | KR1 : ... | KR2 : ... | KR3 : ...' }
+          ]
+        },
+        {
+          id: 'customer-journey',
+          title: 'Parcours client (journey map)',
+          desc: 'Awareness -> advocacy : emotions, touchpoints, frictions',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Cartographie le parcours client de "{theme}" pour [persona] en 5 etapes (awareness, consideration, purchase, retention, advocacy). Pour chaque etape : etat d\'esprit/emotion, points de contact, frictions, et 1 opportunite d\'amelioration (idealement avec l\'IA).',
+          fields: [
+            { name: 'journeySteps', label: 'Les 5 etapes (emotion + touchpoints + friction)', rows: 5, placeholder: 'Awareness : emotion ... touchpoints ... friction ...\nConsideration : ...' },
+            { name: 'journeyOps', label: 'Opportunites d\'amelioration (IA)', rows: 2, placeholder: '1. ... 2. ...' }
+          ]
+        },
+        {
+          id: 'positioning-statement',
+          title: 'Enonce de positionnement',
+          desc: 'Formule de positionnement + carte perceptuelle',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Redige l\'enonce de positionnement de "{theme}" avec la formule : "Pour [cible] qui [besoin], [marque] est [categorie] qui [benefice cle], car [preuve/RTB]." Propose aussi 2 axes pour une carte perceptuelle et place la marque + 3 concurrents.',
+          fields: [
+            { name: 'posStatement', label: 'Enonce de positionnement', rows: 3, placeholder: 'Pour ... qui ..., [marque] est ... qui ..., car ...' },
+            { name: 'posMap', label: 'Carte perceptuelle (2 axes + placement)', rows: 2, placeholder: 'Axe X : ... / Axe Y : ... — Nous : ... vs concurrents : ...' }
+          ]
         }
       ]
     },
@@ -270,11 +350,11 @@
         {
           id: 'logo',
           title: 'Logo & univers visuel',
-          desc: 'Generez votre logo avec Midjourney/DALL-E et definissez la palette',
-          aiTool: 'Midjourney / DALL-E / Canva',
+          desc: 'Generez votre logo avec FLUX/Ideogram et definissez la palette',
+          aiTool: 'FLUX (HF) / Ideogram / Canva',
           prompt: 'Logo design for "{theme}" brand. Modern, minimal, [3 mots cles]. Style : flat design, vector, single color on white. --ar 1:1 --v 6',
           fields: [
-            { name: 'logoPrompt', label: 'Prompt Midjourney/DALL-E utilise', rows: 3, placeholder: 'Collez votre prompt final ici...' },
+            { name: 'logoPrompt', label: 'Prompt image utilise (FLUX/Ideogram)', rows: 3, placeholder: 'Collez votre prompt final ici...' },
             { name: 'palette', label: 'Palette de couleurs (3-5 hex)', placeholder: 'Ex: #2D5F3F, #F4E5BC, #D4624A' },
             { name: 'typography', label: 'Typographie principale', placeholder: 'Ex: Montserrat Bold pour titres, Open Sans pour texte' }
           ]
@@ -295,7 +375,7 @@
           id: 'art-direction',
           title: 'Direction artistique / moodboard',
           desc: 'Definissez l\'univers visuel puis generez un moodboard',
-          aiTool: 'FLUX (HF) / Midjourney',
+          aiTool: 'FLUX (HF) / Leonardo.ai',
           prompt: 'Moodboard for "{theme}" brand. Visual style: [3 adjectifs charte], color palette [palette hex], lighting (warm/natural), textures, art direction references, mood. Cohesive, modern. --ar 16:9',
           fields: [
             { name: 'artStyle', label: 'Direction artistique (style, lumiere, references)', rows: 3, placeholder: 'Style : bold pop / flat-lay ; lumiere chaude ; accents dessines a la main ; references...' },
@@ -306,7 +386,7 @@
           id: 'packaging-main',
           title: 'Packaging produit (mockup principal)',
           desc: 'Generez le mockup du packaging du produit phare',
-          aiTool: 'FLUX (HF) / Midjourney',
+          aiTool: 'FLUX (HF) / Leonardo.ai',
           prompt: 'Product packaging mockup for "{theme}", [type de contenant], brand colors [palette], big wordmark "{name}", premium yet [ton charte]. Studio shot, soft light, appetizing. --ar 4:5',
           fields: [
             { name: 'packagingConcept', label: 'Concept packaging (forme, codes, message au dos)', rows: 2, placeholder: 'Brique collector rouge/creme, gros wordmark, picto, punchline au dos...' },
@@ -334,6 +414,78 @@
             { name: 'templatesConcept', label: 'Concept templates (format, elements recurrents)', rows: 2, placeholder: 'Bandeau couleur, zone titre, picto, espace produit...' },
             { name: 'templatesPrompt', label: 'Prompt / liens des templates', rows: 2, placeholder: 'Collez prompts ou liens des visuels generes...' }
           ]
+        },
+        {
+          id: 'brand-archetype',
+          title: 'Archetype de marque',
+          desc: 'Archetype principal + secondaire (parmi les 12 de Jung)',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Choisis l\'archetype de marque de "{theme}" parmi les 12 de Jung (Innocent, Sage, Explorateur, Hors-la-loi, Magicien, Heros, Amoureux, Bouffon, Monsieur-tout-le-monde, Soignant, Createur, Souverain). Donne 1 archetype principal + 1 secondaire, leurs traits, le ton de voix, 2 marques de reference, et les implications creatives (couleurs, typo, style de copy).',
+          fields: [
+            { name: 'archMain', label: 'Archetype principal + secondaire', placeholder: 'Ex: Le Bouffon (principal) + Le Createur (secondaire)' },
+            { name: 'archTraits', label: 'Traits, ton, marques de reference', rows: 3, placeholder: 'Traits : ... / Ton : ... / Marques : ...' },
+            { name: 'archImplications', label: 'Implications creatives (couleur/typo/copy)', rows: 2, placeholder: 'Couleurs : ... / Typo : ... / Copy : ...' }
+          ]
+        },
+        {
+          id: 'brand-story',
+          title: 'Storytelling / manifeste de marque',
+          desc: 'Recit fondateur, ennemi, golden circle, manifeste',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Ecris le storytelling de marque de "{theme}" : 1) recit fondateur (origine, declic), 2) l\'ennemi que la marque combat, 3) le golden circle (why / how / what), 4) un manifeste de marque de 100-150 mots, percutant et incarnant le ton.',
+          fields: [
+            { name: 'storyOrigin', label: 'Recit fondateur + ennemi', rows: 3, placeholder: 'Origine : ... / Declic : ... / Ennemi : ...' },
+            { name: 'storyGolden', label: 'Golden circle (why / how / what)', rows: 2, placeholder: 'Why : ... / How : ... / What : ...' },
+            { name: 'storyManifesto', label: 'Manifeste de marque (100-150 mots)', rows: 4, placeholder: 'Nous croyons que ...' }
+          ]
+        },
+        {
+          id: 'tagline-system',
+          title: 'Systeme de slogans',
+          desc: 'Tagline principale + variantes par canal',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Cree le systeme de slogans de "{theme}" (ton [adjectifs charte]) : 1 tagline principale (signature de marque) + 3-5 variantes selon l\'usage (pub courte, packaging, reseaux, accroche site). Ajoute les regles d\'emploi (quand utiliser quoi).',
+          fields: [
+            { name: 'taglineMain', label: 'Tagline principale', placeholder: 'Ex: "La tomate qui a du peps."' },
+            { name: 'taglineVariants', label: '3-5 variantes par usage', rows: 3, placeholder: 'Pub : ... / Packaging : ... / Reseaux : ... / Site : ...' },
+            { name: 'taglineRules', label: 'Regles d\'emploi', rows: 2, placeholder: 'Quand utiliser la principale vs les variantes...' }
+          ]
+        },
+        {
+          id: 'iconography',
+          title: 'Iconographie / systeme de pictos',
+          desc: 'Style des icones + set de 8-12 pictos cles',
+          aiTool: 'Recraft / FLUX (HF)',
+          prompt: 'Set of brand icons / pictograms for "{theme}", consistent line style, [palette], rounded, friendly, flat vector, same grid and stroke. 8-12 key icons (livraison, qualite, eco, communaute...).',
+          fields: [
+            { name: 'iconStyle', label: 'Style des icones (trait, grille, regles)', rows: 2, placeholder: 'Style : ligne 2px arrondie, grille 24px, couleur unique...' },
+            { name: 'iconSet', label: 'Liste des 8-12 pictos cles', rows: 2, placeholder: '1. livraison 2. qualite 3. eco 4. communaute ...' },
+            { name: 'iconPrompt', label: 'Prompt / liens des pictos generes', rows: 2, placeholder: 'Collez prompts ou liens...' }
+          ]
+        },
+        {
+          id: 'photo-style',
+          title: 'Style photo / illustration',
+          desc: 'Direction imagee : sujets, lumiere, couleurs, do/don\'t',
+          aiTool: 'Stable Diffusion 3.5 (HF) / FLUX (HF)',
+          prompt: 'Photography / illustration style guide for "{theme}": subjects, framing, lighting, color grading, mood, do and don\'t. Generate 3 reference visuals that exemplify the style. [palette], [3 adjectifs charte].',
+          fields: [
+            { name: 'photoDirection', label: 'Direction imagee (sujets, cadrage, lumiere, couleurs)', rows: 3, placeholder: 'Sujets : ... / Cadrage : ... / Lumiere : ... / Couleurs : ...' },
+            { name: 'photoDoDont', label: 'Do / Don\'t images', rows: 2, placeholder: 'YES : lumiere chaude, gros plans... / NO : fonds gris, stock photo...' },
+            { name: 'photoPrompt', label: 'Prompt / liens des 3 visuels de reference', rows: 2, placeholder: 'Collez prompts ou liens...' }
+          ]
+        },
+        {
+          id: 'brand-applications',
+          title: 'Applications de marque',
+          desc: 'Papeterie, merch, signature mail, avatars reseaux',
+          aiTool: 'Canva / FLUX (HF) / Mockey.ai',
+          prompt: 'Decline l\'identite de "{theme}" sur ses applications : carte de visite, signature email, merch (tote bag, t-shirt, sticker), avatar + banniere pour les reseaux. Donne le concept de chaque application + genere les mockups.',
+          fields: [
+            { name: 'appStationery', label: 'Papeterie (carte de visite, signature mail)', rows: 2, placeholder: 'Carte : ... / Signature : ...' },
+            { name: 'appMerch', label: 'Merch (tote, t-shirt, sticker)', rows: 2, placeholder: 'Tote : ... / T-shirt : ... / Sticker : ...' },
+            { name: 'appSocial', label: 'Avatars & bannieres reseaux + liens mockups', rows: 2, placeholder: 'Avatar : ... / Banniere : ... / liens : ...' }
+          ]
         }
       ]
     },
@@ -347,7 +499,7 @@
           id: 'ad-visuals',
           title: 'Visuels publicitaires (3 formats)',
           desc: 'Generez 3 visuels pour Instagram, LinkedIn et display avec l\'IA',
-          aiTool: 'Midjourney / DALL-E / Adobe Firefly',
+          aiTool: 'Stable Diffusion 3.5 (HF) / FLUX (HF)',
           prompt: 'Hero shot for "{theme}" campaign. [Persona] using product in [lieu/contexte]. Mood : [3 adjectifs]. Photography style, natural light, --ar 4:5 (Instagram) / --ar 16:9 (LinkedIn) / --ar 1.91:1 (Display)',
           fields: [
             { name: 'visualConcept', label: 'Concept creatif central', rows: 2, placeholder: 'Quelle scene, quelle emotion, quel message principal...' },
@@ -761,6 +913,22 @@
     if (allText.indexOf(':') === -1) tips.push('Utiliser des libelles (ex. "Objectif : ...").');
     return { score: scoreBrick(step, data), tips: tips };
   }
+  // Badge de statut d'acces d'un outil (gratuit / compte / essai) d'apres window.AIA.TOOL_ACCESS (par domaine).
+  function toolAccessBadge(url) {
+    try {
+      var TA = (window.AIA && window.AIA.TOOL_ACCESS) || {};
+      var host = '';
+      try { host = new URL(url).hostname.replace(/^www\./, ''); } catch (e) { host = ''; }
+      if (/\.hf\.space$/.test(host)) host = 'huggingface.co'; // les Spaces -> compte HF
+      var info = TA[host];
+      if (!info) { for (var k in TA) { if (url.indexOf(k) > -1) { info = TA[k]; break; } } }
+      if (!info || !info.access) return '';
+      var m = { free: ['🆓', 'Gratuit'], account: ['🔑', 'Compte gratuit'], trial: ['🎁', 'Essai gratuit'], paid: ['💳', 'Payant'] };
+      var b = m[info.access]; if (!b) return '';
+      return '<span class="tool-access-badge" title="' + escapeHtml(info.note || '') + '" style="font-size:.66rem;font-weight:700;margin-left:.25rem;padding:.02rem .3rem;border-radius:5px;background:rgba(255,255,255,0.08);white-space:nowrap">' + b[0] + ' ' + b[1] + '</span>';
+    } catch (e) { return ''; }
+  }
+
   function renderBusinessGame(main) {
     var AIA = window.AIA;
     var st = AIA.getState();
@@ -896,16 +1064,17 @@
           var _meta = STEP_META[step.id] || {};
           var expectedHtml = _meta.expected ? '<div class="game-step-expected" style="background:rgba(245,183,49,0.08);border-left:3px solid var(--gold);padding:.5rem .7rem;border-radius:8px;margin:.5rem 0;font-size:.84rem"><strong>&#127919; Attendu :</strong> ' + escapeHtml(_meta.expected) + '</div>' : '';
           var techHtml = (_meta.tech || []).map(function (t) {
-            if (t.kind === 'hf') return '<button class="btn-outline btn-xs btn-test-tech" data-url="' + t.url + '" data-label="' + escapeHtml(t.label) + '">&#129514; Tester : ' + escapeHtml(t.label) + '</button>';
-            return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">&#129514; ' + escapeHtml(t.label) + ' &#8599;</a>';
-          }).join('');
+            var badge = toolAccessBadge(t.url);
+            if (t.kind === 'hf') return '<button class="btn-outline btn-xs btn-test-tech" data-url="' + t.url + '" data-label="' + escapeHtml(t.label) + '">&#129514; Tester : ' + escapeHtml(t.label) + '</button>' + badge;
+            return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">&#129514; ' + escapeHtml(t.label) + ' &#8599;</a>' + badge;
+          }).join(' ');
           // Guide enrichi (outil gratuit + checklist "avoir tout" + pas-a-pas + prompt exemple)
           var _guide = (window.AIA.STEP_GUIDE && window.AIA.STEP_GUIDE[step.id]) || null;
           var guideHtml = '';
           if (_guide) {
             var _ft = _guide.freeTool || null;
-            var ftBtn = _ft ? '<a class="btn-primary btn-xs" href="' + _ft.url + '" target="_blank" rel="noopener">🆓 ' + escapeHtml(_ft.label) + ' ↗</a>' + (_ft.why ? ' <span style="font-size:.8rem;color:var(--text-muted)">' + escapeHtml(_ft.why) + '</span>' : '') : '';
-            var altBtns = (_guide.altTools || []).map(function (t) { return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">' + escapeHtml(t.label) + ' ↗</a>'; }).join(' ');
+            var ftBtn = _ft ? '<a class="btn-primary btn-xs" href="' + _ft.url + '" target="_blank" rel="noopener">🆓 ' + escapeHtml(_ft.label) + ' ↗</a>' + toolAccessBadge(_ft.url) + (_ft.why ? ' <span style="font-size:.8rem;color:var(--text-muted)">' + escapeHtml(_ft.why) + '</span>' : '') : '';
+            var altBtns = (_guide.altTools || []).map(function (t) { return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">' + escapeHtml(t.label) + ' ↗</a>' + toolAccessBadge(t.url); }).join(' ');
             var clHtml = (_guide.checklist || []).map(function (c) { return '<li>' + escapeHtml(c) + '</li>'; }).join('');
             var gsHtml = (_guide.guide || []).map(function (g) { return '<li>' + escapeHtml(g) + '</li>'; }).join('');
             var pex = _guide.promptExample ? '<div style="margin:.4rem 0"><strong>📝 Prompt exemple :</strong><div class="game-step-prompt-text" style="margin:.2rem 0">' + escapeHtml(_guide.promptExample) + '</div><button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(_guide.promptExample) + '">📋 Copier ce prompt</button></div>' : '';
@@ -1045,7 +1214,8 @@
     main.querySelectorAll('.btn-test-tech').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var url = this.getAttribute('data-url'), label = this.getAttribute('data-label') || 'Demo';
-        if (AIA.openIframeModal) AIA.openIframeModal(url, label);
+        if (AIA.openHfDemo) AIA.openHfDemo(url, label); // demos HF : banniere login + apercu + ouvrir onglet
+        else if (AIA.openIframeModal) AIA.openIframeModal(url, label);
         else window.open(url, '_blank', 'noopener');
       });
     });
