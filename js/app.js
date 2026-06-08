@@ -1453,9 +1453,15 @@
       var items=rankItems(rank);if(!items.length)return'';
       return' <span class="rank-items" title="Items RPG rang '+rank+'">'+items.map(function(it){return ITEM_ICONS[it]||'';}).join('')+'</span>';
     }
-    var medals=['🥈','🥇','🥉'],order=[1,0,2],podH='';
+    // Couronne or/argent/bronze selon le RANG reel (1=or, 2=argent, 3=bronze) — corrige l'ancien mapping inverse
+    function crownFor(rk){
+      var st={1:'filter:drop-shadow(0 0 6px #FFD700) saturate(1.3)',2:'filter:grayscale(1) brightness(1.5) drop-shadow(0 0 6px #C0C0C0)',3:'filter:sepia(1) saturate(2.4) hue-rotate(-18deg) brightness(0.92) drop-shadow(0 0 6px #CD7F32)'};
+      var lbl={1:'1re place — couronne d\'or',2:'2e place — couronne d\'argent',3:'3e place — couronne de bronze'};
+      return '<span class="lb-crown" title="'+(lbl[rk]||'')+'" style="font-size:1.7rem;display:inline-block;line-height:1;'+(st[rk]||'')+'">👑</span>';
+    }
+    var order=[1,0,2],podH='';
     order.forEach(function(idx){var s=students[idx];if(!s)return;var rk=idx+1;/* rank = sorted position +1 */
-      podH+='<div class="podium-item'+(s.isMe?' is-me':'')+'"><div class="rank">'+medals[idx]+'</div>'+
+      podH+='<div class="podium-item'+(s.isMe?' is-me':'')+'"><div class="rank">'+crownFor(rk)+'</div>'+
         '<div class="avatar-small">'+(s.isMe?'⭐':'👤')+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div>'+
         '<div class="xp">'+s.xp+' XP</div>'+(s.streak>1?'<div style="font-size:0.7rem">🔥 '+s.streak+'j</div>':'')+
         '<div class="podium-bar"></div></div>';});
