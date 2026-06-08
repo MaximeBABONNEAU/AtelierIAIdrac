@@ -899,6 +899,24 @@
             if (t.kind === 'hf') return '<button class="btn-outline btn-xs btn-test-tech" data-url="' + t.url + '" data-label="' + escapeHtml(t.label) + '">&#129514; Tester : ' + escapeHtml(t.label) + '</button>';
             return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">&#129514; ' + escapeHtml(t.label) + ' &#8599;</a>';
           }).join('');
+          // Guide enrichi (outil gratuit + checklist "avoir tout" + pas-a-pas + prompt exemple)
+          var _guide = (window.AIA.STEP_GUIDE && window.AIA.STEP_GUIDE[step.id]) || null;
+          var guideHtml = '';
+          if (_guide) {
+            var _ft = _guide.freeTool || null;
+            var ftBtn = _ft ? '<a class="btn-primary btn-xs" href="' + _ft.url + '" target="_blank" rel="noopener">🆓 ' + escapeHtml(_ft.label) + ' ↗</a>' + (_ft.why ? ' <span style="font-size:.8rem;color:var(--text-muted)">' + escapeHtml(_ft.why) + '</span>' : '') : '';
+            var altBtns = (_guide.altTools || []).map(function (t) { return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">' + escapeHtml(t.label) + ' ↗</a>'; }).join(' ');
+            var clHtml = (_guide.checklist || []).map(function (c) { return '<li>' + escapeHtml(c) + '</li>'; }).join('');
+            var gsHtml = (_guide.guide || []).map(function (g) { return '<li>' + escapeHtml(g) + '</li>'; }).join('');
+            var pex = _guide.promptExample ? '<div style="margin:.4rem 0"><strong>📝 Prompt exemple :</strong><div class="game-step-prompt-text" style="margin:.2rem 0">' + escapeHtml(_guide.promptExample) + '</div><button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(_guide.promptExample) + '">📋 Copier ce prompt</button></div>' : '';
+            guideHtml = '<details class="game-step-guide" style="margin:.5rem 0;border:1px solid var(--border-glass);border-radius:10px;padding:.4rem .8rem;background:rgba(46,204,113,0.05)">' +
+              '<summary style="cursor:pointer;font-weight:700">📚 Guide complet + outil IA gratuit — tout ce qu\'il faut produire</summary>' +
+              (ftBtn ? '<div style="margin:.5rem 0"><strong>🆓 Outil gratuit recommande :</strong><div style="margin:.25rem 0">' + ftBtn + '</div>' + (altBtns ? '<div style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Alternatives gratuites : ' + altBtns + '</div>' : '') + '</div>' : '') +
+              (clHtml ? '<div style="margin:.4rem 0"><strong>✅ A produire (avoir TOUT) :</strong><ul style="margin:.2rem 0 .2rem 1.1rem;font-size:.83rem">' + clHtml + '</ul></div>' : '') +
+              (gsHtml ? '<div style="margin:.4rem 0"><strong>🧭 Pas a pas avec l\'outil :</strong><ol style="margin:.2rem 0 .2rem 0;font-size:.83rem;list-style:none;padding-left:.2rem">' + gsHtml + '</ol></div>' : '') +
+              pex +
+              '</details>';
+          }
           var headerHtml = '<div class="game-step-header">' +
             '<div class="game-step-checkbox">' + statusIcon + '</div>' +
             '<div class="game-step-title"><h4>Etape ' + (sIdx + 1) + ' : ' + step.title + '</h4><p>' + step.desc + '</p></div>' +
@@ -921,6 +939,7 @@
             '<div class="game-step-body" style="display:' + (done ? 'none' : 'block') + '">' +
             '<div class="game-step-tool">🛠️ <strong>Outil suggere :</strong> ' + step.aiTool + '</div>' +
             expectedHtml +
+            guideHtml +
             '<details class="game-step-method"><summary>🧭 Methode guidee en 4 etapes</summary>' +
             '<ol class="game-method-list">' +
             '<li><strong>Recherche</strong> : reunis les infos cles sur ' + escapeHtml(theme.name) + ' (cible, concurrents, chiffres).</li>' +
