@@ -25,9 +25,9 @@
       desc: 'Outil gratuit pour creer un buyer persona complet en 7 etapes.', duration: '20 min', level: 'debutant' },
 
     // ===== DAY 2 — Visuel & Marque =====
-    { id: 'r6', day: 2, theme: 'image-ia', type: 'video', title: 'Comparatif Midjourney vs DALL-E vs Flux',
-      url: 'https://www.youtube.com/results?search_query=midjourney+vs+dalle+vs+flux+2025',
-      desc: 'Analyse comparative des principaux generateurs d\'image en 2025.', duration: '15 min', level: 'tous' },
+    { id: 'r6', day: 2, theme: 'image-ia', type: 'video', title: 'Midjourney — guide ultime pour debutants',
+      url: 'https://www.youtube.com/watch?v=k3t3S9V3OlQ', videoId: 'k3t3S9V3OlQ',
+      desc: 'Tour complet de Midjourney pour generer vos premiers visuels marketing.', duration: '25 min', level: 'tous' },
     { id: 'r7', day: 2, theme: 'image-ia', type: 'tool', title: 'Midjourney Prompt Helper',
       url: 'https://prompt.noonshot.com/midjourney',
       desc: 'Builder de prompts visuel : styles, eclairages, compositions.', duration: '10 min', level: 'debutant' },
@@ -143,7 +143,10 @@
           '<span class="resource-duration">⏱️ ' + r.duration + '</span>' +
           '<span class="resource-theme">#' + r.theme + '</span>' +
           '</div>' +
-          '<a href="' + r.url + '" target="_blank" rel="noopener noreferrer" class="btn-primary resource-open" data-res-id="' + r.id + '">Ouvrir →</a>' +
+          (r.type === 'video'
+            ? '<button class="btn-primary resource-open" data-res-id="' + r.id + '" data-embed="video" data-video="' + (r.videoId || '') + '" data-title="' + escapeHtml(r.title) + '">▶ Lire ici</button>'
+            : '<button class="btn-primary resource-open" data-res-id="' + r.id + '" data-embed="iframe" data-url="' + escapeHtml(r.url) + '" data-title="' + escapeHtml(r.title) + '">👁️ Aperçu intégré</button>') +
+          '<a href="' + r.url + '" target="_blank" rel="noopener noreferrer" class="resource-ext-link" data-res-id="' + r.id + '" style="display:inline-block;margin-top:.4rem;font-size:.72rem;color:var(--text-muted,#9aa);text-decoration:none">↗ Ouvrir dans un onglet</a>' +
           '</div>';
       }).join('') +
       '</div>';
@@ -167,6 +170,13 @@
     main.querySelectorAll('.resource-open').forEach(function (link) {
       link.addEventListener('click', function () {
         var id = this.getAttribute('data-res-id');
+        var embed = this.getAttribute('data-embed');
+        var title = this.getAttribute('data-title') || '';
+        if (embed === 'video' && AIA.openVideoModal && this.getAttribute('data-video')) {
+          AIA.openVideoModal(this.getAttribute('data-video'), title);
+        } else if (embed === 'iframe' && AIA.openIframeModal) {
+          AIA.openIframeModal(this.getAttribute('data-url'), title);
+        }
         markViewed(id);
         var card = this.closest('.resource-card');
         if (card && !card.classList.contains('viewed')) {

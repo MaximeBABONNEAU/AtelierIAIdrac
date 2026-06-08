@@ -379,6 +379,11 @@
         '</div>';
     }
 
+    // Videos du cours embarquees (modale au clic)
+    if (AIA.renderActivityVideos) {
+      html += AIA.renderActivityVideos(actId);
+    }
+
     if (content && content.slides) {
       html += '<div class="course-content">';
       content.slides.forEach(function(slide, idx) {
