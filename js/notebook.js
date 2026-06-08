@@ -34,6 +34,16 @@
     var cd = s.campaignData || {}, gv = s.gameValidation || {};
     var bc = brickCounts(s, PG);
     var badges = s.badges || [];
+    var SM = A.STEP_META || {}, ATL = A.ASSET_TYPE_LABELS || {};
+    // Recap par type d'asset (mise en forme auto du projet)
+    var typeCounts = {};
+    Object.keys(PG).forEach(function (pk) {
+      PG[pk].steps.forEach(function (stp) {
+        var m = SM[stp.id] || {}; if (!m.type) return;
+        var has = stp.fields.some(function (f) { return ((cd[stp.id] || {})[f.name] || '').trim(); });
+        if (has) typeCounts[m.type] = (typeCounts[m.type] || 0) + 1;
+      });
+    });
 
     var html = '<div class="nb-cover">' +
       '<div class="nb-cover-emoji">' + theme.emoji + '</div>' +
@@ -48,6 +58,14 @@
       '<div class="nb-stat"><b>' + bc.done + '/' + bc.total + '</b><span>Livrables</span></div>' +
       '<div class="nb-stat"><b>' + badges.length + '</b><span>Badges</span></div></div>';
 
+    // Recap visuel par type d'asset produit
+    var tcKeys = Object.keys(typeCounts);
+    if (tcKeys.length) {
+      html += '<div class="nb-type-recap" style="display:flex;flex-wrap:wrap;gap:.4rem;margin:.2rem 0 1rem">' +
+        tcKeys.map(function (k) { return '<span style="background:rgba(255,255,255,0.05);border:1px solid var(--border-glass);border-radius:999px;padding:.2rem .7rem;font-size:.8rem">' + (ATL[k] || k) + ' &times; ' + typeCounts[k] + '</span>'; }).join('') +
+        '</div>';
+    }
+
     // Livrables par phase (contenu reel)
     Object.keys(PG).forEach(function (pk) {
       var ph = PG[pk];
@@ -58,7 +76,11 @@
         var badge = (v.score != null)
           ? '<span class="nb-score sc-' + scClass(v.score) + '">' + v.score + '/100</span>'
           : (hasContent ? '<span class="nb-badge draft">brouillon</span>' : '<span class="nb-badge empty">non rempli</span>');
-        html += '<div class="nb-brick"><div class="nb-brick-head"><h4>' + esc(step.title) + '</h4>' + badge + '</div>';
+        var smeta = SM[step.id] || {};
+        var typeChip = smeta.type && ATL[smeta.type] ? '<span class="nb-type-chip" style="font-size:.72rem;font-weight:600;background:rgba(255,255,255,0.06);border:1px solid var(--border-glass);border-radius:6px;padding:.05rem .4rem;margin-left:.4rem;vertical-align:middle">' + ATL[smeta.type] + '</span>' : '';
+        var solution = (smeta.tech || []).map(function (t) { return t.label; }).join(' · ');
+        html += '<div class="nb-brick"><div class="nb-brick-head"><h4>' + esc(step.title) + typeChip + '</h4>' + badge + '</div>';
+        if (solution) html += '<div class="nb-solution" style="font-size:.78rem;color:var(--text-muted);margin:-.2rem 0 .4rem">🛠️ Solution envisagee : ' + esc(solution) + '</div>';
         step.fields.forEach(function (f) {
           var val = (data[f.name] || '').trim();
           if (val) html += '<div class="nb-field"><div class="nb-flabel">' + esc(f.label) + '</div><div class="nb-fval">' + nl2br(val) + '</div></div>';

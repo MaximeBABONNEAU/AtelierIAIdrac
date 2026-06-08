@@ -126,19 +126,45 @@
 
   /* ============ META PAR ETAPE : attendu concret + technos recommandees (HF / LLM) ============ */
   // kind 'hf' -> ouvre la demo HuggingFace en modale (window.AIA.openIframeModal) ; 'llm' -> lien externe.
+  // type : strategy | image | audio | video | copy | web | deck  (sert au formatage auto du Notebook)
+  var ASSET_TYPE_LABELS = { strategy: '🧭 Stratégie', image: '🎨 Image', audio: '🔊 Audio', video: '🎬 Vidéo', copy: '✍️ Copy', web: '🌐 Web', deck: '📊 Deck' };
+  var LLM_CHATGPT = { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' };
+  var LLM_CLAUDE = { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' };
+  var HF_FLUX = { label: 'FLUX (HuggingFace)', kind: 'hf', url: 'https://black-forest-labs-flux-1-schnell.hf.space' };
+  var HF_SD35 = { label: 'Stable Diffusion 3.5 (HF)', kind: 'hf', url: 'https://stabilityai-stable-diffusion-3-5-large.hf.space' };
   var STEP_META = {
-    'product-idea':   { expected: 'Un concept clair en 50-100 mots + 3 axes de differenciation concrets. On doit comprendre QUOI, POUR QUI, et POURQUOI c\'est unique.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
-    'target-persona': { expected: '1 persona incarne : prenom + age + metier, 3 motivations, 3 freins, canaux ou il s\'informe. Evite les generalites ("jeunes actifs").', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
-    'market-analysis':{ expected: '3 concurrents (forces/faiblesses) + 3 tendances cles + 1 phrase de positionnement differenciant.', tech: [ { label: 'Perplexity', kind: 'llm', url: 'https://www.perplexity.ai/' }, { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' } ] },
-    'brand-name':     { expected: '1 nom final court + baseline 5-8 mots + justification. Prononcable, evocateur, .com plausible.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Namelix', kind: 'llm', url: 'https://namelix.com/' } ] },
-    'logo':           { expected: '1 prompt de logo abouti + palette 3-5 couleurs (hex) + typo. Genere plusieurs variantes, garde la meilleure.', tech: [ { label: 'FLUX (HuggingFace)', kind: 'hf', url: 'https://black-forest-labs-flux-1-schnell.hf.space' }, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
-    'brand-guide':    { expected: '3 valeurs + 5 adjectifs de ton + mots YES/NO. Doit guider concretement la redaction de tous les textes.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
-    'ad-visuals':     { expected: '1 concept creatif + prompts pour 3 formats (IG 4:5 / LinkedIn 16:9 / Display) coherents (meme ambiance).', tech: [ { label: 'Stable Diffusion 3.5 (HF)', kind: 'hf', url: 'https://stabilityai-stable-diffusion-3-5-large.hf.space' }, { label: 'FLUX (HF)', kind: 'hf', url: 'https://black-forest-labs-flux-1-schnell.hf.space' } ] },
-    'copy':           { expected: '3 headlines + 1 body de 50-80 mots + 1 CTA principal. Mettre les benefices avant les features.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
-    'media-plan':     { expected: 'Repartition du budget par canal (%/EUR) + KPIs chiffres + calendrier 4-6 semaines.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
-    'landing-page':   { expected: 'Structure de page (hero > preuve > features > pricing > FAQ > CTA) avec contenu suggere par section.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Framer', kind: 'llm', url: 'https://www.framer.com/' } ] },
-    'pitch-video':    { expected: 'Script 60s structure (hook / probleme / solution / preuve / CTA), 8-10 phrases pretes a filmer.', tech: [ { label: 'HeyGen', kind: 'llm', url: 'https://www.heygen.com/' }, { label: 'ElevenLabs', kind: 'llm', url: 'https://elevenlabs.io/' } ] },
-    'final-deck':     { expected: 'Plan des 10 slides (couverture > ... > demande), 1 ligne de contenu par slide.', tech: [ { label: 'Gamma', kind: 'llm', url: 'https://gamma.app/' }, { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' } ] }
+    // --- Phase 1 : Strategie ---
+    'product-idea':    { type: 'strategy', expected: 'Un concept clair en 50-100 mots + 3 axes de differenciation concrets. On doit comprendre QUOI, POUR QUI, et POURQUOI c\'est unique.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'consumer-insight':{ type: 'strategy', expected: '1 insight consommateur fort (verbatim a la 1ere personne) + 3 tensions a resoudre (envie vs frein).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'target-persona':  { type: 'strategy', expected: '1 persona incarne : prenom + age + metier, 3 motivations, 3 freins, canaux ou il s\'informe. Evite les generalites ("jeunes actifs").', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'market-analysis': { type: 'strategy', expected: '3 concurrents (forces/faiblesses) + 3 tendances cles + 1 phrase de positionnement differenciant + 1 carte de positionnement.', tech: [ { label: 'Perplexity', kind: 'llm', url: 'https://www.perplexity.ai/' }, LLM_CHATGPT ] },
+    'brand-platform':  { type: 'strategy', expected: 'Mission, vision, promesse (1 phrase), raison d\'y croire (RTB), ennemi de marque, 5 traits de personnalite.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'marketing-mix':   { type: 'strategy', expected: 'Les 4P : Product (coeur + 2 extensions), Price (positionnement + mecaniques), Place (3 vagues), Promotion (canaux cles).', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    // --- Phase 2 : Identite & branding ---
+    'brand-name':      { type: 'strategy', expected: '1 nom final court + baseline 5-8 mots + justification. Prononcable, evocateur, .com plausible.', tech: [ LLM_CHATGPT, { label: 'Namelix', kind: 'llm', url: 'https://namelix.com/' } ] },
+    'logo':            { type: 'image', expected: '1 prompt de logo abouti + 3 variantes generees + palette 3-5 couleurs (hex) + typo.', tech: [ HF_FLUX, { label: 'Ideogram (texte)', kind: 'llm', url: 'https://ideogram.ai/' }, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'brand-guide':     { type: 'strategy', expected: '3 valeurs + 5 adjectifs de ton + mots YES/NO + 2 exemples Do/Don\'t. Doit guider la redaction de tous les textes.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'art-direction':   { type: 'image', expected: 'Direction artistique : 3 adjectifs de style, references, lumiere, textures + 1 moodboard genere.', tech: [ HF_FLUX, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'packaging-main':  { type: 'image', expected: '1 concept de packaging du produit phare + mockup studio genere (contenant, couleurs, wordmark).', tech: [ HF_FLUX, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'packaging-range': { type: 'image', expected: '2-3 variantes de gamme coherentes (codes couleur/saveur) + visuel des SKU cote a cote.', tech: [ HF_FLUX, HF_SD35 ] },
+    'social-templates':{ type: 'image', expected: 'Template Story 9:16 + banniere 16:9 + sticker/picto, palette de marque, typo ronde. Reutilisables.', tech: [ HF_FLUX, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' } ] },
+    // --- Phase 3 : Contenus & assets ---
+    'ad-visuals':      { type: 'image', expected: '1 concept creatif + 3 visuels generes (IG 4:5 / LinkedIn 16:9 / Display 1.91:1) coherents.', tech: [ HF_SD35, HF_FLUX ] },
+    'copy':            { type: 'copy', expected: '3 headlines + 1 body de 50-80 mots + 1 CTA principal. Benefices avant features.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'social-content':  { type: 'copy', expected: '5 captions IG + 5 hooks TikTok (3 premieres sec) + 5 posts X + 5 microcopies UI, au ton de la charte.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'jingle':          { type: 'audio', expected: '1 brief de jingle (ambiance, tempo, instruments, voix) + jingle 10-15s + sonic logo 2s generes (lien).', tech: [ { label: 'Suno', kind: 'llm', url: 'https://suno.com/' }, { label: 'Udio', kind: 'llm', url: 'https://www.udio.com/' } ] },
+    'voiceover':       { type: 'audio', expected: 'Script voix-off 20s (ton charte) + variante ASMR + voix FR generee (lien ElevenLabs).', tech: [ { label: 'ElevenLabs', kind: 'llm', url: 'https://elevenlabs.io/' } ] },
+    'manifesto-video': { type: 'video', expected: 'Script + storyboard d\'un manifeste 30-60s (intention, plans, texte ecran, musique) + quelques plans generes (lien).', tech: [ { label: 'Runway', kind: 'llm', url: 'https://runwayml.com/' }, { label: 'Kling', kind: 'llm', url: 'https://klingai.com/' } ] },
+    'social-video':    { type: 'video', expected: '1 Reel/TikTok 15-20s (hook, plans, son) + 1 concept de challenge UGC (hashtag, mecanique, incentive) + demo (lien).', tech: [ { label: 'Kling', kind: 'llm', url: 'https://klingai.com/' }, { label: 'CapCut', kind: 'llm', url: 'https://www.capcut.com/' } ] },
+    'retail-plv':      { type: 'image', expected: 'Affiche OOH + stop-rayon lisibles a 3m : gros wordmark, punchline, palette. Visuels generes.', tech: [ HF_FLUX, { label: 'Ideogram (texte)', kind: 'llm', url: 'https://ideogram.ai/' } ] },
+    'media-plan':      { type: 'strategy', expected: 'Repartition du budget par canal (%/EUR) + KPIs chiffres + calendrier 4-6 semaines.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    // --- Phase 4 : Lancement & pitch ---
+    'landing-page':    { type: 'web', expected: 'Structure de page (hero > preuve > features > pricing > FAQ > CTA) + contenu par section + (option) page generee.', tech: [ { label: 'Framer', kind: 'llm', url: 'https://www.framer.com/' }, { label: 'v0', kind: 'llm', url: 'https://v0.dev/' }, LLM_CHATGPT ] },
+    'email-sequence':  { type: 'copy', expected: 'Sequence de 6 emails (waitlist > J-7 > drop > preuve > abo > bilan) : objet + message + CTA.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'gtm-plan':        { type: 'strategy', expected: 'GTM 12 semaines en 3 temps (pre-lancement / lancement / post) + KPIs par etage de funnel.', tech: [ LLM_CHATGPT, LLM_CLAUDE ] },
+    'display-ads':     { type: 'image', expected: 'Set display 3 formats (300x250 / 728x90 / 320x50) + ad copy acquisition/retargeting/challenge + visuels.', tech: [ HF_FLUX, LLM_CHATGPT ] },
+    'pitch-video':     { type: 'video', expected: 'Script 60s structure (hook / probleme / solution / preuve / CTA), 8-10 phrases pretes a filmer + video (lien).', tech: [ { label: 'HeyGen', kind: 'llm', url: 'https://www.heygen.com/' }, { label: 'ElevenLabs', kind: 'llm', url: 'https://elevenlabs.io/' } ] },
+    'final-deck':      { type: 'deck', expected: 'Deck slide ANIME de 10-12 slides assemblant TOUS les assets produits (visuels, audio, video, copy). Lien partageable.', tech: [ { label: 'Gamma', kind: 'llm', url: 'https://gamma.app/' }, { label: 'Canva', kind: 'llm', url: 'https://www.canva.com/' }, { label: 'Tome', kind: 'llm', url: 'https://tome.app/' } ] }
   };
 
   /* ============ PHASES STRUCTURE (Guided Workflow) ============ */
@@ -158,6 +184,17 @@
           fields: [
             { name: 'description', label: 'Description produit (50-100 mots)', rows: 4, placeholder: 'Decrivez le produit, sa promesse principale et ce qui le rend unique...' },
             { name: 'differentiation', label: 'Axes de differenciation (3 points)', rows: 3, placeholder: '1. ...\n2. ...\n3. ...' }
+          ]
+        },
+        {
+          id: 'consumer-insight',
+          title: 'Insight & tensions consommateur',
+          desc: 'Formulez l\'insight central + 3 tensions a resoudre (envie vs frein)',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Pour "{theme}", formule 1 insight consommateur fort, ecrit comme un verbatim a la 1ere personne (cible : [persona]). Puis liste 3 tensions a resoudre, chacune sous la forme "envie de X mais frein Y".',
+          fields: [
+            { name: 'insight', label: 'Insight central (verbatim)', rows: 3, placeholder: '"J\'ai 28 ans, je vis en ville... le soir je veux manger bon, sain et rapide, mais..."' },
+            { name: 'tensions', label: '3 tensions a resoudre', rows: 3, placeholder: '1. Envie de ... mais frein ...\n2. ...\n3. ...' }
           ]
         },
         {
@@ -182,6 +219,32 @@
             { name: 'competitors', label: 'Top 3 concurrents (forces + faiblesses)', rows: 4, placeholder: '1. Marque X — Forces : ... / Faiblesses : ...\n2. ...\n3. ...' },
             { name: 'trends', label: '3 tendances marche a exploiter', rows: 3, placeholder: '1. ...\n2. ...\n3. ...' },
             { name: 'positioning', label: 'Notre positionnement (1 phrase)', placeholder: 'Ex: "Le seul kit de champignons 100% francais, certifie bio et livre sous 24h"' }
+          ]
+        },
+        {
+          id: 'brand-platform',
+          title: 'Plateforme de marque',
+          desc: 'Mission, vision, promesse, raison d\'y croire, ennemi, personnalite',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Construis la plateforme de marque de "{theme}" : mission, vision, promesse (1 phrase memorable), raison d\'y croire (RTB, preuves concretes), ennemi de marque (ce qu\'on combat), et 5 traits de personnalite.',
+          fields: [
+            { name: 'mission', label: 'Mission & vision', rows: 2, placeholder: 'Mission : ... / Vision : ...' },
+            { name: 'promise', label: 'Promesse (1 phrase) + tagline', rows: 2, placeholder: 'Promesse : ... / Tagline : ...' },
+            { name: 'rtb', label: 'Raison d\'y croire (preuves)', rows: 2, placeholder: 'Recette courte, origine, 0 additif, petites series...' },
+            { name: 'personality', label: 'Personnalite (5 traits) + ennemi', rows: 2, placeholder: 'Espiegle, genereuse... / Ennemi : la soupe triste, l\'industriel sans ame' }
+          ]
+        },
+        {
+          id: 'marketing-mix',
+          title: 'Marketing mix (4P)',
+          desc: 'Product, Price, Place, Promotion',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Definis le marketing mix 4P de "{theme}" : Product (coeur de gamme + 2 extensions de lancement), Price (positionnement de valeur + mecaniques de lancement), Place (3 vagues de distribution), Promotion (canaux cles).',
+          fields: [
+            { name: 'product4p', label: 'Product (coeur + 2 extensions)', rows: 2, placeholder: 'Coeur : ... / Extension 1 : ... / Extension 2 : ...' },
+            { name: 'price4p', label: 'Price (positionnement + mecaniques)', rows: 2, placeholder: 'Premium accessible ; pre-commande -20%, pack decouverte, abonnement...' },
+            { name: 'place4p', label: 'Place (3 vagues de distribution)', rows: 2, placeholder: '1. DTC (site) 2. Retail selectif 3. Food service / OOH' },
+            { name: 'promotion4p', label: 'Promotion (canaux cles)', rows: 2, placeholder: 'Social-first, influence, UGC, echantillonnage, RP...' }
           ]
         }
       ]
@@ -227,6 +290,50 @@
             { name: 'tone', label: 'Tone of voice (5 adjectifs)', placeholder: 'Ex: convivial, expert, optimiste, ludique, premium' },
             { name: 'doDont', label: 'Mots a utiliser / a eviter', rows: 3, placeholder: 'YES : ... / NO : ...' }
           ]
+        },
+        {
+          id: 'art-direction',
+          title: 'Direction artistique / moodboard',
+          desc: 'Definissez l\'univers visuel puis generez un moodboard',
+          aiTool: 'FLUX (HF) / Midjourney',
+          prompt: 'Moodboard for "{theme}" brand. Visual style: [3 adjectifs charte], color palette [palette hex], lighting (warm/natural), textures, art direction references, mood. Cohesive, modern. --ar 16:9',
+          fields: [
+            { name: 'artStyle', label: 'Direction artistique (style, lumiere, references)', rows: 3, placeholder: 'Style : bold pop / flat-lay ; lumiere chaude ; accents dessines a la main ; references...' },
+            { name: 'moodboardPrompt', label: 'Prompt moodboard utilise', rows: 2, placeholder: 'Collez le prompt image utilise...' }
+          ]
+        },
+        {
+          id: 'packaging-main',
+          title: 'Packaging produit (mockup principal)',
+          desc: 'Generez le mockup du packaging du produit phare',
+          aiTool: 'FLUX (HF) / Midjourney',
+          prompt: 'Product packaging mockup for "{theme}", [type de contenant], brand colors [palette], big wordmark "{name}", premium yet [ton charte]. Studio shot, soft light, appetizing. --ar 4:5',
+          fields: [
+            { name: 'packagingConcept', label: 'Concept packaging (forme, codes, message au dos)', rows: 2, placeholder: 'Brique collector rouge/creme, gros wordmark, picto, punchline au dos...' },
+            { name: 'packagingPrompt', label: 'Prompt mockup utilise', rows: 2, placeholder: 'Collez le prompt image utilise...' }
+          ]
+        },
+        {
+          id: 'packaging-range',
+          title: 'Declinaison gamme (variations)',
+          desc: 'Declinez le packaging sur 2-3 variantes de gamme',
+          aiTool: 'FLUX (HF) / SD3.5 (HF)',
+          prompt: 'Product range variations for "{theme}": 3 SKUs side by side, consistent design system, different flavor/color codes, same wordmark. Studio shot. --ar 16:9',
+          fields: [
+            { name: 'rangeVariations', label: '2-3 variantes (nom + code couleur)', rows: 3, placeholder: '1. L\'Originale (rouge)\n2. Basilic Punch (vert)\n3. Feu Doux (orange)' },
+            { name: 'rangePrompt', label: 'Prompt declinaison utilise', rows: 2, placeholder: 'Collez le prompt image utilise...' }
+          ]
+        },
+        {
+          id: 'social-templates',
+          title: 'Templates social (Story + banniere)',
+          desc: 'Story 9:16, banniere 16:9 et sticker/picto reutilisables',
+          aiTool: 'FLUX (HF) / Canva',
+          prompt: 'Social media templates for "{theme}": Instagram Story 9:16 + cover banner 16:9, brand palette [palette hex], bold rounded type, hand-drawn sticker accents. Editable, on-brand.',
+          fields: [
+            { name: 'templatesConcept', label: 'Concept templates (format, elements recurrents)', rows: 2, placeholder: 'Bandeau couleur, zone titre, picto, espace produit...' },
+            { name: 'templatesPrompt', label: 'Prompt / liens des templates', rows: 2, placeholder: 'Collez prompts ou liens des visuels generes...' }
+          ]
         }
       ]
     },
@@ -270,6 +377,75 @@
             { name: 'kpis', label: 'KPIs cibles', rows: 2, placeholder: 'Ex: 500k impressions, CPM < 8 EUR, 3000 clics, 80 conversions, ROAS > 2.5' },
             { name: 'timing', label: 'Calendrier (4-6 semaines)', rows: 2, placeholder: 'S1 : teasing / S2-3 : launch peak / S4-5 : retargeting / S6 : repush + UGC' }
           ]
+        },
+        {
+          id: 'social-content',
+          title: 'Contenus social (captions, hooks, posts)',
+          desc: '5 captions IG + 5 hooks TikTok + 5 posts X + microcopy',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Pour "{theme}" (ton [adjectifs charte]), ecris : 5 captions Instagram, 5 hooks TikTok (3 premieres secondes, accrocheurs), 5 posts X courts et taquins, et 5 microcopies UI (bouton, email capture, confirmation, rupture, 404).',
+          fields: [
+            { name: 'captionsIG', label: '5 captions Instagram', rows: 3, placeholder: '1. ...\n2. ...\n3. ...\n4. ...\n5. ...' },
+            { name: 'hooksTikTok', label: '5 hooks TikTok (3 sec)', rows: 3, placeholder: '1. POV : ...\n2. ...' },
+            { name: 'postsX', label: '5 posts X', rows: 2, placeholder: '1. ...\n2. ...' },
+            { name: 'microcopy', label: 'Microcopy UI (5)', rows: 2, placeholder: 'Bouton : ... / Email capture : ... / Confirmation : ...' }
+          ]
+        },
+        {
+          id: 'jingle',
+          title: 'Jingle / sonic branding',
+          desc: 'Composez un jingle court + une signature sonore (sonic logo)',
+          aiTool: 'Suno / Udio',
+          prompt: 'Brief de jingle pour "{theme}" : ambiance [3 adjectifs charte], tempo, instruments, voix (oui/non), duree 10-15s, + un sonic logo de 2s. Genere avec Suno, ecoute, garde la meilleure version et colle le lien.',
+          fields: [
+            { name: 'jingleBrief', label: 'Brief du jingle (ambiance, tempo, instruments)', rows: 3, placeholder: 'Ambiance pop joyeuse, tempo 110 bpm, ukulele + claps, voix "la la"...' },
+            { name: 'jingleUrl', label: 'Lien du jingle genere (Suno)', placeholder: 'https://suno.com/song/...' }
+          ]
+        },
+        {
+          id: 'voiceover',
+          title: 'Voix-off pub / ASMR',
+          desc: 'Voix-off de la pub + variante ASMR sensorielle',
+          aiTool: 'ElevenLabs',
+          prompt: 'Ecris un script de voix-off de 20s pour la pub de "{theme}" (ton [charte]) + une variante ASMR/sensorielle (gros plans, sons du produit). Genere la voix en francais avec ElevenLabs et colle le lien.',
+          fields: [
+            { name: 'voiceoverScript', label: 'Script voix-off (20s) + variante ASMR', rows: 4, placeholder: 'PUB : ...\nASMR : ...' },
+            { name: 'voiceoverUrl', label: 'Lien de la voix generee (ElevenLabs)', placeholder: 'https://elevenlabs.io/...' }
+          ]
+        },
+        {
+          id: 'manifesto-video',
+          title: 'Video manifeste de lancement',
+          desc: 'Film manifeste 30-60s qui pose la marque',
+          aiTool: 'Runway / Kling / Sora',
+          prompt: 'Ecris le script + storyboard d\'une video manifeste de 30-60s pour "{theme}" : intention, 5-6 plans cles (description visuelle), textes a l\'ecran, musique/voix. Genere quelques plans avec Runway ou Kling et colle le lien.',
+          fields: [
+            { name: 'manifestoStoryboard', label: 'Script + storyboard (plans, texte ecran)', rows: 5, placeholder: 'Plan 1 (0-5s) : ... | Texte : ...\nPlan 2 : ...' },
+            { name: 'manifestoUrl', label: 'Lien de la video / des plans generes', placeholder: 'https://...' }
+          ]
+        },
+        {
+          id: 'social-video',
+          title: 'Reel / TikTok + challenge UGC',
+          desc: 'Reel produit/recette + concept de challenge UGC',
+          aiTool: 'Kling / CapCut / HeyGen',
+          prompt: 'Concois 1 Reel/TikTok de 15-20s pour "{theme}" (hook 3s, plans, son/musique, texte) + 1 concept de challenge UGC (hashtag, mecanique, incentive). Genere une demo video et colle le lien.',
+          fields: [
+            { name: 'reelConcept', label: 'Concept Reel/TikTok (hook, plans, son)', rows: 3, placeholder: 'Hook : ... | Plans : ... | Son : ...' },
+            { name: 'ugcChallenge', label: 'Challenge UGC (hashtag, mecanique, incentive)', rows: 2, placeholder: '#TonHashtag — montre ... — a gagner : ...' },
+            { name: 'reelUrl', label: 'Lien de la video generee', placeholder: 'https://...' }
+          ]
+        },
+        {
+          id: 'retail-plv',
+          title: 'Affiche PLV / stop-rayon (retail)',
+          desc: 'Affiche OOH + stop-rayon lisibles a 3 metres',
+          aiTool: 'FLUX (HF) / Ideogram (texte)',
+          prompt: 'Retail poster + shelf stopper for "{theme}", big wordmark "{name}", punchline, brand palette [palette hex], readable at 3 meters, bold pop style, high contrast. --ar 3:4',
+          fields: [
+            { name: 'plvConcept', label: 'Concept PLV (message, accroche, format)', rows: 2, placeholder: 'Stop-rayon qui "crie" avec humour, punchline courte, gros visuel produit...' },
+            { name: 'plvPrompt', label: 'Prompt / liens des visuels PLV', rows: 2, placeholder: 'Collez prompts ou liens des visuels generes...' }
+          ]
         }
       ]
     },
@@ -302,14 +478,47 @@
           ]
         },
         {
-          id: 'final-deck',
-          title: 'Deck de presentation finale',
-          desc: 'Construisez le pitch deck en 10 slides max',
-          aiTool: 'Gamma / Tome / PowerPoint + IA',
-          prompt: 'Plan d\'un pitch deck en 10 slides pour "{theme}". Slides : couverture, probleme, solution, marche, produit, business model, traction, equipe, demande, contact.',
+          id: 'email-sequence',
+          title: 'Sequence email de lancement (6)',
+          desc: 'Teasing -> drop -> preuve sociale -> abonnement -> bilan retail',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Ecris une sequence de 6 emails de lancement pour "{theme}" (ton [adjectifs charte]) : 1) bienvenue waitlist, 2) J-7, 3) drop officiel, 4) preuve sociale J+5, 5) lancement abonnement, 6) bilan + arrivee retail. Pour chacun : objet + coeur du message + CTA.',
           fields: [
-            { name: 'deckPlan', label: 'Plan des 10 slides', rows: 6, placeholder: '1. Couverture : ...\n2. Probleme : ...\n3. Solution : ...\n...\n10. Contact : ...' },
-            { name: 'deckUrl', label: 'URL du deck final', placeholder: 'https://gamma.app/...' }
+            { name: 'emailSequence', label: 'Les 6 emails (objet + message + CTA)', rows: 6, placeholder: 'Email 1 (waitlist) — Objet : ... | Message : ... | CTA : ...\nEmail 2 (J-7) — ...' }
+          ]
+        },
+        {
+          id: 'gtm-plan',
+          title: 'Go-to-market 12 semaines & KPIs',
+          desc: '3 temps (pre-lancement / lancement / post) + KPIs funnel',
+          aiTool: 'ChatGPT / Claude',
+          prompt: 'Construis le go-to-market 12 semaines de "{theme}" en 3 temps : PRE-LANCEMENT (S1-4, intriguer), LANCEMENT (S5-8, exploser), POST-LANCEMENT (S9-12, fideliser). Pour chaque temps : objectif, 3-4 actions cles, KPIs. Puis des KPIs par etage de funnel (notoriete -> retention).',
+          fields: [
+            { name: 'gtmPhases', label: '3 temps (objectif + actions cles)', rows: 5, placeholder: 'PRE-LANCEMENT : objectif ... actions ...\nLANCEMENT : ...\nPOST-LANCEMENT : ...' },
+            { name: 'gtmKpis', label: 'KPIs par etage du funnel', rows: 3, placeholder: 'Notoriete : reach... / Acquisition : emails, CPL... / Conversion : ROAS... / Retention : taux abo, NPS...' }
+          ]
+        },
+        {
+          id: 'display-ads',
+          title: 'Bannieres display & ad copy',
+          desc: 'Set display 3 formats + ad copy acquisition/retargeting',
+          aiTool: 'FLUX (HF) + ChatGPT',
+          prompt: 'Cree un set de bannieres display pour "{theme}" (300x250, 728x90, 320x50) : 1 concept visuel coherent avec la charte + ad copy court pour 3 usages (acquisition, retargeting, challenge). Genere les visuels et colle les liens.',
+          fields: [
+            { name: 'displayConcept', label: 'Concept visuel (3 formats)', rows: 2, placeholder: 'Visuel produit + accroche + CTA Jaune Soleil, decline en 300x250 / 728x90 / 320x50...' },
+            { name: 'adCopy', label: 'Ad copy (acquisition / retargeting / challenge)', rows: 3, placeholder: 'Acquisition : Titre ... Texte ... CTA ...\nRetargeting : ...\nChallenge : ...' },
+            { name: 'displayUrl', label: 'Liens des bannieres generees', placeholder: 'https://...' }
+          ]
+        },
+        {
+          id: 'final-deck',
+          title: 'Deck slide anime (livrable final)',
+          desc: 'Assemblez TOUS vos contenus (strategie, visuels, audio, video, copy) en un deck slide anime presentable',
+          aiTool: 'Gamma / Canva / Tome',
+          prompt: 'Construis un deck slide ANIME de 10-12 slides pour "{theme}" qui raconte toute la campagne en integrant les assets produits (logo, packaging, visuels, jingle, video manifeste, copy, plan media). Slides : couverture, insight, marche & positionnement, plateforme de marque, identite (logo/packaging), contenus & assets (visuels/audio/video), plan media & GTM, KPIs, demande, contact. Utilise Gamma ou Canva pour les animations.',
+          fields: [
+            { name: 'deckPlan', label: 'Plan des slides (avec les assets integres)', rows: 6, placeholder: '1. Couverture (logo)\n2. Insight\n3. Marche & positionnement\n4. Plateforme de marque\n5. Identite (logo + packaging)\n6. Contenus (visuels + jingle + video)\n7. Plan media & GTM\n8. KPIs\n9. Demande\n10. Contact' },
+            { name: 'deckUrl', label: 'Lien du deck anime final (partageable)', placeholder: 'https://gamma.app/... ou https://canva.com/...' }
           ]
         }
       ]
@@ -1400,6 +1609,8 @@
   window.AIA = window.AIA || {};
   window.AIA.PRODUCT_THEMES = PRODUCT_THEMES;
   window.AIA.PHASES_GUIDE = PHASES_GUIDE;
+  window.AIA.STEP_META = STEP_META;
+  window.AIA.ASSET_TYPE_LABELS = ASSET_TYPE_LABELS;
   // Contexte de la session courante (jour/demi-journee + phase/demos recommandees) pour le fil conducteur du dashboard.
   window.AIA.getSessionContext = function () {
     var t = getCurrentTiming();
