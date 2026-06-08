@@ -59,9 +59,15 @@
       content: item.content || '',
       time: new Date().toISOString()
     });
+    // Anti-farm : +5 XP par production DISTINCTE, jamais re-recompensee (cycle epingler/retirer/re-epingler bloque) et plafonnee
+    var _st = AIA.getState();
+    if (!Array.isArray(_st.pinnedRewardedKeys)) _st.pinnedRewardedKeys = [];
+    var PIN_XP_CAP = 12;
+    var _rewardable = _st.pinnedRewardedKeys.indexOf(key) === -1 && _st.pinnedRewardedKeys.length < PIN_XP_CAP;
+    if (_rewardable) _st.pinnedRewardedKeys.push(key);
     if (AIA.saveState) AIA.saveState();
-    if (AIA.addXP) AIA.addXP(5, 'Production epinglee au Carnet');
-    if (AIA.showToast) AIA.showToast('📌 Epingle au Carnet ! (+5 XP)', 'success');
+    if (_rewardable && AIA.addXP) AIA.addXP(5, 'Production epinglee au Carnet');
+    if (AIA.showToast) AIA.showToast(_rewardable ? '📌 Epingle au Carnet ! (+5 XP)' : '📌 Epingle au Carnet', 'success');
     return true;
   }
 

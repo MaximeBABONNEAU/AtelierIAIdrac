@@ -28,15 +28,21 @@
       clarity: scores.clarity, creativity: scores.creativity, feasibility: scores.feasibility,
       comment: comment, overall: overall, reviewerKey: reviewerKey
     };
-    AIA.db.ref('reviews/' + reviewerKey + '/' + targetKey).set(entry, function (err) {
-      if (err) { if (callback) callback({ error: String(err) }); return; }
-      if (AIA.addXP) AIA.addXP(2, 'Peer review ecrite');
-      pushFeed({ actorKey: reviewerKey, action: 'reviewed', target: targetKey, overall: overall });
-      var st = AIA.getState();
-      st.reviewsGiven = (st.reviewsGiven || 0) + 1;
-      if (st.reviewsGiven >= 5 && AIA.awardBadge) AIA.awardBadge('helper');
-      if (AIA.saveState) AIA.saveState();
-      if (callback) callback({ success: true });
+    var _rref = AIA.db.ref('reviews/' + reviewerKey + '/' + targetKey);
+    _rref.once('value', function (snap) {
+      var isNew = !snap.exists(); // anti-farm : XP une seule fois par cible (pas a chaque re-soumission)
+      _rref.set(entry, function (err) {
+        if (err) { if (callback) callback({ error: String(err) }); return; }
+        pushFeed({ actorKey: reviewerKey, action: 'reviewed', target: targetKey, overall: overall });
+        if (isNew) {
+          if (AIA.addXP) AIA.addXP(2, 'Peer review ecrite');
+          var st = AIA.getState();
+          st.reviewsGiven = (st.reviewsGiven || 0) + 1;
+          if (st.reviewsGiven >= 5 && AIA.awardBadge) AIA.awardBadge('helper');
+          if (AIA.saveState) AIA.saveState();
+        }
+        if (callback) callback({ success: true });
+      });
     });
   }
 

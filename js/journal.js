@@ -111,9 +111,14 @@
     if (!Array.isArray(st.journal)) st.journal = [];
     var isFirst = st.journal.length === 0;
     st.journal.unshift(entry);
+    // Anti-farm : +10 XP au maximum UNE fois par jour (pas a chaque entree)
+    var _today = new Date().toISOString().split('T')[0];
+    if (!Array.isArray(st.journalXpDates)) st.journalXpDates = [];
+    var _rewardToday = st.journalXpDates.indexOf(_today) === -1;
+    if (_rewardToday) st.journalXpDates.push(_today);
     if (AIA.saveState) AIA.saveState();
     if (isFirst && AIA.awardBadge) AIA.awardBadge('journaler');
-    if (AIA.addXP) AIA.addXP(10, 'Entree journal');
+    if (_rewardToday && AIA.addXP) AIA.addXP(10, 'Entree journal');
     var byDay = {};
     st.journal.forEach(function (e) {
       var d = e.day || (new Date(e.ts)).toISOString().split('T')[0];

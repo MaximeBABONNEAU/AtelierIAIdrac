@@ -91,19 +91,23 @@
   function savePre(score, answers) {
     var AIA = window.AIA;
     var st = AIA.getState();
+    var firstTime = !st.preTest; // XP une seule fois : re-passer le test ne re-attribue rien
     st.preTest = { ts: new Date().toISOString(), score: score, total: QUESTIONS.length, answers: answers };
     if (AIA.saveState) AIA.saveState();
-    if (AIA.addXP) AIA.addXP(10, 'Pre-test complete');
+    if (firstTime && AIA.addXP) AIA.addXP(10, 'Pre-test complete');
   }
 
   function savePost(score, answers) {
     var AIA = window.AIA;
     var st = AIA.getState();
+    var firstTime = !st.postTest; // XP une seule fois (anti-farm : pas de re-gain en re-passant)
+    var pct = Math.round(score * 100 / QUESTIONS.length);
     st.postTest = { ts: new Date().toISOString(), score: score, total: QUESTIONS.length, answers: answers };
     if (AIA.saveState) AIA.saveState();
-    if (AIA.addXP) AIA.addXP(30, 'Post-test complete');
-    var pct = Math.round(score * 100 / QUESTIONS.length);
-    if (pct >= 80 && AIA.addXP) AIA.addXP(50, 'Score post-test >= 80%');
+    if (firstTime) {
+      if (AIA.addXP) AIA.addXP(30, 'Post-test complete');
+      if (pct >= 80 && AIA.addXP) AIA.addXP(50, 'Score post-test >= 80%');
+    }
     if (pct >= 90 && AIA.awardBadge) AIA.awardBadge('grade-a');
     if (pct >= 100 && AIA.awardBadge) AIA.awardBadge('perfectionist');
   }

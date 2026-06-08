@@ -508,11 +508,15 @@
         '</div></div>';
 
       if (AIA.bumpGameProgress) AIA.bumpGameProgress('quiz'); // progression vers le Quiz Maitre
+      // Anti-farm : l'XP du quiz n'est gagnee qu'a la 1ere completion (Recommencer ne re-recompense pas)
+      var _stQ = AIA.getState();
+      var _quizFirst = !_stQ.arenaQuizDone;
+      if (_quizFirst) { _stQ.arenaQuizDone = true; if (AIA.saveState) AIA.saveState(); }
       if (score === questions.length) {
         AIA.awardBadge('quiz-perfect');
-        AIA.addXP(20, 'Quiz parfait');
-        AIA.showToast('Quiz parfait ! +20 XP', 'success');
-      } else {
+        if (_quizFirst) AIA.addXP(20, 'Quiz parfait');
+        AIA.showToast(_quizFirst ? 'Quiz parfait ! +20 XP' : 'Quiz parfait ! (XP deja obtenue)', 'success');
+      } else if (_quizFirst) {
         AIA.addXP(5 + score, 'Quiz termine');
       }
 

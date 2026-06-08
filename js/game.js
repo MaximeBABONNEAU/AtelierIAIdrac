@@ -1708,7 +1708,14 @@
         } else {
           ref.set(true, function () {
             window.AIA.showToast('Vote enregistre ! ♥', 'success');
-            if (window.AIA.addXP) window.AIA.addXP(2, 'Vote campagne');
+            // Anti-farm : +2 XP une seule fois par cible (re-voter apres avoir retire ne re-recompense pas)
+            var _vst = window.AIA.getState();
+            if (!Array.isArray(_vst.votedRewarded)) _vst.votedRewarded = [];
+            if (_vst.votedRewarded.indexOf(targetKey) === -1) {
+              _vst.votedRewarded.push(targetKey);
+              if (window.AIA.saveState) window.AIA.saveState();
+              if (window.AIA.addXP) window.AIA.addXP(2, 'Vote campagne');
+            }
             // Voter badge when 3 votes used
             window.AIA.db.ref('votes/' + myKey).once('value', function (vs) {
               var vv = vs.val() || {};
