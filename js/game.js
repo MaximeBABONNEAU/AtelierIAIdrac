@@ -97,8 +97,49 @@
       target: 'Urbains 28-45 ans, anti-cycle d\'achat', price: '9-29 EUR/mois selon plante', usp: 'Jamais sans plante' },
     { id: 'pixelpup', name: 'PixelPup', emoji: '🐕', category: 'Pets / SaaS', tagline: 'Portrait IA de votre chien',
       description: 'Service en ligne qui transforme la photo de votre animal en portrait artistique IA (pop art, peinture, manga).',
-      target: 'Proprietaires d\'animaux 25-55 ans, cadeaux', price: '19-49 EUR / portrait', usp: 'Souvenir personnalise haut de gamme' }
+      target: 'Proprietaires d\'animaux 25-55 ans, cadeaux', price: '19-49 EUR / portrait', usp: 'Souvenir personnalise haut de gamme' },
+    { id: 'penny', name: 'Penny', emoji: '🐷', category: 'Fintech / Budget', tagline: 'Coach budget IA pour jeunes',
+      description: 'App qui categorise les depenses, predit les fins de mois difficiles et coache vers l\'epargne via micro-defis.',
+      target: 'Etudiants & jeunes actifs 18-30 ans', price: 'Gratuit + premium 4,99/mois', usp: 'Pedagogique, sans jugement, gamifie' },
+    { id: 'reverie', name: 'Reverie', emoji: '👗', category: 'Fashion / Location', tagline: 'Dressing de luxe en location',
+      description: 'Location de pieces de createurs pour evenements : robe, costume, accessoires livres et nettoyes.',
+      target: 'CSP+ 25-45 ans, mariages & galas', price: '39-149 EUR / piece / 4 jours', usp: 'Luxe accessible, zero achat impulsif' },
+    { id: 'volt', name: 'Volt', emoji: '🔌', category: 'Mobility / Energy', tagline: 'Recharge VE entre particuliers',
+      description: 'Marketplace pour recharger sa voiture electrique sur la borne d\'un particulier, moins cher qu\'en station.',
+      target: 'Proprietaires de VE urbains/peri-urbains', price: 'Commission 12% par recharge', usp: 'Maillage dense, prix imbattable' },
+    { id: 'hestia', name: 'Hestia', emoji: '🏡', category: 'PropTech / Social', tagline: 'Colocation intergenerationnelle',
+      description: 'Plateforme qui met en relation seniors avec chambre libre et etudiants, contre loyer doux + presence.',
+      target: 'Seniors isoles + etudiants en tension de logement', price: 'Abonnement 19 EUR/mois', usp: 'Lien social + logement abordable' },
+    { id: 'confetti', name: 'Confetti', emoji: '🎉', category: 'EventTech / SaaS', tagline: 'Organisateur d\'evenements IA',
+      description: 'Assistant qui planifie un evenement de A a Z : retro-planning, prestataires, budget, invitations, pilote par IA.',
+      target: 'Offices managers, assos, particuliers debordes', price: '29-99 EUR / evenement', usp: 'Tout-en-un, zero tableur Excel' },
+    { id: 'talently', name: 'Talently', emoji: '🧑‍💼', category: 'HRTech / B2B', tagline: 'Pre-selection candidats par IA',
+      description: 'Outil RH qui trie les CV, genere des questions d\'entretien sur-mesure et resume les soft-skills sans biais.',
+      target: 'PME & cabinets de recrutement', price: 'SaaS 99-499 EUR/mois', usp: 'Gain de temps + reduction des biais' },
+    { id: 'riffai', name: 'RiffAI', emoji: '🎸', category: 'MusicTech / Creator', tagline: 'Compositeur de jingles IA',
+      description: 'Genere une musique libre de droits sur-mesure (jingle, fond de podcast, pub) a partir d\'un brief texte.',
+      target: 'Createurs de contenu, TPE, podcasters', price: '9,99 EUR/mois illimite', usp: '100% libre de droits, instantane' },
+    { id: 'heritage', name: 'Heritage', emoji: '💎', category: 'Luxe / Resale', tagline: 'Authentification de luxe par IA',
+      description: 'Service qui authentifie sacs et montres de luxe d\'occasion par photo + expert, avec certificat blockchain.',
+      target: 'Acheteurs/vendeurs seconde main premium', price: '29 EUR / authentification', usp: 'Confiance + tracabilite anti-contrefacon' }
   ];
+
+  /* ============ META PAR ETAPE : attendu concret + technos recommandees (HF / LLM) ============ */
+  // kind 'hf' -> ouvre la demo HuggingFace en modale (window.AIA.openIframeModal) ; 'llm' -> lien externe.
+  var STEP_META = {
+    'product-idea':   { expected: 'Un concept clair en 50-100 mots + 3 axes de differenciation concrets. On doit comprendre QUOI, POUR QUI, et POURQUOI c\'est unique.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
+    'target-persona': { expected: '1 persona incarne : prenom + age + metier, 3 motivations, 3 freins, canaux ou il s\'informe. Evite les generalites ("jeunes actifs").', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
+    'market-analysis':{ expected: '3 concurrents (forces/faiblesses) + 3 tendances cles + 1 phrase de positionnement differenciant.', tech: [ { label: 'Perplexity', kind: 'llm', url: 'https://www.perplexity.ai/' }, { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' } ] },
+    'brand-name':     { expected: '1 nom final court + baseline 5-8 mots + justification. Prononcable, evocateur, .com plausible.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Namelix', kind: 'llm', url: 'https://namelix.com/' } ] },
+    'logo':           { expected: '1 prompt de logo abouti + palette 3-5 couleurs (hex) + typo. Genere plusieurs variantes, garde la meilleure.', tech: [ { label: 'FLUX (HuggingFace)', kind: 'hf', url: 'https://black-forest-labs-flux-1-schnell.hf.space' }, { label: 'Midjourney', kind: 'llm', url: 'https://www.midjourney.com/' } ] },
+    'brand-guide':    { expected: '3 valeurs + 5 adjectifs de ton + mots YES/NO. Doit guider concretement la redaction de tous les textes.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
+    'ad-visuals':     { expected: '1 concept creatif + prompts pour 3 formats (IG 4:5 / LinkedIn 16:9 / Display) coherents (meme ambiance).', tech: [ { label: 'Stable Diffusion 3.5 (HF)', kind: 'hf', url: 'https://stabilityai-stable-diffusion-3-5-large.hf.space' }, { label: 'FLUX (HF)', kind: 'hf', url: 'https://black-forest-labs-flux-1-schnell.hf.space' } ] },
+    'copy':           { expected: '3 headlines + 1 body de 50-80 mots + 1 CTA principal. Mettre les benefices avant les features.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
+    'media-plan':     { expected: 'Repartition du budget par canal (%/EUR) + KPIs chiffres + calendrier 4-6 semaines.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Claude', kind: 'llm', url: 'https://claude.ai/' } ] },
+    'landing-page':   { expected: 'Structure de page (hero > preuve > features > pricing > FAQ > CTA) avec contenu suggere par section.', tech: [ { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' }, { label: 'Framer', kind: 'llm', url: 'https://www.framer.com/' } ] },
+    'pitch-video':    { expected: 'Script 60s structure (hook / probleme / solution / preuve / CTA), 8-10 phrases pretes a filmer.', tech: [ { label: 'HeyGen', kind: 'llm', url: 'https://www.heygen.com/' }, { label: 'ElevenLabs', kind: 'llm', url: 'https://elevenlabs.io/' } ] },
+    'final-deck':     { expected: 'Plan des 10 slides (couverture > ... > demande), 1 ligne de contenu par slide.', tech: [ { label: 'Gamma', kind: 'llm', url: 'https://gamma.app/' }, { label: 'ChatGPT', kind: 'llm', url: 'https://chatgpt.com/' } ] }
+  };
 
   /* ============ PHASES STRUCTURE (Guided Workflow) ============ */
   var PHASES_GUIDE = {
@@ -303,7 +344,7 @@
     overlay.innerHTML =
       '<div class="theme-selection-modal">' +
       '<h2>🎯 Choisissez votre projet d\'atelier</h2>' +
-      '<p class="theme-selection-subtitle">3 produits fictifs ont ete generes au hasard. Choisissez celui que vous voulez transformer en campagne marketing complete pendant l\'atelier. <strong>Ce choix est definitif</strong>.</p>' +
+      '<p class="theme-selection-subtitle">3 produits fictifs tires au hasard parmi ' + PRODUCT_THEMES.length + '. Choisissez celui que vous voulez transformer en campagne marketing complete. Pas de stress : vous pourrez <strong>changer de sujet a tout moment</strong> depuis le Game.</p>' +
       '<div class="theme-choices">' +
       choices.map(function (t) {
         return '<div class="theme-choice-card" data-theme-id="' + t.id + '">' +
@@ -321,10 +362,18 @@
           '</div>';
       }).join('') +
       '</div>' +
-      '<p class="theme-selection-hint">💡 Astuce : choisissez celui qui vous inspire le plus — vous allez y passer 4 jours !</p>' +
+      '<div style="text-align:center;margin:.6rem 0"><button class="btn-outline" id="btn-reroll-themes">🎲 Voir 3 autres sujets</button></div>' +
+      '<p class="theme-selection-hint">💡 Astuce : choisissez celui qui vous inspire le plus — et changez-en quand vous voulez.</p>' +
       '</div>';
 
     document.body.appendChild(overlay);
+
+    var rerollBtn = overlay.querySelector('#btn-reroll-themes');
+    if (rerollBtn) rerollBtn.addEventListener('click', function () {
+      st.themeChoices = pickRandomThemes(3);
+      if (AIA.saveState) AIA.saveState();
+      showThemeSelection(onConfirm);
+    });
 
     overlay.querySelectorAll('.btn-choose-theme').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -332,7 +381,6 @@
         var id = card.getAttribute('data-theme-id');
         var theme = PRODUCT_THEMES.find(function (t) { return t.id === id; });
         if (!theme) return;
-        if (!confirm('Confirmer le choix : ' + theme.name + ' ? Ce choix sera definitif pour tout l\'atelier.')) return;
         st.productTheme = theme;
         st.campaignData = st.campaignData || {};
         if (AIA.saveState) AIA.saveState();
@@ -544,6 +592,7 @@
       '<div class="game-theme-category">' + theme.category + ' &bull; Projet choisi</div>' +
       '<h1 class="game-theme-name">' + theme.name + '</h1>' +
       '<p class="game-theme-tagline">' + theme.tagline + '</p>' +
+      '<button class="btn-ghost btn-xs" id="btn-change-theme-top" style="margin-top:.35rem">🔄 Changer de sujet</button>' +
       '</div>' +
       '<div class="game-theme-progress-block">' +
       '<div class="game-theme-progress-num">' + globalPct + '%</div>' +
@@ -611,7 +660,8 @@
         '<div class="game-steps">' +
         phase.steps.map(function (step, sIdx) {
           var valInfo = st.gameValidation && st.gameValidation[step.id];
-          var locked = !!(valInfo && valInfo.locked);
+          // Plus de verrou dur : une brique finalisee reste TOUJOURS editable et re-finalisable (ecrase le score).
+          var locked = false;
           var score = valInfo ? valInfo.score : null;
           var done = !!st.gameDeliverables[step.id];
           var data = st.campaignData[step.id] || {};
@@ -631,8 +681,15 @@
             .replace(/{positioning}/g, _posi).replace(/{name}/g, _bname);
           // "Noter par l'IA" : prompt d'auto-critique a coller dans une vraie IA (feedback qualitatif reel)
           var critiquePrompt = 'Tu es un jury marketing exigeant (atelier IDRAC). Evalue mon livrable pour l etape "' + step.title + '". Donne : une note sur 100, 3 points forts, 3 axes d amelioration concrets et actionnables, puis une version amelioree. Mon livrable :\n[colle ici ta production]';
-          var statusIcon = locked ? '🔒' : (done ? '✅' : '⬜');
-          var scoreBadge = (locked && score != null) ? '<span class="game-step-scorebadge ' + scoreClass(score) + '">' + score + '/100</span>' : '';
+          var statusIcon = done ? '✅' : '⬜';
+          var scoreBadge = (score != null) ? '<span class="game-step-scorebadge ' + scoreClass(score) + '">' + score + '/100</span>' : '';
+          // Meta etape : attendu concret + technos recommandees (HF en modale / LLM en lien)
+          var _meta = STEP_META[step.id] || {};
+          var expectedHtml = _meta.expected ? '<div class="game-step-expected" style="background:rgba(245,183,49,0.08);border-left:3px solid var(--gold);padding:.5rem .7rem;border-radius:8px;margin:.5rem 0;font-size:.84rem"><strong>&#127919; Attendu :</strong> ' + escapeHtml(_meta.expected) + '</div>' : '';
+          var techHtml = (_meta.tech || []).map(function (t) {
+            if (t.kind === 'hf') return '<button class="btn-outline btn-xs btn-test-tech" data-url="' + t.url + '" data-label="' + escapeHtml(t.label) + '">&#129514; Tester : ' + escapeHtml(t.label) + '</button>';
+            return '<a class="btn-outline btn-xs ia-tool-link" href="' + t.url + '" target="_blank" rel="noopener">&#129514; ' + escapeHtml(t.label) + ' &#8599;</a>';
+          }).join('');
           var headerHtml = '<div class="game-step-header">' +
             '<div class="game-step-checkbox">' + statusIcon + '</div>' +
             '<div class="game-step-title"><h4>Etape ' + (sIdx + 1) + ' : ' + step.title + '</h4><p>' + step.desc + '</p></div>' +
@@ -654,6 +711,7 @@
           return '<div class="game-step-card' + (done ? ' done' : '') + '" data-step-id="' + step.id + '">' + headerHtml +
             '<div class="game-step-body" style="display:' + (done ? 'none' : 'block') + '">' +
             '<div class="game-step-tool">🛠️ <strong>Outil suggere :</strong> ' + step.aiTool + '</div>' +
+            expectedHtml +
             '<details class="game-step-method"><summary>🧭 Methode guidee en 4 etapes</summary>' +
             '<ol class="game-method-list">' +
             '<li><strong>Recherche</strong> : reunis les infos cles sur ' + escapeHtml(theme.name) + ' (cible, concurrents, chiffres).</li>' +
@@ -666,8 +724,7 @@
             '<div class="game-step-prompt-text">' + escapeHtml(promptText) + '</div>' +
             '<div class="game-step-prompt-actions">' +
             '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(promptText) + '">📋 Copier le prompt</button>' +
-            '<a class="btn-outline btn-xs ia-tool-link" href="https://chatgpt.com/" target="_blank" rel="noopener">💬 Ouvrir ChatGPT ↗</a>' +
-            '<a class="btn-outline btn-xs ia-tool-link" href="https://claude.ai/" target="_blank" rel="noopener">🧠 Ouvrir Claude ↗</a>' +
+            techHtml +
             '<button class="btn-outline btn-xs btn-copy-prompt" data-prompt="' + encodeURIComponent(critiquePrompt) + '">🤖 Prompt de notation IA</button>' +
             '</div>' +
             '<p class="game-step-howto">1) Copiez le prompt &bull; 2) Ouvrez un outil IA &bull; 3) <strong>Collez la VRAIE reponse de l\'IA ci-dessous</strong> &bull; 4) Validez pour la noter</p>' +
@@ -691,9 +748,9 @@
               step.fields.map(function (f) { var rv = AIA.CORRIGES.gameRef[step.id][f.name]; return rv ? '<div style="margin:.35rem 0;font-size:.83rem"><strong>' + escapeHtml(f.label) + ' :</strong><br>' + escapeHtml(rv).replace(/\n/g, '<br>') + '</div>' : ''; }).join('') +
               '</details>' : '') +
             renderAssetsBlock(step.id, data.assets || []) +
-            '<p class="game-step-validate-note">⚠️ <strong>Valider definitivement</strong> note votre brique (auto-evaluation) et la verrouille comme rendu officiel. Vous gagnez les points + un bonus selon la qualite.</p>' +
+            '<p class="game-step-validate-note">✅ <strong>Marquer comme finalise</strong> note votre brique (auto-evaluation) et la compte comme rendu. Vous pouvez la <strong>modifier et re-finaliser a tout moment</strong> — tout est sauvegarde en continu dans votre Notebook.</p>' +
             '<div class="game-step-actions">' +
-            '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">🔒 Valider definitivement</button>' +
+            '<button class="btn-primary btn-validate-step" data-step-id="' + step.id + '">' + (done ? '🔄 Mettre a jour le rendu' : '✅ Marquer comme finalise') + '</button>' +
             '<button class="btn-outline btn-sm btn-feedback-step" data-step-id="' + step.id + '">🔍 Tester ma brique</button>' +
             '<button class="btn-ghost btn-sm btn-save-draft" data-step-id="' + step.id + '">💾 Sauvegarder brouillon</button>' +
             '</div>' +
@@ -756,6 +813,15 @@
       });
     });
 
+    // Tester une techno HuggingFace directement dans le site (modale)
+    main.querySelectorAll('.btn-test-tech').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var url = this.getAttribute('data-url'), label = this.getAttribute('data-label') || 'Demo';
+        if (AIA.openIframeModal) AIA.openIframeModal(url, label);
+        else window.open(url, '_blank', 'noopener');
+      });
+    });
+
     main.querySelectorAll('.btn-save-draft').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var stepId = this.getAttribute('data-step-id');
@@ -801,7 +867,6 @@
     main.querySelectorAll('[data-step][data-field]').forEach(function (el) {
       el.addEventListener('input', function () {
         var sid = this.getAttribute('data-step'), fld = this.getAttribute('data-field');
-        if (st.gameValidation && st.gameValidation[sid] && st.gameValidation[sid].locked) return; // brique verrouillee
         st.campaignData = st.campaignData || {}; st.campaignData[sid] = st.campaignData[sid] || {};
         st.campaignData[sid][fld] = this.value;
         if (AIA.saveState) AIA.saveState();
@@ -812,22 +877,21 @@
       btn.addEventListener('click', function () {
         var stepId = this.getAttribute('data-step-id');
         var ok = saveStepData(stepId, main, true);
-        if (!ok) { AIA.showToast('Collez votre reponse IA (au moins 1 champ) avant de valider', 'warning'); return; }
-        if (!confirm('Valider DEFINITIVEMENT cette brique ? Elle sera notee puis verrouillee comme rendu officiel (le formateur pourra la rouvrir si besoin).')) return;
+        if (!ok) { AIA.showToast('Collez votre reponse IA (au moins 1 champ) avant de finaliser', 'warning'); return; }
         // Reset systematique des indices de guidage (evite une banniere obsolete)
         _suggestNextStepId = null; _justCompletedTitle = '';
         var wasDone = !!st.gameDeliverables[stepId];
-        // Auto-evaluation + verrouillage de la brique
+        // Auto-evaluation — brique finalisee mais TOUJOURS re-editable / re-finalisable (ecrase le score)
         var stepObj = orderedSteps().find(function (s) { return s.id === stepId; }) || { fields: [] };
         var bScore = scoreBrick(stepObj, st.campaignData[stepId] || {});
         st.gameValidation = st.gameValidation || {};
-        st.gameValidation[stepId] = { locked: true, score: bScore, ts: new Date().toISOString() };
+        st.gameValidation[stepId] = { finalized: true, score: bScore, ts: new Date().toISOString() };
         st.gameDeliverables[stepId] = true;
         if (!wasDone) {
           var bonus = brickBonus(bScore);
-          AIA.addXP(15 + bonus, 'Brique validee (' + bScore + '/100)');
-          AIA.showToast('🔒 Brique validee ! Score ' + bScore + '/100 — +' + (15 + bonus) + ' XP', 'success');
-        } else { AIA.showToast('🔒 Brique verrouillee — score ' + bScore + '/100', 'success'); }
+          AIA.addXP(15 + bonus, 'Brique finalisee (' + bScore + '/100)');
+          AIA.showToast('✅ Brique finalisee ! Score ' + bScore + '/100 — +' + (15 + bonus) + ' XP &bull; sauvegardee dans ton Notebook', 'success');
+        } else { AIA.showToast('🔄 Rendu mis a jour — nouveau score ' + bScore + '/100', 'success'); }
         // Phase-completion badge check
         Object.keys(PHASES_GUIDE).forEach(function (pk) {
           var allDone = PHASES_GUIDE[pk].steps.every(function (s) { return st.gameDeliverables[s.id]; });
@@ -864,14 +928,18 @@
       AIA.showToast('Campagne exportee !', 'success');
     });
 
-    var btnChange = document.getElementById('btn-change-theme');
-    if (btnChange) btnChange.addEventListener('click', function () {
-      if (!confirm('Reinitialiser votre projet ? Vous reperdez votre choix (le travail des etapes reste sauvegarde).')) return;
+    function changeTheme() {
+      // Changer de sujet a tout moment : le travail deja saisi reste sauvegarde (campaignData), seul le choix est reinitialise.
+      if (!confirm('Changer de sujet ? Votre travail deja saisi reste sauvegarde dans votre Notebook ; vous choisirez un nouveau projet.')) return;
       st.productTheme = null;
       st.themeChoices = null;
       if (AIA.saveState) AIA.saveState();
-      renderBusinessGame(main);
-    });
+      showThemeSelection(function () { renderBusinessGame(main); });
+    }
+    var btnChange = document.getElementById('btn-change-theme');
+    if (btnChange) btnChange.addEventListener('click', changeTheme);
+    var btnChangeTop = document.getElementById('btn-change-theme-top');
+    if (btnChangeTop) btnChangeTop.addEventListener('click', changeTheme);
 
     // ===== Fil conducteur guide (micro-etape 2) =====
     // Cas A : suggestion explicite de l'etape suivante apres une validation
