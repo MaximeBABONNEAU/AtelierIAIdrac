@@ -408,6 +408,20 @@
       html += '<div class="course-slide glass-card"><h3>Contenu</h3><p>' + activity.desc + '</p></div>';
     }
 
+    /* --- Corrige formateur (visible UNIQUEMENT en vue formateur, cache aux etudiants) --- */
+    if (AIA.isFormateurView && AIA.isFormateurView() && AIA.CORRIGES && AIA.CORRIGES.exercises) {
+      var _esc = function (s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+      var _cor = AIA.CORRIGES.exercises[actId];
+      var _cor2 = AIA.CORRIGES.exercises[actId + '-2'];
+      if (_cor || _cor2) {
+        html += '<div class="formateur-corrige glass-card" style="border-left:3px solid #2ecc71;background:rgba(46,204,113,0.06);margin-top:1rem">' +
+          '<h4 style="color:#2ecc71">&#127891; Corrige formateur <span style="font-size:.72rem;color:var(--text-muted);font-weight:500">(visible par vous seul)</span></h4>' +
+          (_cor ? '<p style="white-space:pre-line;font-size:.86rem;margin:.3rem 0">' + _esc(_cor) + '</p>' : '') +
+          (_cor2 ? '<p style="white-space:pre-line;font-size:.86rem;margin:.3rem 0">' + _esc(_cor2) + '</p>' : '') +
+          '</div>';
+      }
+    }
+
     /* --- Inline demo embed map (expanded) --- */
     var inlineDemoMap = {
       'd1-premier-prompt':'renderDemoPrompt', 'd1-prompt-avance':'renderDemoPrompt',

@@ -388,6 +388,9 @@
     if (state.currentPage) navigateTo(state.currentPage);
   }
   function getAdminAsStudent() { return adminAsStudent; }
+  // Vue formateur : connecte en admin ET pas en mode "voir comme un etudiant".
+  // Sert a reveler les corriges (caches aux etudiants).
+  function isFormateurView() { return !!(state.user && state.user.isAdmin && !adminAsStudent); }
 
   function isActivityUnlocked(actId, dayIdx) {
     if (state.user && state.user.isAdmin && !adminAsStudent) return true;
@@ -1844,6 +1847,7 @@
   window.AIA.setUnlocksBulk=setUnlocksBulk;
   window.AIA.setAdminAsStudent=setAdminAsStudent;
   window.AIA.getAdminAsStudent=getAdminAsStudent;
+  window.AIA.isFormateurView=isFormateurView;
   window.AIA.getUnlocks=function(){return unlocks;};
 
   function init(){

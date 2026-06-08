@@ -141,6 +141,12 @@
               '</label>';
           }).join('') +
           '</div>' +
+          // Corrige formateur : bonne reponse + justification (vue formateur seulement, cache aux etudiants)
+          ((window.AIA.isFormateurView && window.AIA.isFormateurView()) ?
+            '<div class="formateur-corrige" style="border-left:3px solid #2ecc71;background:rgba(46,204,113,0.06);padding:.5rem .7rem;border-radius:8px;margin-top:.6rem;font-size:.82rem">' +
+            '<strong style="color:#2ecc71">&#127891; Bonne reponse :</strong> ' + escapeHtml(q.options[q.correct]) +
+            ((window.AIA.CORRIGES && window.AIA.CORRIGES.quiz && window.AIA.CORRIGES.quiz[q.id]) ? '<br><span style="color:var(--text-secondary)">' + escapeHtml(window.AIA.CORRIGES.quiz[q.id]) + '</span>' : '') +
+            '</div>' : '') +
           '</div>';
       }).join('') +
       '<button type="button" class="btn-primary" id="btn-submit-assessment" style="margin-top:1rem;width:100%">📝 Soumettre mes reponses</button>' +

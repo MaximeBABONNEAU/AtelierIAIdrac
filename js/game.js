@@ -684,6 +684,12 @@
               }
             }).join('') +
             '</div>' +
+            // Reponse de reference (EcoMush) — visible UNIQUEMENT en vue formateur
+            ((AIA.isFormateurView && AIA.isFormateurView() && AIA.CORRIGES && AIA.CORRIGES.gameRef && AIA.CORRIGES.gameRef[step.id]) ?
+              '<details class="formateur-corrige" style="border-left:3px solid #2ecc71;background:rgba(46,204,113,0.06);padding:.55rem .8rem;border-radius:8px;margin:.6rem 0">' +
+              '<summary style="cursor:pointer;color:#2ecc71;font-weight:700;font-size:.85rem">&#127891; Reponse de reference (EcoMush) — formateur</summary>' +
+              step.fields.map(function (f) { var rv = AIA.CORRIGES.gameRef[step.id][f.name]; return rv ? '<div style="margin:.35rem 0;font-size:.83rem"><strong>' + escapeHtml(f.label) + ' :</strong><br>' + escapeHtml(rv).replace(/\n/g, '<br>') + '</div>' : ''; }).join('') +
+              '</details>' : '') +
             renderAssetsBlock(step.id, data.assets || []) +
             '<p class="game-step-validate-note">⚠️ <strong>Valider definitivement</strong> note votre brique (auto-evaluation) et la verrouille comme rendu officiel. Vous gagnez les points + un bonus selon la qualite.</p>' +
             '<div class="game-step-actions">' +
