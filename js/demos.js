@@ -361,9 +361,9 @@
 
     main.innerHTML = header +
       '<div class="demo-workspace glass-card">' +
-      '<h3 style="margin-bottom:0.5rem">&#127912; Stable Diffusion 3 — Generation en temps reel</h3>' +
+      '<h3 style="margin-bottom:0.5rem">&#127912; Stable Diffusion 3.5 — Generation en temps reel</h3>' +
       '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Generez des visuels marketing directement depuis HuggingFace. Essayez des prompts comme : <em>"Product photography of premium coffee beans, dramatic studio lighting, dark background"</em></p>' +
-      createHFEmbed('https://stabilityai-stable-diffusion-3-medium.hf.space', 'Stable Diffusion 3 Medium', { tall: true }) +
+      createHFEmbed('https://stabilityai-stable-diffusion-3-5-large.hf.space', 'Stable Diffusion 3.5 Large', { tall: true }) +
       '</div>' +
 
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
@@ -763,7 +763,7 @@
       '<div class="demo-workspace glass-card">' +
       '<h3 style="margin-bottom:0.5rem">🎙️ Whisper Large V3 — OpenAI</h3>' +
       '<p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:1rem">Uploadez un fichier audio (mp3/wav) ou enregistrez votre voix. Whisper transcrit en 100+ langues avec ponctuation. Precision ~95% sur le francais.</p>' +
-      createHFEmbed('https://openai-whisper.hf.space', 'Whisper Large V3 — Speech to Text', { tall: true }) +
+      createHFEmbed('https://hf-audio-whisper-large-v3-turbo.hf.space', 'Whisper Large V3 Turbo — Speech to Text', { tall: true }) +
       '</div>' +
       '<div class="demo-workspace glass-card" style="margin-top:1.5rem">' +
       '<h3>💡 Use cases marketing</h3>' +
