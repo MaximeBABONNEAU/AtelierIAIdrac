@@ -676,6 +676,8 @@
       inbox:function(){if(window.AIA&&window.AIA.renderInbox)window.AIA.renderInbox(main);},
       shop:function(){if(window.AIA&&window.AIA.renderShop)window.AIA.renderShop(main);},
       arena:renderArena,
+      chat:function(){if(window.AIA&&window.AIA.renderClassChat)window.AIA.renderClassChat(main);},
+      duel:function(){if(window.AIA&&window.AIA.renderDuel)window.AIA.renderDuel(main);},
       'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -1325,7 +1327,7 @@
     main.innerHTML='<div class="page-header"><h1>Arena <span class="gradient-text">Multijoueur</span></h1>'+
       '<p class="page-subtitle">Battles, challenges et quiz en temps reel</p></div>'+
       '<div class="arena-modes">'+
-      '<div class="arena-mode-card glass-card" data-navigate="battle"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Affrontez un autre etudiant : soumettez vos prompts, la classe vote</p></div>'+
+      '<div class="arena-mode-card glass-card" data-navigate="duel"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Vrai duel 1v1 : matchmaking, chacun son tour, 30s par prompt, auto-score &bull; 10 duels/jour</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div>'+
       '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe, affrontez la classe ou <strong>d&eacute;fiez le Prof</strong> !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Boss solo &bull; Duel du Prof</div></div>'+
@@ -1811,7 +1813,11 @@
   window.AIA.completeActivity = completeActivity;
   window.AIA.toggleDeliverable = function(id){
     state.gameDeliverables[id]=!state.gameDeliverables[id];
-    if(state.gameDeliverables[id]) addXP(10,'Livrable: '+id);
+    // Anti-farm : +10 XP une seule fois par livrable. Cocher/decocher en boucle (ou via console) ne re-recompense plus.
+    if(state.gameDeliverables[id]){
+      state.deliverableXp = state.deliverableXp || {};
+      if(!state.deliverableXp[id]){ state.deliverableXp[id]=true; addXP(10,'Livrable: '+id); }
+    }
     var allDone=Object.keys(GAME_DELIVERABLES).every(function(p){return GAME_DELIVERABLES[p].every(function(d){return state.gameDeliverables[d.id];});});
     if(allDone) awardBadge('game-complete'); saveState();
   };

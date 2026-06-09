@@ -16,6 +16,23 @@
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Arena</a>';
   }
 
+  /* ============ ANTI-FARM XP (Arena) ============
+     L'XP de l'Arena n'est gagnee qu'a la 1ere reussite de chaque mode/boss.
+     Reessayer / "Sujet suivant" ne re-recompense plus (la pratique reste libre, sans inflation du score). */
+  function claimArena(flag) {
+    var AIA = window.AIA, st = AIA.getState();
+    st.arenaClaims = st.arenaClaims || {};
+    if (st.arenaClaims[flag]) return false;
+    st.arenaClaims[flag] = true;
+    if (AIA.saveState) AIA.saveState();
+    return true;
+  }
+  // true uniquement si le boss n'a jamais ete vaincu (donc XP a attribuer). A appeler AVANT markGameBoss.
+  function bossXpFirst(game) {
+    var gp = (window.AIA.getState().gameProgress) || {};
+    return !(gp[game] && gp[game].bossDone);
+  }
+
   var QUIZ_QUESTIONS = [
     { q: 'Quel est le role principal du prompt engineering ?', options: ['Coder des algorithmes','Formuler des instructions optimales pour l\'IA','Designer des interfaces','Analyser des donnees'], correct: 1 },
     { q: 'Que signifie "few-shot prompting" ?', options: ['Utiliser peu de mots','Donner quelques exemples au modele','Limiter les reponses','Accelerer la generation'], correct: 1 },
@@ -304,7 +321,7 @@
         (bossMode
           ? (evalResult.total >= BATTLE_BOSS_TARGET
               ? 'BOSS VAINCU ! Score ' + evalResult.total + '/100 — +' + SOLO_BOSS_XP + ' XP + badge 🔥'
-              : 'Le boss r&eacute;siste (score ' + evalResult.total + '/100, il en faut ' + BATTLE_BOSS_TARGET + '). +20 XP — r&eacute;essaie !')
+              : 'Le boss r&eacute;siste (score ' + evalResult.total + '/100, il en faut ' + BATTLE_BOSS_TARGET + '). R&eacute;essaie !')
           : (userWins ? 'Excellent ! Votre prompt est proche de la qualite reference (+12 XP)' : 'Continuez a vous entrainer ! Analysez la correction et reessayez (+5 XP)')) +
         '</div>' +
         '<button class="btn-outline" id="btn-battle-retry">🔄 ' + (bossMode ? 'Réessayer le boss' : 'Reessayer avec ce sujet') + '</button>' +
@@ -316,16 +333,16 @@
       // XP, badge & progression
       if (bossMode) {
         if (evalResult.total >= BATTLE_BOSS_TARGET) {
+          var _battleBossFirst = bossXpFirst('battle');
           if (AIA.markGameBoss) AIA.markGameBoss('battle');
-          AIA.addXP(SOLO_BOSS_XP, 'Battle Boss vaincu');
+          if (_battleBossFirst) AIA.addXP(SOLO_BOSS_XP, 'Battle Boss vaincu');
           if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
           try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Brief Legendaire' }); } catch (e) {}
         } else {
-          AIA.addXP(5, 'Battle Boss tente');
+          if (claimArena('battleBossTried')) AIA.addXP(5, 'Battle Boss tente');
         }
       } else {
-        var xpEarned = userWins ? 12 : 5;
-        AIA.addXP(xpEarned, 'Battle de prompts');
+        if (claimArena('battle')) AIA.addXP(userWins ? 12 : 5, 'Battle de prompts');
         if (userWins && evalResult.total >= 80) AIA.awardBadge('battle-win');
         if (evalResult.total >= 80) { try { if (AIA.pushFeed) AIA.pushFeed({ action: 'grade-a', target: brief.title, score: evalResult.total }); } catch (e) {} }
         if (AIA.bumpGameProgress) AIA.bumpGameProgress('battle'); // progression vers le Brief Legendaire
@@ -466,19 +483,20 @@
       if (bossMode) {
         var won = score >= winThreshold;
         if (won) {
+          var _quizBossFirst = bossXpFirst('quiz');
           if (AIA.markGameBoss) AIA.markGameBoss('quiz');
-          AIA.addXP(SOLO_BOSS_XP, 'Quiz Boss vaincu');
+          if (_quizBossFirst) AIA.addXP(SOLO_BOSS_XP, 'Quiz Boss vaincu');
           if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
           try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Quiz Maitre' }); } catch (e) {}
         } else {
-          AIA.addXP(5, 'Quiz Boss tente');
+          if (claimArena('quizBossTried')) AIA.addXP(5, 'Quiz Boss tente');
         }
         main.innerHTML = '<div class="page-header">' + backBtn() +
           '<h1>Quiz <span class="gradient-text">BOSS</span></h1></div>' +
           '<div class="quiz-results glass-card boss-battle">' +
           '<div class="result-emoji">' + (won ? '🏆' : '💀') + '</div>' +
           '<div class="result-score">' + score + '/' + questions.length + '</div>' +
-          '<div class="result-grade">' + (won ? 'Quiz Maître VAINCU ! +' + SOLO_BOSS_XP + ' XP + badge' : 'Raté (' + winThreshold + '/10 requis). +20 XP') + '</div>' +
+          '<div class="result-grade">' + (won ? 'Quiz Maître VAINCU ! +' + SOLO_BOSS_XP + ' XP + badge' : 'Raté (' + winThreshold + '/10 requis)') + '</div>' +
           '<div style="margin-top:1.5rem">' +
           (won ? '' : '<button class="btn-primary" id="btn-quiz-retry">Réessayer le boss</button>') +
           '<button class="btn-outline" data-navigate="arena" style="margin-left:0.5rem">Retour Arena</button>' +
@@ -566,15 +584,16 @@
         setTimeout(function () {
           var won = response.length >= CHALLENGE_BOSS_MINLEN;
           if (won) {
+            var _chBossFirst = bossXpFirst('challenge');
             if (AIA.markGameBoss) AIA.markGameBoss('challenge');
-            AIA.addXP(SOLO_BOSS_XP, 'Challenge Boss vaincu');
+            if (_chBossFirst) AIA.addXP(SOLO_BOSS_XP, 'Challenge Boss vaincu');
             if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
             try { if (AIA.pushFeed) AIA.pushFeed({ action: 'boss-solo', target: 'Le Defi Piege' }); } catch (e) {}
-          } else { AIA.addXP(5, 'Challenge Boss tente'); }
+          } else { if (claimArena('challengeBossTried')) AIA.addXP(5, 'Challenge Boss tente'); }
           res.innerHTML = '<div class="rpg-result ' + (won ? 'win' : 'lose') + '">' +
             '<div class="rpg-result-icon">' + (won ? '🏆' : '💀') + '</div>' +
             '<h3>' + (won ? 'D&eacute;fi Pi&egrave;ge relev&eacute; !' : 'Pas encore...') + '</h3>' +
-            '<p>' + (won ? '+' + SOLO_BOSS_XP + ' XP + badge 🎭 — tu as dompt&eacute; le brief impossible !' : 'R&eacute;ponse trop courte (&ge; ' + CHALLENGE_BOSS_MINLEN + ' caract&egrave;res requis, ' + response.length + ' actuellement). +20 XP.') + '</p>' +
+            '<p>' + (won ? '+' + SOLO_BOSS_XP + ' XP + badge 🎭 — tu as dompt&eacute; le brief impossible !' : 'R&eacute;ponse trop courte (&ge; ' + CHALLENGE_BOSS_MINLEN + ' caract&egrave;res requis, ' + response.length + ' actuellement).') + '</p>' +
             '<div style="margin-top:0.6rem">' + (won ? '' : '<button class="btn-primary" id="btn-chal-retry">R&eacute;essayer</button> ') +
             '<button class="btn-outline" data-navigate="arena">Retour Arena</button></div></div>';
           var rb = document.getElementById('btn-chal-retry');
@@ -617,7 +636,7 @@
           '</div>';
 
         if (AIA.bumpGameProgress) AIA.bumpGameProgress('challenge'); // progression vers le Defi Piege
-        AIA.addXP(8 + (6 - userRank) * 2, 'Challenge collectif');
+        if (claimArena('challenge')) AIA.addXP(8 + (6 - userRank) * 2, 'Challenge collectif');
         AIA.showToast('Challenge termine ! Rang #' + userRank, 'success');
       }, 2500);
     });
@@ -1324,14 +1343,18 @@
   function pveOnEnd(won) {
     var AIA = window.AIA, st = AIA.getState();
     if (won) {
+      // Anti-farm : le boss PvE est rejouable, mais l'XP de victoire n'est gagnee qu'au 1er KO.
+      var _pveFirst = bossXpFirst('rpg');
       if (AIA.markGameBoss) AIA.markGameBoss('rpg');
-      AIA.addXP(SOLO_BOSS_XP, 'Boss PvE vaincu');
+      if (_pveFirst) AIA.addXP(SOLO_BOSS_XP, 'Boss PvE vaincu');
       if (AIA.awardBadge) AIA.awardBadge('boss-slayer');
       try { if (AIA.pushFeed && st.user && !st.user.isAdmin) AIA.pushFeed({ action: 'boss-solo', target: CREATURE_CONF.name }); } catch (e) {}
-      return { title: CREATURE_CONF.name + ' terrass&eacute; !', html: '<p>+' + SOLO_BOSS_XP + ' XP + badge <strong>Boss Slayer</strong> 🐲</p>' };
+      return { title: CREATURE_CONF.name + ' terrass&eacute; !', html: '<p>' + (_pveFirst ? '+' + SOLO_BOSS_XP + ' XP + badge' : 'Badge') + ' <strong>Boss Slayer</strong> 🐲' + (_pveFirst ? '' : ' <span style="color:var(--text-muted)">(XP deja obtenue)</span>') + '</p>' };
     }
-    AIA.addXP(5, 'Combat boss PvE');
-    return { title: 'Le boss r&eacute;siste...', html: '<p>+5 XP. Reviens plus fort — tu peux le r&eacute;affronter quand tu veux.</p>' };
+    // Consolation +5 XP une seule fois (pas a chaque tentative ratee).
+    var _firstTry = claimArena('rpgBossTried');
+    if (_firstTry) AIA.addXP(5, 'Combat boss PvE');
+    return { title: 'Le boss r&eacute;siste...', html: '<p>' + (_firstTry ? '+5 XP. ' : '') + 'Reviens plus fort — tu peux le r&eacute;affronter quand tu veux.</p>' };
   }
 
   window.AIA = window.AIA || {};

@@ -461,10 +461,13 @@
         wb.scores = wb.scores || {};
         wb.scores[id] = sc;
         wb.finalized[id] = true;
+        // Anti-farm : XP attribuee une seule fois par section, meme apres reouverture/re-validation par le formateur.
+        wb.rewarded = wb.rewarded || {};
         var bonus = sc >= 80 ? 15 : sc >= 60 ? 10 : sc >= 40 ? 5 : 0;
-        if (AIA.addXP) AIA.addXP(10 + bonus, 'Carnet : section validee (' + sc + '/100)');
+        var _gainedXp = !wb.rewarded[id];
+        if (_gainedXp) { wb.rewarded[id] = true; if (AIA.addXP) AIA.addXP(10 + bonus, 'Carnet : section validee (' + sc + '/100)'); }
         if (AIA.saveState) AIA.saveState();
-        AIA.showToast('🔒 Section validee ! Score ' + sc + '/100 — +' + (10 + bonus) + ' XP', 'success');
+        AIA.showToast('🔒 Section validee ! Score ' + sc + '/100' + (_gainedXp ? ' — +' + (10 + bonus) + ' XP' : ' (XP deja obtenue)'), 'success');
         renderWorkbook(main);
       });
     });

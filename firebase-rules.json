@@ -146,6 +146,29 @@
       ".write": "auth != null"
     },
 
+    "chat": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$msgId": {
+        ".validate": "newData.hasChildren(['text', 'ts']) && newData.child('text').isString() && newData.child('text').val().length < 600"
+      }
+    },
+
+    "duel_queue": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    "duels": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
+    "duel_notify": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+
     "$other": {
       ".read": false,
       ".write": false
