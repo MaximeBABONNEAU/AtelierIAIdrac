@@ -332,7 +332,62 @@
     _classListener = null;
   }
 
+  /* ===================== COMPAGNON NAV (haut gauche, animation idle) =====================
+     - Dès la connexion : la créature est AFFECTÉE automatiquement (sans ouvrir l'écran).
+     - Affichée à côté de l'avatar étudiant (#nav-pet), animée en idle :
+       respiration (bob 1px) + clignement des yeux. Clic -> écran PromptMon. */
+  var _petWatch = null, _petAnim = null, _petT = 0, _assigning = false;
+
+  function paintNavPet(tOverride) {
+    var c = document.getElementById('nav-pet'); if (!c || c.style.display === 'none') return;
+    var A = window.AIA, pm = PM(); if (!pm || !pm.drawCreature) return;
+    var st = A.getState(); var p = st.promptmon; if (!p || !p.creatureId) return;
+    var cr = pm.getCreature(p.creatureId); if (!cr) return;
+    var ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, c.width, c.height);
+    // Phase dérivée de l'horloge : robuste au throttling des onglets cachés (et testable)
+    var t = (typeof tOverride === 'number') ? tOverride : Date.now();
+    var bob = Math.floor(t / 720) % 2;            // respiration : 2 positions (720ms)
+    var blink = (t % 4700) >= 4340;               // clignement ~360ms toutes les 4,7s
+    pm.drawCreature(ctx, cr, p.evoStage || 0, p.equipped || [], 2, 2, 2 + bob, { blink: blink });
+  }
+  function startIdle() { if (_petAnim) return; _petAnim = setInterval(function () { paintNavPet(); }, 180); }
+  function stopIdle() { if (_petAnim) { clearInterval(_petAnim); _petAnim = null; } }
+
+  function petWatcher() {
+    var A = window.AIA, c = document.getElementById('nav-pet');
+    var st = A.getState && A.getState(); var u = st && st.user;
+    if (!u || !u.accountKey) { // déconnecté ou formateur sans compte
+      if (c) c.style.display = 'none';
+      stopIdle(); return;
+    }
+    var p = getPM();
+    if (!p.creatureId) {       // AFFECTATION AUTOMATIQUE à la connexion
+      if (_assigning) return;
+      _assigning = true;
+      assignCreature(function (id, isNew) {
+        _assigning = false;
+        if (isNew && A.showToast) {
+          var cr = PM().getCreature(id);
+          if (cr) A.showToast('🐾 ' + cr.names[0] + ' t\'a choisi ! Retrouve-le en haut à gauche.', 'success');
+        }
+      });
+      return;
+    }
+    if (c && c.style.display !== 'block') { c.style.display = 'block'; }
+    startIdle();
+  }
+  function startPetWatcher() {
+    if (_petWatch) return;
+    petWatcher();
+    _petWatch = setInterval(petWatcher, 1500);
+  }
+  // Démarre dès le chargement (scripts en fin de body : DOM prêt)
+  try { startPetWatcher(); } catch (e) {}
+
   window.AIA = window.AIA || {};
   window.AIA.renderPromptmon = renderPromptmon;
   window.AIA.stopPromptmon = stopPromptmon;
+  window.AIA.paintNavPet = paintNavPet;
 })();
