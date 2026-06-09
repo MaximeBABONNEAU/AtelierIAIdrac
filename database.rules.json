@@ -158,8 +158,18 @@
     "feedback": {
       ".read": "auth != null",
       "$id": {
-        ".write": "auth != null && (!newData.exists() || (root.child('accounts/' + newData.child('key').val()).exists() && root.child('owners/' + newData.child('key').val()).val() === auth.uid))",
-        ".validate": "newData.hasChildren(['key', 'ts'])"
+        ".write": "auth != null && (newData.exists() ? (root.child('accounts/' + newData.child('key').val()).exists() && root.child('owners/' + newData.child('key').val()).val() === auth.uid) : (data.exists() && root.child('owners/' + data.child('key').val()).val() === auth.uid))",
+        ".validate": "newData.hasChildren(['key', 'ts'])",
+        "status": {
+          ".write": "auth != null",
+          ".validate": "newData.isString() && newData.val().length < 20"
+        },
+        "votes": {
+          "$voter": {
+            ".write": "auth != null && root.child('accounts/' + $voter).exists() && root.child('owners/' + $voter).val() === auth.uid",
+            ".validate": "newData.isBoolean() || !newData.exists()"
+          }
+        }
       }
     },
     "duel_queue": {
