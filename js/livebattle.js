@@ -109,6 +109,25 @@
   /* ====================================================
      PHASE PREP — "Ma soumission Live" (preemptif, persistant)
      ==================================================== */
+  // Theme du jour : J2 = slogan voix + avatar video ; J3 = son + image ; sinon generique.
+  function seminarDay() {
+    try {
+      var dates = (window.AIA.CONFIG && window.AIA.CONFIG.dates) || [];
+      var today = new Date().toISOString().split('T')[0];
+      var i = dates.indexOf(today);
+      if (i >= 0) return i + 1;
+      if (dates.length && today > dates[dates.length - 1]) return 4;
+      return 0;
+    } catch (e) { return 0; }
+  }
+  var BATTLE_THEMES = {
+    2: { title: 'Slogan : Voix & Avatar', consigne: 'Donne vie a ton slogan : une VOIX IA (ElevenLabs) + un AVATAR VIDEO anime (HeyGen) qui le declame. Rends une video MP4.', prefer: 'video' },
+    3: { title: 'Son & Image', consigne: 'Associe une IMAGE de marque a un JINGLE qui la represente (ou rends une video).', prefer: 'media' }
+  };
+  function currentTheme() {
+    return BATTLE_THEMES[seminarDay()] || { title: 'Son & Image', consigne: 'Associe une image de marque a un jingle, ou rends une video MP4. La classe vote en direct.', prefer: 'media' };
+  }
+
   function renderPrep(main) {
     var A = window.AIA, u = me();
     A.db.ref('livebattle_content').once('value', function (snap) {
@@ -138,8 +157,9 @@
         '</div>'
       ) : '<div class="glass-card" style="padding:1rem">Connecte-toi en etudiant pour preparer ta soumission.</div>';
 
-      main.innerHTML = '<div class="page-header"><h1>🎤 Live Battle <span class="gradient-text">Son &amp; Image</span></h1>' +
-        '<p class="page-subtitle">Consigne : associe une <strong>image de marque</strong> a un <strong>jingle</strong> (ou rends une video). La classe votera en direct ⭐</p></div>' +
+      var TH = currentTheme();
+      main.innerHTML = '<div class="page-header"><h1>🎤 Live Battle <span class="gradient-text">' + esc(TH.title) + '</span></h1>' +
+        '<p class="page-subtitle"><strong>Consigne :</strong> ' + esc(TH.consigne) + ' La classe vote en direct ⭐</p></div>' +
         adminBar + form;
 
       if (isAdmin()) { var lb = document.getElementById('lb-launch'); if (lb) lb.addEventListener('click', function () { launchLive(all); }); }
@@ -148,7 +168,7 @@
   }
 
   function wirePrepForm(u, mine) {
-    var pending = { type: mine ? mine.type : 'media', imageUrl: mine && mine.imageUrl, audioUrl: mine && mine.audioUrl, videoUrl: mine && mine.videoUrl };
+    var pending = { type: mine ? mine.type : currentTheme().prefer, imageUrl: mine && mine.imageUrl, audioUrl: mine && mine.audioUrl, videoUrl: mine && mine.videoUrl };
     var fMedia = document.getElementById('lb-form-media'), fVideo = document.getElementById('lb-form-video');
     var prev = document.getElementById('lb-prev'), msg = document.getElementById('lb-msg'), saveBtn = document.getElementById('lb-save');
     function showType(t) { pending.type = t; fMedia.style.display = t === 'media' ? 'block' : 'none'; fVideo.style.display = t === 'video' ? 'block' : 'none'; refresh(); }
@@ -193,7 +213,8 @@
     for (var i = keys.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = keys[i]; keys[i] = keys[j]; keys[j] = t; }
     var ref = A.db.ref('livebattle').push(); var id = ref.key;
     var content = {}; keys.forEach(function (k) { content[k] = contents[k]; });
-    ref.set({ meta: { phase: 'live', order: keys, currentIdx: 0, createdAt: Date.now() }, content: content }, function () {
+    var TH = currentTheme();
+    ref.set({ meta: { phase: 'live', order: keys, currentIdx: 0, createdAt: Date.now(), title: TH.title, consigne: TH.consigne }, content: content }, function () {
       A.db.ref('livebattle/current').set(id);
     });
   }
