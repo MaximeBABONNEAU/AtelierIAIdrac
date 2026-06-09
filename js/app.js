@@ -350,10 +350,30 @@
     });
   }
 
+  // Robustesse : jour max auto-debloque (pendant le seminaire = jour courant ; apres = tout ; avant = jour 1).
+  // Evite que des etudiants restent bloques si le formateur oublie de debloquer une phase/un jour.
+  function maxUnlockedDay() {
+    try {
+      var dates = (CONFIG && CONFIG.dates) || [];
+      if (!dates.length) return 99;
+      var today = new Date().toISOString().split('T')[0];
+      var i = dates.indexOf(today);
+      if (i >= 0) return i + 1;
+      if (today > dates[dates.length - 1]) return 99;
+      return 1;
+    } catch (e) { return 99; }
+  }
+
   function isItemUnlocked(type, id) {
     if (state.user && state.user.isAdmin && !adminAsStudent) return true;
-    if (!unlocks[type]) return false;
-    return !!unlocks[type][id];
+    var u = unlocks[type] || {};
+    if (u[id] === true) return true;
+    if (u[id] === false) return false;          // hard-lock formateur conserve
+    if (type === 'phases') {                     // auto-deblocage des phases du Business Game par jour
+      var n = parseInt(String(id).replace(/\D/g, ''), 10) || 1;
+      return maxUnlockedDay() >= n;
+    }
+    return !!u[id];
   }
 
   function setUnlock(type, id, value, callback) {
@@ -396,8 +416,9 @@
     if (state.user && state.user.isAdmin && !adminAsStudent) return true;
     if (unlocks.activities && unlocks.activities[actId] === false) return false;
     if (!(unlocks.activities && unlocks.activities[actId] === true)) {
-      var dayKey0 = 'day' + (dayIdx + 1);
-      if (dayLocks[dayKey0]) return false;
+      var dayNum0 = dayIdx + 1;
+      // Le verrou de jour ne bloque plus une fois la date du jour atteinte (robustesse anti-blocage).
+      if (dayLocks['day' + dayNum0] && maxUnlockedDay() < dayNum0) return false;
     }
     var d = PROGRAM['day' + (dayIdx + 1)];
     if (!d) return false;

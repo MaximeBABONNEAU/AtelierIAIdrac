@@ -97,7 +97,7 @@
     var A = window.AIA;
     if (_battleRef) { try { _battleRef.off(); } catch (e) {} }
     _battleRef = A.db.ref('livebattle/' + id);
-    _curIdx = -1;
+    _curIdx = -1; _stageKey = null; _stageOrderLen = 0;
     _battleRef.on('value', function (snap) {
       var b = snap.val() || {}; var meta = b.meta || {};
       if (meta.phase === 'results') { if (_ticker) { clearInterval(_ticker); _ticker = null; } renderResults(main, id, b); }
@@ -193,7 +193,7 @@
     for (var i = keys.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = keys[i]; keys[i] = keys[j]; keys[j] = t; }
     var ref = A.db.ref('livebattle').push(); var id = ref.key;
     var content = {}; keys.forEach(function (k) { content[k] = contents[k]; });
-    ref.set({ meta: { phase: 'live', order: keys, startedAt: Date.now(), perSecs: PER_SECS, createdAt: Date.now() }, content: content }, function () {
+    ref.set({ meta: { phase: 'live', order: keys, currentIdx: 0, createdAt: Date.now() }, content: content }, function () {
       A.db.ref('livebattle/current').set(id);
     });
   }
@@ -208,83 +208,103 @@
   }
 
   /* ====================================================
-     PHASE LIVE — scene + rotation auto + popup etoiles
-     (re-render COMPLET seulement au changement de presentateur : la video ne redemarre pas)
+     PHASE LIVE — pilotage MANUEL par le formateur, scene STABLE.
+     Le bloc media (#lb-stage-media) n'est RECONSTRUIT qu'au changement de presentateur
+     -> une video lue ne se coupe JAMAIS sur un vote ou un rafraichissement de donnees.
      ==================================================== */
+  var _stageKey = null, _stageOrderLen = 0, _stageCtx = null;
+
+  function setCurrentIdx(id, order, n) {
+    var clamped = Math.max(0, Math.min(order.length - 1, n));
+    window.AIA.db.ref('livebattle/' + id + '/meta/currentIdx').set(clamped);
+  }
+
   function runStage(main, id, b) {
     var meta = b.meta || {}, content = b.content || {}, ratings = b.ratings || {};
     var order = (meta.order || []).filter(function (k) { return content[k]; });
-    var perSecs = meta.perSecs || PER_SECS, started = meta.startedAt || Date.now();
-    var u = me();
-    if (_ticker) { clearInterval(_ticker); _ticker = null; }
-    _curIdx = -1;
-
-    function tick() {
-      var elapsed = (Date.now() - started) / 1000;
-      var idx = Math.floor(elapsed / perSecs);
-      if (idx >= order.length) { clearInterval(_ticker); _ticker = null; if (isAdmin()) endBattle(id); return; }
-      var leftInTurn = Math.max(0, Math.ceil(perSecs - (elapsed - idx * perSecs)));
-      if (idx !== _curIdx) { _curIdx = idx; renderStageFull(main, id, order, content, ratings, idx); }
-      var cd = document.getElementById('lb-countdown'); if (cd) cd.textContent = '⏱ ' + leftInTurn + 's';
+    if (!order.length) { main.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Aucune soumission a presenter.' + (isAdmin() ? ' <button class="btn-outline" id="lb-end">Resultats</button>' : '') + '</div>'; var e0 = document.getElementById('lb-end'); if (e0) e0.addEventListener('click', function () { endBattle(id); }); return; }
+    var idx = Math.max(0, Math.min(order.length - 1, meta.currentIdx || 0));
+    var presenterKey = order[idx];
+    _stageCtx = { main: main, id: id, order: order, content: content, ratings: ratings, idx: idx };
+    if (presenterKey !== _stageKey || _stageOrderLen !== order.length) {
+      _stageKey = presenterKey; _stageOrderLen = order.length;
+      renderStageFull(main, id, order, content, ratings, idx);
+    } else {
+      updateVotePanel();
     }
-    tick();
-    _ticker = setInterval(tick, 500);
   }
 
   function presenterMedia(cur) {
     if (cur.type === 'video' && cur.videoUrl) {
-      return '<video id="lb-media" src="' + cur.videoUrl + '" controls autoplay playsinline style="max-width:min(620px,92%);max-height:48vh;border-radius:12px;border:2px solid var(--gold);box-shadow:0 10px 40px rgba(0,0,0,.5)"></video>';
+      return '<video id="lb-media" src="' + cur.videoUrl + '" controls autoplay playsinline style="max-width:min(640px,94%);max-height:50vh;border-radius:12px;border:2px solid var(--gold);box-shadow:0 10px 40px rgba(0,0,0,.5)"></video>';
     }
     return '<img src="' + (cur.imageUrl || '') + '" alt="brand" style="max-width:min(560px,90%);max-height:44vh;border-radius:12px;border:2px solid var(--gold);box-shadow:0 10px 40px rgba(0,0,0,.5)">' +
       '<div style="margin-top:.5rem"><audio id="lb-media" src="' + (cur.audioUrl || '') + '" controls autoplay style="width:min(560px,90%)"></audio></div>';
   }
 
-  function starRow(presenterKey, presenterName, ratings, u) {
-    var mine = (ratings[presenterKey] || {})[u.accountKey] || 0;
-    var stars = '';
-    for (var s = 1; s <= 5; s++) {
-      stars += '<span class="lb-star" data-star="' + s + '" style="cursor:pointer;font-size:2rem;line-height:1;color:' + (s <= mine ? '#F5B731' : 'rgba(255,255,255,0.35)') + '">★</span>';
+  function votePanelHtml(curKey, curName, ratings, u) {
+    var st = avgOf(ratings[curKey]);
+    var canVote = u.accountKey && curKey !== u.accountKey;
+    var body;
+    if (canVote) {
+      var mine = (ratings[curKey] || {})[u.accountKey] || 0, stars = '';
+      for (var s = 1; s <= 5; s++) stars += '<span class="lb-star" data-star="' + s + '" style="cursor:pointer;font-size:2.1rem;line-height:1;color:' + (s <= mine ? '#F5B731' : 'rgba(255,255,255,0.35)') + '">★</span>';
+      body = '<div style="font-size:.8rem;color:var(--text-secondary)">Note la creation de <strong>' + esc((curName || '').split(' ')[0]) + '</strong></div>' +
+        '<div id="lb-stars">' + stars + '</div>' +
+        '<div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">' + (mine ? 'Ta note : ' + mine + '/5 (modifiable)' : 'Touche une etoile') + ' &bull; ' + st.n + ' vote(s) &bull; moy ' + st.avg.toFixed(1) + ' ★</div>';
+    } else {
+      body = '<div style="font-size:.85rem">' + (u.accountKey && curKey === u.accountKey ? '🎤 C\'est ton passage !' : (isAdmin() ? '👨‍🏫 Pilotage de la scene' : '')) + '</div>' +
+        '<div style="font-size:.72rem;color:var(--text-muted)">' + st.n + ' vote(s) &bull; moyenne ' + st.avg.toFixed(1) + ' ★</div>';
     }
-    return '<div class="lb-vote-popup" style="position:fixed;left:50%;bottom:1.1rem;transform:translateX(-50%);z-index:9000;background:rgba(20,20,35,0.96);border:1px solid var(--gold);border-radius:16px;padding:.7rem 1.2rem;box-shadow:0 12px 50px rgba(0,0,0,.6);text-align:center;backdrop-filter:blur(6px)">' +
-      '<div style="font-size:.8rem;color:var(--text-muted);margin-bottom:.2rem">Note la creation de <strong>' + esc((presenterName || '').split(' ')[0]) + '</strong></div>' +
-      '<div id="lb-stars" data-presenter="' + presenterKey + '">' + stars + '</div>' +
-      '<div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem">' + (mine ? 'Ta note : ' + mine + '/5 (modifiable)' : 'Touche une etoile') + '</div>' +
-      '</div>';
+    return '<div class="lb-vote-popup" style="position:fixed;left:50%;bottom:1.1rem;transform:translateX(-50%);z-index:9000;background:rgba(20,20,35,0.96);border:1px solid var(--gold);border-radius:16px;padding:.7rem 1.2rem;box-shadow:0 12px 50px rgba(0,0,0,.6);text-align:center;backdrop-filter:blur(6px);max-width:92vw">' + body + '</div>';
+  }
+
+  // Mise a jour LEGERE : reconstruit uniquement le panneau de vote (le media n'est PAS touche).
+  function updateVotePanel() {
+    var c = _stageCtx; if (!c) return; var u = me();
+    var curKey = c.order[c.idx], cur = c.content[curKey] || {};
+    var wrap = document.getElementById('lb-vote-wrap'); if (!wrap) return;
+    wrap.innerHTML = votePanelHtml(curKey, cur.name, c.ratings, u);
+    wireStars(c.id, curKey, u);
+  }
+  function wireStars(id, curKey, u) {
+    var sw = document.getElementById('lb-stars'); if (!sw) return;
+    sw.querySelectorAll('.lb-star').forEach(function (st) {
+      st.addEventListener('click', function () { window.AIA.db.ref('livebattle/' + id + '/ratings/' + curKey + '/' + u.accountKey).set(parseInt(this.getAttribute('data-star'), 10)); });
+    });
   }
 
   function renderStageFull(main, id, order, content, ratings, idx) {
-    var u = me();
-    var curKey = order[idx], cur = content[curKey] || {};
+    var u = me(); var curKey = order[idx], cur = content[curKey] || {};
+    var controls = isAdmin() ? '<div style="display:flex;gap:.4rem;justify-content:center;flex-wrap:wrap;margin-bottom:.5rem">' +
+      '<button class="btn-outline btn-sm" id="lb-prev"' + (idx <= 0 ? ' disabled' : '') + '>⏮ Precedent</button>' +
+      '<button class="btn-primary btn-sm" id="lb-next"' + (idx >= order.length - 1 ? ' disabled' : '') + '>Suivant ⏭</button>' +
+      '<button class="btn-outline btn-sm" id="lb-end">⏹ Terminer</button>' +
+      '</div><div style="text-align:center;font-size:.72rem;color:var(--text-muted);margin-bottom:.4rem">Tu passes a un etudiant quand tu veux : boutons, ou clique un avatar ci-dessous.</div>' : '';
     var audience = order.map(function (k) {
-      var c = content[k] || {}; var on = k === curKey;
-      return '<div style="text-align:center;opacity:' + (on ? '1' : '0.5') + ';transform:scale(' + (on ? '1.15' : '1') + ');transition:.3s">' + avatarImg(c.avatar, 38) +
-        '<div style="font-size:.58rem;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((c.name || '').split(' ')[0]) + '</div></div>';
+      var c = content[k] || {}, on = k === curKey;
+      return '<div class="lb-aud' + (isAdmin() ? ' lb-jump' : '') + '" data-key="' + k + '" style="text-align:center;cursor:' + (isAdmin() ? 'pointer' : 'default') + ';opacity:' + (on ? '1' : '0.5') + ';transform:scale(' + (on ? '1.15' : '1') + ');transition:.3s">' +
+        avatarImg(c.avatar, 38) + '<div style="font-size:.58rem;max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc((c.name || '').split(' ')[0]) + '</div></div>';
     }).join('');
-    var adminBar = isAdmin() ? '<div style="text-align:center;margin-bottom:.5rem"><button class="btn-outline btn-sm" id="lb-end">⏭ Terminer &amp; resultats</button></div>' : '';
-    var canVote = u.accountKey && curKey !== u.accountKey;
 
     main.innerHTML = '<div class="page-header" style="margin-bottom:.4rem"><h1>🎤 Live <span class="gradient-text">Battle</span></h1>' +
-      '<p class="page-subtitle">Presentation ' + (idx + 1) + '/' + order.length + ' &bull; vote en direct ⭐</p></div>' + adminBar +
+      '<p class="page-subtitle">Passage ' + (idx + 1) + '/' + order.length + ' &bull; vote en direct ⭐</p></div>' + controls +
       '<div class="glass-card" style="padding:0;overflow:hidden">' +
-        '<div style="background:linear-gradient(180deg,#1a1a2e,#16213e);padding:1rem;text-align:center;position:relative">' +
-          '<div id="lb-countdown" style="position:absolute;top:.6rem;right:.9rem;font-weight:800;font-size:1.25rem;color:var(--gold)">⏱</div>' +
+        '<div id="lb-stage-media" style="background:linear-gradient(180deg,#1a1a2e,#16213e);padding:1rem;text-align:center">' +
           '<div style="display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.5rem">' + avatarImg(cur.avatar, 54) +
             '<div style="text-align:left"><div style="font-size:.72rem;color:var(--text-muted)">AU TABLEAU</div><div style="font-size:1.2rem;font-weight:800">' + esc(cur.name || 'Etudiant') + '</div></div></div>' +
           presenterMedia(cur) +
         '</div>' +
       '</div>' +
       '<div class="glass-card" style="margin-top:1rem;padding:.6rem;display:flex;gap:.5rem;overflow-x:auto;justify-content:center;flex-wrap:wrap">' + audience + '</div>' +
-      (canVote ? starRow(curKey, cur.name, ratings, u) : '');
+      '<div id="lb-vote-wrap">' + votePanelHtml(curKey, cur.name, ratings, u) + '</div>';
 
     var media = document.getElementById('lb-media'); if (media && media.play) { var p = media.play(); if (p && p.catch) p.catch(function () {}); }
+    var pb = document.getElementById('lb-prev'); if (pb) pb.addEventListener('click', function () { setCurrentIdx(id, order, idx - 1); });
+    var nb = document.getElementById('lb-next'); if (nb) nb.addEventListener('click', function () { setCurrentIdx(id, order, idx + 1); });
     var eb = document.getElementById('lb-end'); if (eb) eb.addEventListener('click', function () { endBattle(id); });
-    var sw = document.getElementById('lb-stars');
-    if (sw) sw.querySelectorAll('.lb-star').forEach(function (st) {
-      st.addEventListener('click', function () {
-        var v = parseInt(this.getAttribute('data-star'), 10);
-        window.AIA.db.ref('livebattle/' + id + '/ratings/' + curKey + '/' + u.accountKey).set(v);
-      });
-    });
+    if (isAdmin()) main.querySelectorAll('.lb-jump').forEach(function (el) { el.addEventListener('click', function () { var k = this.getAttribute('data-key'); var ni = order.indexOf(k); if (ni > -1) setCurrentIdx(id, order, ni); }); });
+    wireStars(id, curKey, u);
   }
 
   /* ====================================================
@@ -311,14 +331,16 @@
     var medals = ['🥇', '🥈', '🥉'];
     var rows = keys.map(function (k, i) {
       var c = content[k] || {}, stt = stats[k]; var meRow = k === u.accountKey;
-      var thumb = c.type === 'video'
-        ? '<video src="' + (c.videoUrl || '') + '" style="width:64px;height:48px;object-fit:cover;border-radius:6px" muted></video>'
-        : '<img src="' + (c.imageUrl || '') + '" style="width:48px;height:48px;object-fit:cover;border-radius:6px">';
-      var media = c.type === 'video' ? '' : (c.audioUrl ? '<audio src="' + c.audioUrl + '" controls style="height:30px;max-width:150px"></audio>' : '');
-      return '<div class="glass-card" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;margin-bottom:.5rem' + (meRow ? ';border:1px solid var(--gold)' : '') + '">' +
-        '<div style="font-size:1.3rem;width:2rem;text-align:center">' + (medals[i] || (i + 1)) + '</div>' + avatarImg(c.avatar, 38) + thumb +
-        '<div style="flex:1"><strong>' + esc(c.name || 'Etudiant') + '</strong>' + (meRow ? ' (toi)' : '') + '<div style="font-size:.7rem;color:var(--text-muted)">' + stt.n + ' vote(s)</div></div>' +
-        media + '<div style="font-weight:800;color:var(--gold);min-width:78px;text-align:right">' + stt.avg.toFixed(2) + ' ★</div></div>';
+      // Relecture des assets : video jouable, ou image (clic = plein ecran) + audio jouable.
+      var replay = c.type === 'video'
+        ? '<video src="' + (c.videoUrl || '') + '" controls playsinline preload="metadata" style="width:160px;max-height:100px;border-radius:6px;background:#000"></video>'
+        : '<a href="' + (c.imageUrl || '') + '" target="_blank" rel="noopener" title="Voir en grand"><img src="' + (c.imageUrl || '') + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid var(--border-glass)"></a>' +
+          (c.audioUrl ? '<audio src="' + c.audioUrl + '" controls preload="none" style="height:32px;max-width:170px"></audio>' : '');
+      return '<div class="glass-card" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;margin-bottom:.5rem;flex-wrap:wrap' + (meRow ? ';border:1px solid var(--gold)' : '') + '">' +
+        '<div style="font-size:1.3rem;width:2rem;text-align:center">' + (medals[i] || (i + 1)) + '</div>' + avatarImg(c.avatar, 38) +
+        '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">' + replay + '</div>' +
+        '<div style="flex:1;min-width:120px"><strong>' + esc(c.name || 'Etudiant') + '</strong>' + (meRow ? ' (toi)' : '') + '<div style="font-size:.7rem;color:var(--text-muted)">' + stt.n + ' vote(s)</div></div>' +
+        '<div style="font-weight:800;color:var(--gold);min-width:78px;text-align:right">' + stt.avg.toFixed(2) + ' ★</div></div>';
     }).join('');
 
     main.innerHTML = '<div class="page-header"><h1>🏆 Resultats <span class="gradient-text">Live Battle</span></h1>' +
