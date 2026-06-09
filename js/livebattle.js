@@ -72,13 +72,14 @@
   }
 
   /* ---------- ETAT ---------- */
-  var _curRef = null, _battleRef = null, _ticker = null, _curIdx = -1, _rewardClaimed = {};
+  var _curRef = null, _battleRef = null, _ticker = null, _curIdx = -1, _rewardClaimed = {}, _forgeRef = null;
   function stopLive() {
     var A = window.AIA;
     try { if (_curRef && A.db) A.db.ref('livebattle/current').off('value', _curRef); } catch (e) {}
     try { if (_battleRef) _battleRef.off(); } catch (e) {}
+    try { if (_forgeRef) _forgeRef.off(); } catch (e) {}
     if (_ticker) { clearInterval(_ticker); _ticker = null; }
-    _curRef = null; _battleRef = null; _curIdx = -1;
+    _curRef = null; _battleRef = null; _curIdx = -1; _forgeRef = null;
   }
 
   function renderLiveBattle(main) {
@@ -121,7 +122,7 @@
     } catch (e) { return 0; }
   }
   var BATTLE_THEMES = {
-    2: { title: 'Slogan : Voix & Avatar', consigne: 'Donne vie a ton slogan : une VOIX IA (ElevenLabs) + un AVATAR VIDEO anime (HeyGen) qui le declame. Rends une video MP4.', prefer: 'video' },
+    2: { title: 'Slogan : Voix & Avatar', consigne: 'Donne vie a ton slogan : utilise le STUDIO IA integre (visuel anime + voix, gratuit et sans compte) — ou apporte ta propre video MP4 (HeyGen, ElevenLabs, Kling...). La classe compare les creations et vote.', prefer: 'ia' },
     3: { title: 'Son & Image', consigne: 'Associe une IMAGE de marque a un JINGLE qui la represente (ou rends une video).', prefer: 'media' }
   };
   function currentTheme() {
@@ -140,7 +141,8 @@
         '<div class="glass-card" style="padding:1.2rem">' +
         '<h3 style="margin-top:0">🎨 Ma soumission</h3>' +
         (mine ? '<div style="color:var(--green);margin-bottom:.6rem">✅ Soumission enregistree (' + (mine.type === 'video' ? 'Video' : 'Image + Jingle') + '). Tu peux la remplacer ci-dessous.</div>' : '<div style="color:var(--text-muted);margin-bottom:.6rem">Prepare ton contenu en avance — tu pourras le modifier jusqu\'au lancement.</div>') +
-        '<div style="display:flex;gap:.5rem;margin-bottom:1rem">' +
+        '<div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">' +
+          '<button class="btn-outline btn-sm lb-type" data-type="ia">✨ Studio IA (gratuit)</button>' +
           '<button class="btn-outline btn-sm lb-type" data-type="media">🖼️+🔊 Image + Jingle</button>' +
           '<button class="btn-outline btn-sm lb-type" data-type="video">🎬 Video MP4</button>' +
         '</div>' +
@@ -150,6 +152,19 @@
         '</div>' +
         '<div id="lb-form-video" style="display:none">' +
           '<div style="margin-bottom:.7rem"><strong>🎬 Video MP4</strong> <span style="font-size:.78rem;color:var(--text-muted)">(' + fmtSize(VIDEO_MAX) + ' max, ~15-30s)</span><div style="font-size:.76rem;color:var(--text-muted);margin:.2rem 0">' + toolBtns(VID_TOOLS) + '</div><input type="file" id="lb-vid" accept="video/*"></div>' +
+        '</div>' +
+        '<div id="lb-form-ia" style="display:none">' +
+          '<div id="lb-ia-worker" style="font-size:.78rem;margin-bottom:.6rem"></div>' +
+          '<div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.7rem">Decris ton visuel de marque, ecris ton slogan, choisis une voix — la video est generee par le Studio IA de la classe (gratuit, sans compte, sans watermark) puis enregistree automatiquement comme ta soumission.</div>' +
+          '<div style="margin-bottom:.6rem"><strong>🎨 Prompt visuel</strong> <span style="font-size:.74rem;color:var(--text-muted)">(decris l\'image a creer puis animer — anglais conseille)</span><textarea id="lb-ia-prompt" maxlength="550" rows="3" style="width:100%;resize:vertical" placeholder="ex : modern sneaker store with neon lights, cinematic"></textarea></div>' +
+          '<div style="margin-bottom:.6rem"><strong>💬 Slogan</strong> <span style="font-size:.74rem;color:var(--text-muted)">(dit par la voix IA, garde-le court)</span><input type="text" id="lb-ia-slogan" maxlength="280" style="width:100%" placeholder="ex : La performance n\'attend pas."></div>' +
+          '<div style="margin-bottom:.8rem"><strong>🗣️ Voix</strong> <select id="lb-ia-voice" style="margin-left:.4rem">' +
+            '<option value="fr-FR-DeniseNeural">Denise (femme)</option>' +
+            '<option value="fr-FR-HenriNeural">Henri (homme)</option>' +
+            '<option value="fr-FR-EloiseNeural">Eloise (jeune)</option>' +
+          '</select></div>' +
+          '<button class="btn-primary" id="lb-ia-go">🚀 Generer ma video IA</button>' +
+          '<div id="lb-ia-status" style="margin-top:.6rem;font-size:.85rem"></div>' +
         '</div>' +
         '<div id="lb-prev" style="margin:.6rem 0"></div>' +
         '<button class="btn-primary" id="lb-save" disabled>Enregistrer ma soumission</button>' +
@@ -168,10 +183,10 @@
   }
 
   function wirePrepForm(u, mine) {
-    var pending = { type: mine ? mine.type : currentTheme().prefer, imageUrl: mine && mine.imageUrl, audioUrl: mine && mine.audioUrl, videoUrl: mine && mine.videoUrl };
-    var fMedia = document.getElementById('lb-form-media'), fVideo = document.getElementById('lb-form-video');
+    var pending = { type: mine ? (mine.via === 'ia' ? 'ia' : mine.type) : currentTheme().prefer, imageUrl: mine && mine.imageUrl, audioUrl: mine && mine.audioUrl, videoUrl: mine && mine.videoUrl };
+    var fMedia = document.getElementById('lb-form-media'), fVideo = document.getElementById('lb-form-video'), fIA = document.getElementById('lb-form-ia');
     var prev = document.getElementById('lb-prev'), msg = document.getElementById('lb-msg'), saveBtn = document.getElementById('lb-save');
-    function showType(t) { pending.type = t; fMedia.style.display = t === 'media' ? 'block' : 'none'; fVideo.style.display = t === 'video' ? 'block' : 'none'; refresh(); }
+    function showType(t) { pending.type = t; fMedia.style.display = t === 'media' ? 'block' : 'none'; fVideo.style.display = t === 'video' ? 'block' : 'none'; if (fIA) fIA.style.display = t === 'ia' ? 'block' : 'none'; if (saveBtn) saveBtn.style.display = t === 'ia' ? 'none' : ''; if (prev) prev.style.display = t === 'ia' ? 'none' : ''; refresh(); }
     function ready() { return pending.type === 'video' ? !!pending.videoUrl : (!!pending.imageUrl && !!pending.audioUrl); }
     function refresh() {
       prev.innerHTML = pending.type === 'video'
@@ -201,6 +216,85 @@
       var data = { name: u.name || 'Etudiant', avatar: st.avatar || (window.AIA.getDefaultAvatar ? window.AIA.getDefaultAvatar() : null), type: pending.type, ts: Date.now() };
       if (pending.type === 'video') data.videoUrl = pending.videoUrl; else { data.imageUrl = pending.imageUrl; data.audioUrl = pending.audioUrl; }
       window.AIA.db.ref('livebattle_content/' + u.accountKey).set(data, function (err) { msg.innerHTML = err ? '<span style="color:var(--red)">Echec enregistrement.</span>' : '<span style="color:var(--green)">✅ Soumission enregistree ! Tu peux la modifier jusqu\'au lancement.</span>'; });
+    });
+
+    wireIA(u);
+  }
+
+  /* ====================================================
+     STUDIO IA — generation gratuite (file Firebase + worker formateur)
+     L'etudiant soumet prompt+slogan+voix -> /avatarforge/requests/<key>.
+     Le worker (poste formateur) genere (image FLUX -> animation SVD -> voix
+     Edge-TTS -> montage) et publie /avatarforge/jobs/<key> {status, videoUrl}.
+     A "done", la video devient automatiquement la soumission Live Battle.
+     ==================================================== */
+  var IA_STEPS = { image: '🎨 Creation de l\'image...', animation: '🎬 Animation du visuel...', voix: '🗣️ Generation de la voix...', montage: '🎚️ Montage audio/video...' };
+
+  function wireIA(u) {
+    var A = window.AIA;
+    var pEl = document.getElementById('lb-ia-prompt'), sEl = document.getElementById('lb-ia-slogan'), vEl = document.getElementById('lb-ia-voice');
+    var goBtn = document.getElementById('lb-ia-go'), stEl = document.getElementById('lb-ia-status'), wEl = document.getElementById('lb-ia-worker');
+    if (!goBtn || !u.accountKey) return;
+    var lastSavedUrl = null;
+
+    // pre-remplissage depuis la derniere demande
+    A.db.ref('avatarforge/requests/' + u.accountKey).once('value', function (s) {
+      var r = s.val(); if (!r) return;
+      if (pEl && !pEl.value) pEl.value = r.prompt || '';
+      if (sEl && !sEl.value) sEl.value = r.slogan || '';
+      if (vEl && r.voice) vEl.value = r.voice;
+    });
+
+    goBtn.addEventListener('click', function () {
+      var prompt = (pEl.value || '').trim(), slogan = (sEl.value || '').trim();
+      if (!prompt || !slogan) { stEl.innerHTML = '<span style="color:var(--red)">Remplis le prompt visuel ET le slogan.</span>'; return; }
+      goBtn.disabled = true;
+      A.db.ref('avatarforge/requests/' + u.accountKey).set({ prompt: prompt, slogan: slogan, voice: vEl.value, ts: Date.now() }, function (err) {
+        goBtn.disabled = false;
+        stEl.innerHTML = err ? '<span style="color:var(--red)">Echec d\'envoi (' + esc(String(err)) + ').</span>' : '<span style="color:var(--green)">✅ Demande envoyee au Studio IA — suis l\'avancement ici.</span>';
+      });
+    });
+
+    if (_forgeRef) { try { _forgeRef.off(); } catch (e) {} }
+    _forgeRef = A.db.ref('avatarforge');
+    _forgeRef.on('value', function (snap) {
+      var d = snap.val() || {}, reqs = d.requests || {}, jobs = d.jobs || {}, w = d.worker || {};
+      // indicateur worker
+      if (wEl) {
+        var online = w.ts && (Date.now() - w.ts) < 90000;
+        wEl.innerHTML = online
+          ? '<span style="color:var(--green)">🟢 Studio IA en ligne</span>' + (w.busy ? ' <span style="color:var(--text-muted)">— generation en cours pour ' + esc(String(w.busy).split('_')[0]) + '</span>' : '')
+          : '<span style="color:var(--red)">🔴 Studio IA hors ligne</span> <span style="color:var(--text-muted)">— demande au formateur de lancer le Studio.</span>';
+      }
+      var myReq = reqs[u.accountKey], myJob = jobs[u.accountKey];
+      if (!stEl || !myReq) return;
+      if (!myJob || myJob.reqTs !== myReq.ts) {
+        // en file : position = demandes plus anciennes non terminees
+        var ahead = 0; Object.keys(reqs).forEach(function (k) {
+          if (k === u.accountKey) return; var r = reqs[k]; if (!r) return;
+          var j = jobs[k]; var doneForTs = j && j.reqTs === r.ts && (j.status === 'done' || j.status === 'error');
+          if (!doneForTs && r.ts < myReq.ts) ahead++;
+        });
+        stEl.innerHTML = '⏳ En file d\'attente' + (ahead ? ' — ' + ahead + ' creation(s) avant la tienne' : ' — tu es le prochain !') + ' <span style="color:var(--text-muted)">(~2-4 min par creation)</span>';
+      } else if (myJob.status === 'generating') {
+        stEl.innerHTML = '<strong>' + (IA_STEPS[myJob.step] || '⚙️ Generation...') + '</strong> <span style="color:var(--text-muted)">Ta video arrive, reste sur cette page ou reviens plus tard.</span>';
+      } else if (myJob.status === 'error') {
+        stEl.innerHTML = '<span style="color:var(--red)">❌ Echec de generation (' + esc(myJob.error || 'erreur') + '). Reessaie : modifie ton prompt et clique a nouveau.</span>';
+      } else if (myJob.status === 'done' && myJob.videoUrl) {
+        stEl.innerHTML = '<div style="color:var(--green);margin-bottom:.4rem">🎉 Ta video IA est prete — enregistree comme ta soumission !</div>' +
+          '<video src="' + myJob.videoUrl + '" controls playsinline style="max-width:300px;border-radius:8px"></video>';
+        // auto-enregistrement comme soumission Live Battle (une fois par URL)
+        if (lastSavedUrl !== myJob.videoUrl) {
+          lastSavedUrl = myJob.videoUrl;
+          var st2 = A.getState();
+          A.db.ref('livebattle_content/' + u.accountKey).set({
+            name: u.name || 'Etudiant',
+            avatar: st2.avatar || (A.getDefaultAvatar ? A.getDefaultAvatar() : null),
+            type: 'video', via: 'ia', videoUrl: myJob.videoUrl,
+            prompt: myReq.prompt || '', slogan: myReq.slogan || '', ts: Date.now()
+          });
+        }
+      }
     });
   }
 
@@ -315,6 +409,7 @@
           '<div style="display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.5rem">' + avatarImg(cur.avatar, 54) +
             '<div style="text-align:left"><div style="font-size:.72rem;color:var(--text-muted)">AU TABLEAU</div><div style="font-size:1.2rem;font-weight:800">' + esc(cur.name || 'Etudiant') + '</div></div></div>' +
           presenterMedia(cur) +
+          (cur.via === 'ia' && cur.slogan ? '<div style="margin-top:.55rem;font-size:.95rem">💬 « ' + esc(cur.slogan) + ' » <span style="font-size:.7rem;color:var(--text-muted)">— cree avec le Studio IA</span></div>' : '') +
         '</div>' +
       '</div>' +
       '<div class="glass-card" style="margin-top:1rem;padding:.6rem;display:flex;gap:.5rem;overflow-x:auto;justify-content:center;flex-wrap:wrap">' + audience + '</div>' +
@@ -357,11 +452,12 @@
         ? '<video src="' + (c.videoUrl || '') + '" controls playsinline preload="metadata" style="width:160px;max-height:100px;border-radius:6px;background:#000"></video>'
         : '<a href="' + (c.imageUrl || '') + '" target="_blank" rel="noopener" title="Voir en grand"><img src="' + (c.imageUrl || '') + '" style="width:50px;height:50px;object-fit:cover;border-radius:6px;border:1px solid var(--border-glass)"></a>' +
           (c.audioUrl ? '<audio src="' + c.audioUrl + '" controls preload="none" style="height:32px;max-width:170px"></audio>' : '');
+      var iaInfo = c.via === 'ia' ? '<div style="font-size:.66rem;color:var(--text-muted);width:100%;margin-top:.25rem">✨ Studio IA — 🎨 ' + esc((c.prompt || '').slice(0, 140)) + ((c.prompt || '').length > 140 ? '…' : '') + ' &bull; 💬 « ' + esc(c.slogan || '') + ' »</div>' : '';
       return '<div class="glass-card" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .9rem;margin-bottom:.5rem;flex-wrap:wrap' + (meRow ? ';border:1px solid var(--gold)' : '') + '">' +
         '<div style="font-size:1.3rem;width:2rem;text-align:center">' + (medals[i] || (i + 1)) + '</div>' + avatarImg(c.avatar, 38) +
         '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">' + replay + '</div>' +
         '<div style="flex:1;min-width:120px"><strong>' + esc(c.name || 'Etudiant') + '</strong>' + (meRow ? ' (toi)' : '') + '<div style="font-size:.7rem;color:var(--text-muted)">' + stt.n + ' vote(s)</div></div>' +
-        '<div style="font-weight:800;color:var(--gold);min-width:78px;text-align:right">' + stt.avg.toFixed(2) + ' ★</div></div>';
+        '<div style="font-weight:800;color:var(--gold);min-width:78px;text-align:right">' + stt.avg.toFixed(2) + ' ★</div>' + iaInfo + '</div>';
     }).join('');
 
     main.innerHTML = '<div class="page-header"><h1>🏆 Resultats <span class="gradient-text">Live Battle</span></h1>' +
