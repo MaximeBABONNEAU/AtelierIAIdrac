@@ -60,10 +60,10 @@
       brief: '+120 XP bonus + badge "Brand Builder" pour les premiers a finir.' },
 
     { id: 'livebattle-d2', day: 2, session: 'aprem', timeStart: '16:00', timeEnd: '16:45',
-      type: 'livebattle', icon: '🎤', title: 'Live Battle : Son & Image',
-      desc: 'Associe une image de marque a un jingle (ou rends une video). Presentation live au tableau, la classe vote en etoiles ⭐.',
+      type: 'livebattle', icon: '🗣️', title: 'Live Battle : Slogan en voix + avatar anime',
+      desc: 'Donne vie a ton slogan : genere une VOIX IA (ElevenLabs) et un AVATAR VIDEO anime (HeyGen) qui le declame. Presentation live, la classe vote ⭐.',
       xp: 40, action: 'livebattle',
-      brief: 'Prepare ton image + jingle (ou MP4) en avance dans le menu "Live Battle". Au top, presentation pour tous + vote 1-5 etoiles.' },
+      brief: 'Prepare ta video MP4 en avance dans le menu "Live Battle" : voix IA (ElevenLabs) + avatar anime (HeyGen) qui dit ton slogan. Au top : presentation pour tous + vote 1-5 etoiles.' },
 
     { id: 'livechat-d2', day: 2, session: 'aprem', timeStart: '15:00', timeEnd: '15:20',
       type: 'livechat', icon: '💬', title: 'Live Chat : Battle de punchlines',

@@ -33,10 +33,10 @@
     { label: 'ElevenLabs', url: 'https://elevenlabs.io/', a: 'trial' }
   ];
   var VID_TOOLS = [
+    { label: 'HeyGen (avatar)', url: 'https://www.heygen.com/', a: 'trial' },
+    { label: 'ElevenLabs (voix)', url: 'https://elevenlabs.io/', a: 'trial' },
     { label: 'Kling', url: 'https://klingai.com/', a: 'account' },
-    { label: 'Luma Dream Machine', url: 'https://lumalabs.ai/dream-machine', a: 'account' },
-    { label: 'CapCut', url: 'https://www.capcut.com/', a: 'account' },
-    { label: 'Canva (Video)', url: 'https://www.canva.com/', a: 'account' }
+    { label: 'CapCut', url: 'https://www.capcut.com/', a: 'account' }
   ];
   function toolBtns(list) {
     var badge = { free: '🆓', account: '🔑', trial: '🎁' };
