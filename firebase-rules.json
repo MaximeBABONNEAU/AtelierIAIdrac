@@ -202,6 +202,27 @@
       }
     },
 
+    "avatarforge": {
+      "requests": {
+        ".read": "auth != null",
+        "$key": {
+          ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
+          ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || (newData.hasChildren(['prompt', 'slogan', 'ts']) && newData.child('prompt').isString() && newData.child('prompt').val().length < 600 && newData.child('slogan').isString() && newData.child('slogan').val().length < 300))"
+        }
+      },
+      "jobs": {
+        ".read": "auth != null",
+        "$key": {
+          ".write": "auth != null",
+          ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/)"
+        }
+      },
+      "worker": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
     "promptmon": {
       "roster": {
         ".read": "auth != null",
