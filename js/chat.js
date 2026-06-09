@@ -1,8 +1,9 @@
 /* ==============================================
    CHAT.JS — Chat de classe temps reel + panneau FEEDBACK (fenetre a cote)
    - Chat : un canal classe (/chat).
-   - Feedback : l'etudiant donne une note 1-5 + commentaire (/feedback) ;
-     le formateur voit le ressenti de la classe en direct.
+   - Feedback : l'etudiant signale un BUG, un souci de NAVIGATION, une IDEE
+     d'amelioration ou son RESSENTI (/feedback) -> aide a faire evoluer la plateforme.
+     Le formateur voit les retours categorises + filtrables en direct.
    IDRAC Business School — [AI-assisted]
    ============================================== */
 (function () {
@@ -12,7 +13,16 @@
   function fmtTime(ts) { try { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); } catch (e) { return ''; } }
   function starStr(n) { n = n || 0; var s = ''; for (var i = 1; i <= 5; i++) s += i <= n ? '★' : '☆'; return s; }
 
-  var _listener = null, _fbListener = null, _lastSend = 0, _lastFb = 0;
+  // Categories de feedback (orientees amelioration de la plateforme)
+  var CATS = [
+    { id: 'bug', icon: '🐞', label: 'Bug', ph: 'Decris le bug : ou ca arrive, ce qui se passe, comment le reproduire...' },
+    { id: 'nav', icon: '🧭', label: 'Navigation', ph: 'Qu\'est-ce qui te gene ou te perd dans la navigation ?' },
+    { id: 'idea', icon: '💡', label: 'Idee', ph: 'Ton idee pour ameliorer la plateforme...' },
+    { id: 'feel', icon: '🙂', label: 'Ressenti', ph: 'Ton ressenti sur la session / le rythme...' }
+  ];
+  function catOf(id) { for (var i = 0; i < CATS.length; i++) if (CATS[i].id === id) return CATS[i]; return CATS[3]; }
+
+  var _listener = null, _fbListener = null, _lastSend = 0, _lastFb = 0, _fbData = [], _fbFilter = 'all';
 
   function stopChat() {
     var A = window.AIA;
@@ -31,7 +41,7 @@
     var meName = (st.user && st.user.name) || (isAdmin ? 'Formateur' : 'Moi');
 
     main.innerHTML = '<div class="page-header"><h1>Chat <span class="gradient-text">de classe</span></h1>' +
-      '<p class="page-subtitle">Discussion temps reel + boite a feedback</p></div>' +
+      '<p class="page-subtitle">Discussion temps reel + boite a feedback (bugs, navigation, idees)</p></div>' +
       '<div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:stretch">' +
         // ----- Colonne CHAT -----
         '<div class="chat-wrap glass-card" style="flex:2 1 380px;display:flex;flex-direction:column;height:62vh;max-height:640px;overflow:hidden;padding:0">' +
@@ -43,9 +53,9 @@
           '</div>' +
         '</div>' +
         // ----- Colonne FEEDBACK -----
-        '<div class="glass-card" style="flex:1 1 280px;display:flex;flex-direction:column;height:62vh;max-height:640px;overflow:hidden;padding:0">' +
-          '<div style="padding:.55rem .9rem;border-bottom:1px solid var(--border-glass)"><strong>💡 Feedback</strong>' +
-            '<div style="font-size:.7rem;color:var(--text-muted)">' + (isAdmin ? 'Le ressenti de la classe en direct' : 'Ton ressenti — lu par le formateur') + '</div></div>' +
+        '<div class="glass-card" style="flex:1 1 290px;display:flex;flex-direction:column;height:62vh;max-height:640px;overflow:hidden;padding:0">' +
+          '<div style="padding:.55rem .9rem;border-bottom:1px solid var(--border-glass)"><strong>🛠️ Feedback &amp; bugs</strong>' +
+            '<div style="font-size:.7rem;color:var(--text-muted)">' + (isAdmin ? 'Retours de la classe en direct (categorises)' : 'Aide a ameliorer la plateforme — lu par l\'equipe') + '</div></div>' +
           '<div id="fb-body" style="flex:1;overflow-y:auto;padding:.8rem"></div>' +
         '</div>' +
       '</div>';
@@ -89,50 +99,71 @@
   function renderFeedback(isAdmin, meKey, meName) {
     var AIA = window.AIA, body = document.getElementById('fb-body'); if (!body || !AIA.db) return;
 
-    if (isAdmin) {
-      // Formateur : flux des retours en direct + moyenne
-      _fbListener = AIA.db.ref('feedback').limitToLast(80).on('value', function (snap) {
-        var o = snap.val() || {};
-        var arr = Object.keys(o).map(function (k) { return o[k]; }).filter(Boolean).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
-        if (!arr.length) { body.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:1.5rem">Aucun feedback pour l\'instant.</p>'; return; }
-        var rated = arr.filter(function (f) { return f.rating; });
-        var avg = rated.length ? (rated.reduce(function (s, f) { return s + (f.rating || 0); }, 0) / rated.length) : 0;
-        body.innerHTML = '<div style="text-align:center;font-weight:700;margin-bottom:.6rem">' + (avg ? avg.toFixed(1) + '/5 ★' : '—') + ' <span style="font-size:.72rem;color:var(--text-muted);font-weight:400">&bull; ' + arr.length + ' retour(s)</span></div>' +
-          arr.map(function (f) {
-            return '<div class="glass-card" style="padding:.4rem .6rem;margin-bottom:.4rem">' +
-              '<div style="font-size:.7rem;color:var(--text-muted)">' + esc(f.name || 'Etudiant') + ' &bull; <span style="color:#F5B731">' + starStr(f.rating) + '</span> &bull; ' + fmtTime(f.ts) + '</div>' +
-              (f.text ? '<div style="font-size:.86rem;white-space:pre-wrap;word-break:break-word">' + esc(f.text) + '</div>' : '') +
-            '</div>';
-          }).join('');
-      });
-      return;
-    }
+    if (isAdmin) { _fbFilter = 'all'; renderAdminFeedback(body); return; }
+    renderStudentFeedback(body, meKey, meName);
+  }
 
-    // Etudiant : formulaire de feedback
-    var chosen = 0;
+  // --- Formateur : flux categorise + filtre ---
+  function renderAdminFeedback(body) {
+    var AIA = window.AIA;
+    _fbListener = AIA.db.ref('feedback').limitToLast(120).on('value', function (snap) {
+      var o = snap.val() || {};
+      _fbData = Object.keys(o).map(function (k) { return o[k]; }).filter(Boolean).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+      paintAdmin(body);
+    });
+  }
+  function paintAdmin(body) {
+    var counts = { bug: 0, nav: 0, idea: 0, feel: 0 };
+    _fbData.forEach(function (f) { var c = f.category || 'feel'; if (counts[c] != null) counts[c]++; });
+    var chips = '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.6rem">' +
+      '<span class="fb-filter btn-outline btn-xs' + (_fbFilter === 'all' ? ' btn-primary' : '') + '" data-f="all" style="cursor:pointer">Tout (' + _fbData.length + ')</span>' +
+      CATS.map(function (c) { return '<span class="fb-filter btn-outline btn-xs' + (_fbFilter === c.id ? ' btn-primary' : '') + '" data-f="' + c.id + '" style="cursor:pointer">' + c.icon + ' ' + counts[c.id] + '</span>'; }).join('') +
+      '</div>';
+    var list = _fbData.filter(function (f) { return _fbFilter === 'all' || (f.category || 'feel') === _fbFilter; });
+    var rows = list.length ? list.map(function (f) {
+      var c = catOf(f.category);
+      return '<div class="glass-card" style="padding:.4rem .6rem;margin-bottom:.4rem">' +
+        '<div style="font-size:.7rem;color:var(--text-muted)">' + c.icon + ' <strong>' + c.label + '</strong> &bull; ' + esc(f.name || 'Etudiant') + (f.rating ? ' &bull; <span style="color:#F5B731">' + starStr(f.rating) + '</span>' : '') + ' &bull; ' + fmtTime(f.ts) + '</div>' +
+        (f.text ? '<div style="font-size:.86rem;white-space:pre-wrap;word-break:break-word">' + esc(f.text) + '</div>' : '') +
+      '</div>';
+    }).join('') : '<p style="text-align:center;color:var(--text-muted);padding:1.2rem">Aucun retour dans cette categorie.</p>';
+    body.innerHTML = chips + rows;
+    body.querySelectorAll('.fb-filter').forEach(function (el) {
+      el.addEventListener('click', function () { _fbFilter = this.getAttribute('data-f'); paintAdmin(body); });
+    });
+  }
+
+  // --- Etudiant : formulaire categorise ---
+  function renderStudentFeedback(body, meKey, meName) {
+    var AIA = window.AIA, cat = 'bug', stars = 0;
     function paint() {
-      body.innerHTML = '<div style="font-size:.85rem;margin-bottom:.4rem">Comment tu vis la session ?</div>' +
-        '<div id="fb-stars" style="font-size:2rem;letter-spacing:.1rem;margin-bottom:.5rem">' +
-          [1, 2, 3, 4, 5].map(function (s) { return '<span class="fb-star" data-s="' + s + '" style="cursor:pointer;color:' + (s <= chosen ? '#F5B731' : 'rgba(255,255,255,0.35)') + '">★</span>'; }).join('') +
+      var c = catOf(cat);
+      body.innerHTML = '<div style="font-size:.82rem;margin-bottom:.4rem">Aide-nous a ameliorer la plateforme 🚀</div>' +
+        '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.6rem">' +
+          CATS.map(function (x) { return '<span class="fb-cat btn-outline btn-xs' + (x.id === cat ? ' btn-primary' : '') + '" data-c="' + x.id + '" style="cursor:pointer">' + x.icon + ' ' + x.label + '</span>'; }).join('') +
         '</div>' +
-        '<textarea id="fb-text" rows="3" class="demo-input" style="width:100%" maxlength="400" placeholder="Un mot, une suggestion, une difficulte... (optionnel)"></textarea>' +
-        '<button class="btn-primary" id="fb-send" style="margin-top:.5rem;width:100%">Envoyer mon feedback</button>' +
+        '<textarea id="fb-text" rows="4" class="demo-input" style="width:100%" maxlength="400" placeholder="' + esc(c.ph) + '"></textarea>' +
+        '<div style="font-size:.72rem;color:var(--text-muted);margin:.5rem 0 .2rem">Note (optionnel) :</div>' +
+        '<div id="fb-stars" style="font-size:1.7rem;letter-spacing:.08rem;margin-bottom:.4rem">' +
+          [1, 2, 3, 4, 5].map(function (s) { return '<span class="fb-star" data-s="' + s + '" style="cursor:pointer;color:' + (s <= stars ? '#F5B731' : 'rgba(255,255,255,0.35)') + '">★</span>'; }).join('') +
+        '</div>' +
+        '<button class="btn-primary" id="fb-send" style="width:100%">Envoyer</button>' +
         '<div id="fb-msg" style="font-size:.8rem;margin-top:.4rem"></div>';
-      document.getElementById('fb-stars').querySelectorAll('.fb-star').forEach(function (el) {
-        el.addEventListener('click', function () { chosen = parseInt(this.getAttribute('data-s'), 10); paint(); });
-      });
+
+      body.querySelectorAll('.fb-cat').forEach(function (el) { el.addEventListener('click', function () { cat = this.getAttribute('data-c'); paint(); }); });
+      document.getElementById('fb-stars').querySelectorAll('.fb-star').forEach(function (el) { el.addEventListener('click', function () { stars = parseInt(this.getAttribute('data-s'), 10); paint(); }); });
       var sendBtn = document.getElementById('fb-send');
       if (sendBtn) sendBtn.addEventListener('click', function () {
         var txt = (document.getElementById('fb-text').value || '').trim();
-        if (!chosen && !txt) { document.getElementById('fb-msg').innerHTML = '<span style="color:var(--red)">Mets une note ou un mot.</span>'; return; }
+        if (!txt && !stars) { document.getElementById('fb-msg').innerHTML = '<span style="color:var(--red)">Decris le souci ou mets une note.</span>'; return; }
         var now = Date.now();
         if (now - _lastFb < 1500) { document.getElementById('fb-msg').innerHTML = '<span style="color:var(--text-muted)">Patiente un instant...</span>'; return; }
         _lastFb = now;
-        AIA.db.ref('feedback').push({ key: meKey, name: meName, rating: chosen || 0, text: txt.slice(0, 400), ts: now }, function (err) {
+        AIA.db.ref('feedback').push({ key: meKey, name: meName, category: cat, rating: stars || 0, text: txt.slice(0, 400), ts: now }, function (err) {
           var m = document.getElementById('fb-msg');
           if (err) { if (m) m.innerHTML = '<span style="color:var(--red)">Echec d\'envoi.</span>'; return; }
-          chosen = 0; paint();
-          var m2 = document.getElementById('fb-msg'); if (m2) m2.innerHTML = '<span style="color:var(--green)">✅ Merci ! Tu peux en envoyer un autre quand tu veux.</span>';
+          stars = 0; paint();
+          var m2 = document.getElementById('fb-msg'); if (m2) m2.innerHTML = '<span style="color:var(--green)">✅ Merci ! Ton retour aide a ameliorer la plateforme.</span>';
         });
       });
     }
