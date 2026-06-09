@@ -197,6 +197,15 @@
         ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || newData.hasChildren(['type', 'name']))"
       }
     },
+    "promptmon": {
+      "roster": {
+        ".read": "auth != null",
+        "$key": {
+          ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
+          ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 25))"
+        }
+      }
+    },
     "$other": {
       ".read": false,
       ".write": false
