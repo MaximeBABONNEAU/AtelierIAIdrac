@@ -59,6 +59,12 @@
       xp: 120, action: 'business-game',
       brief: '+120 XP bonus + badge "Brand Builder" pour les premiers a finir.' },
 
+    { id: 'livebattle-d2', day: 2, session: 'aprem', timeStart: '16:00', timeEnd: '16:45',
+      type: 'livebattle', icon: '🎤', title: 'Live Battle : Son & Image',
+      desc: 'Associe une image de marque a un jingle (ou rends une video). Presentation live au tableau, la classe vote en etoiles ⭐.',
+      xp: 40, action: 'livebattle',
+      brief: 'Prepare ton image + jingle (ou MP4) en avance dans le menu "Live Battle". Au top, presentation pour tous + vote 1-5 etoiles.' },
+
     // ===== DAY 3 =====
     { id: 'wrapup-d2', day: 3, session: 'matin', timeStart: '09:00', timeEnd: '09:15',
       type: 'wrapup', icon: '📊', title: 'Retro J2 : Top Marques',
@@ -82,6 +88,12 @@
       desc: 'Phase 3 validee + visuels + textes + plan media. Vous avez une vraie campagne !',
       xp: 140, action: 'business-game',
       brief: '+140 XP bonus + badge "Campaigner". Top 5 vote prix "Meilleure Campagne".' },
+
+    { id: 'livebattle-d3', day: 3, session: 'aprem', timeStart: '16:00', timeEnd: '16:45',
+      type: 'livebattle', icon: '🎤', title: 'Live Battle : Son & Image #2',
+      desc: 'Deuxieme manche : la meilleure asso image de marque + jingle (ou video). Presentation live + vote etoiles ⭐.',
+      xp: 40, action: 'livebattle',
+      brief: 'Upload ton contenu dans le menu "Live Battle". Presentation pour tous + vote 1-5 etoiles, classement par moyenne.' },
 
     // ===== DAY 4 =====
     { id: 'wrapup-d3', day: 4, session: 'matin', timeStart: '09:00', timeEnd: '09:15',
@@ -217,7 +229,8 @@
       lightning: 'LIGHTNING ROUND',
       showcase: 'SHOWCASE',
       boss: 'BOSS CHALLENGE',
-      wrapup: 'WRAP-UP'
+      wrapup: 'WRAP-UP',
+      livebattle: 'LIVE BATTLE'
     };
 
     if (next.status === 'active') {
@@ -326,6 +339,11 @@
         if (h && h.type === 'boss') {
           _activeBossId = hid;
           if (AIA.navigateTo) AIA.navigateTo('boss');
+          return;
+        }
+        // Live Battle : page dediee (upload preemptif + scene live + vote etoiles). XP donnee aux resultats (idempotente).
+        if (h && h.type === 'livebattle') {
+          if (AIA.navigateTo) AIA.navigateTo('livebattle');
           return;
         }
         if (h) {
