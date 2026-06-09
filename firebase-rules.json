@@ -148,15 +148,25 @@
 
     "chat": {
       ".read": "auth != null",
-      ".write": "auth != null",
       "$msgId": {
-        ".validate": "newData.hasChildren(['text', 'ts']) && newData.child('text').isString() && newData.child('text').val().length < 600"
+        ".write": "auth != null && (!newData.exists() || newData.child('key').val() === '__formateur' || (root.child('accounts/' + newData.child('key').val()).exists() && root.child('owners/' + newData.child('key').val()).val() === auth.uid))",
+        ".validate": "newData.hasChildren(['text', 'ts', 'key']) && newData.child('text').isString() && newData.child('text').val().length < 600"
+      }
+    },
+
+    "feedback": {
+      ".read": "auth != null",
+      "$id": {
+        ".write": "auth != null && (!newData.exists() || (root.child('accounts/' + newData.child('key').val()).exists() && root.child('owners/' + newData.child('key').val()).val() === auth.uid))",
+        ".validate": "newData.hasChildren(['key', 'ts'])"
       }
     },
 
     "duel_queue": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      "$key": {
+        ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)"
+      }
     },
 
     "duels": {

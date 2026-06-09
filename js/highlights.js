@@ -65,6 +65,12 @@
       xp: 40, action: 'livebattle',
       brief: 'Prepare ton image + jingle (ou MP4) en avance dans le menu "Live Battle". Au top, presentation pour tous + vote 1-5 etoiles.' },
 
+    { id: 'livechat-d2', day: 2, session: 'aprem', timeStart: '15:00', timeEnd: '15:20',
+      type: 'livechat', icon: '💬', title: 'Live Chat : Battle de punchlines',
+      desc: 'En lien avec la journee Creation de Contenu : poste ta meilleure accroche/slogan genere par IA, reagis a ceux des autres.',
+      xp: 25, action: 'chat',
+      brief: 'Tout le monde dans le Chat : balance ta punchline (slogan, hook, headline marketing). Commente 2 autres. Entraide creative en direct !' },
+
     // ===== DAY 3 =====
     { id: 'wrapup-d2', day: 3, session: 'matin', timeStart: '09:00', timeEnd: '09:15',
       type: 'wrapup', icon: '📊', title: 'Retro J2 : Top Marques',
@@ -94,6 +100,12 @@
       desc: 'Deuxieme manche : la meilleure asso image de marque + jingle (ou video). Presentation live + vote etoiles ⭐.',
       xp: 40, action: 'livebattle',
       brief: 'Upload ton contenu dans le menu "Live Battle". Presentation pour tous + vote 1-5 etoiles, classement par moyenne.' },
+
+    { id: 'livechat-d3', day: 3, session: 'matin', timeStart: '09:15', timeEnd: '09:35',
+      type: 'livechat', icon: '💬', title: 'Live Chat : SEO & mots-cles en direct',
+      desc: 'En lien avec la journee Strategie Marketing : brainstorm collectif de mots-cles et d\'idees SEO pour vos marques.',
+      xp: 25, action: 'chat',
+      brief: 'Dans le Chat : poste 3 mots-cles SEO + 1 question strategie pour ta marque. On s\'entraide en direct.' },
 
     // ===== DAY 4 =====
     { id: 'wrapup-d3', day: 4, session: 'matin', timeStart: '09:00', timeEnd: '09:15',
@@ -230,7 +242,8 @@
       showcase: 'SHOWCASE',
       boss: 'BOSS CHALLENGE',
       wrapup: 'WRAP-UP',
-      livebattle: 'LIVE BATTLE'
+      livebattle: 'LIVE BATTLE',
+      livechat: 'LIVE CHAT'
     };
 
     if (next.status === 'active') {
