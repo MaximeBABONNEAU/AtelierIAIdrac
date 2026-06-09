@@ -197,6 +197,26 @@
         ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || newData.hasChildren(['type', 'name']))"
       }
     },
+    "avatarforge": {
+      "requests": {
+        ".read": "auth != null",
+        "$key": {
+          ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
+          ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || (newData.hasChildren(['prompt', 'slogan', 'ts']) && newData.child('prompt').isString() && newData.child('prompt').val().length < 600 && newData.child('slogan').isString() && newData.child('slogan').val().length < 300))"
+        }
+      },
+      "jobs": {
+        ".read": "auth != null",
+        "$key": {
+          ".write": "auth != null",
+          ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/)"
+        }
+      },
+      "worker": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
     "promptmon": {
       "roster": {
         ".read": "auth != null",
@@ -204,6 +224,26 @@
           ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
           ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || (newData.isNumber() && newData.val() >= 1 && newData.val() <= 25))"
         }
+      },
+      "briefs": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      },
+      "submissions": {
+        ".read": "auth != null",
+        "$briefId": {
+          "$key": {
+            ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
+            ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/)",
+            "matched": {
+              ".write": "auth != null"
+            }
+          }
+        }
+      },
+      "matches": {
+        ".read": "auth != null",
+        ".write": "auth != null"
       }
     },
     "$other": {

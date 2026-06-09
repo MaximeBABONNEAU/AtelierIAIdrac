@@ -89,6 +89,12 @@
     ensureStyles();
     main = main || document.getElementById('main-content');
     var A = window.AIA, st = A.getState();
+    if (st.user && st.user.isAdmin && !st.user.accountKey) {
+      // Formateur : accès direct au panneau juge de l'Arena
+      main.innerHTML = headerHtml() + '<div id="pm-tabbody"></div>';
+      if (A.PROMPTMON_ARENA) A.PROMPTMON_ARENA.renderArena(document.getElementById('pm-tabbody'));
+      return;
+    }
     if (!st.user || !st.user.accountKey) {
       main.innerHTML = headerHtml() + '<div class="glass-card" style="text-align:center;padding:2rem">Connecte-toi pour rencontrer ta créature PromptMon.</div>';
       return;
@@ -164,8 +170,8 @@
         '</div>' +
       '</div>' +
 
-      // --- tabs : cosmetics / class ---
-      '<div style="display:flex;gap:.5rem;margin:1.2rem 0 .8rem"><span class="pm-tab active" data-tab="cos">🎨 Cosmétiques</span><span class="pm-tab" data-tab="dex">👥 Classe</span></div>' +
+      // --- tabs : combats / cosmetics / class ---
+      '<div style="display:flex;gap:.5rem;margin:1.2rem 0 .8rem;flex-wrap:wrap"><span class="pm-tab active" data-tab="arena">⚔️ Combats</span><span class="pm-tab" data-tab="cos">🎨 Cosmétiques</span><span class="pm-tab" data-tab="dex">👥 Classe</span></div>' +
       '<div id="pm-tabbody"></div>';
 
     // paint sprite
@@ -179,11 +185,16 @@
 
     // tabs
     var tabbody = document.getElementById('pm-tabbody');
-    renderCosmetics(tabbody);
+    function openTab(name) {
+      if (name === 'arena' && A.PROMPTMON_ARENA) A.PROMPTMON_ARENA.renderArena(tabbody);
+      else if (name === 'dex') renderClass(tabbody);
+      else renderCosmetics(tabbody);
+    }
+    openTab(A.PROMPTMON_ARENA ? 'arena' : 'cos');
     main.querySelectorAll('.pm-tab').forEach(function (t) {
       t.addEventListener('click', function () {
         main.querySelectorAll('.pm-tab').forEach(function (x) { x.classList.toggle('active', x === t); });
-        if (t.getAttribute('data-tab') === 'cos') renderCosmetics(tabbody); else renderClass(tabbody);
+        openTab(t.getAttribute('data-tab'));
       });
     });
   }
