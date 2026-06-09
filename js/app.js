@@ -441,6 +441,8 @@
       db = firebase.database();
       window.AIA = window.AIA || {};
       window.AIA.db = db;
+      // Storage (medias Live Battle : image/audio/mp4 -> URL)
+      try { if (firebase.storage) window.AIA.storage = firebase.storage(); } catch (e) {}
       // Auth anonyme : donne un uid par appareil pour la propriete des comptes (regles Firebase).
       // Si l'auth anonyme n'est pas (encore) activee dans la console, on continue sans bloquer l'app.
       if (firebase.auth) {
@@ -678,6 +680,7 @@
       arena:renderArena,
       chat:function(){if(window.AIA&&window.AIA.renderClassChat)window.AIA.renderClassChat(main);},
       duel:function(){if(window.AIA&&window.AIA.renderDuel)window.AIA.renderDuel(main);},
+      livebattle:function(){if(window.AIA&&window.AIA.renderLiveBattle)window.AIA.renderLiveBattle(main);},
       'business-game':function(){if(window.AIA&&window.AIA.renderBusinessGameNew){window.AIA.renderBusinessGameNew(document.getElementById('main-content'));}else{renderBusinessGame();}},
       showcase:function(){if(window.AIA&&window.AIA.renderCampaignShowcase)window.AIA.renderCampaignShowcase(document.getElementById('main-content'));},
       leaderboard:renderLeaderboard,
@@ -1328,6 +1331,7 @@
       '<p class="page-subtitle">Battles, challenges et quiz en temps reel</p></div>'+
       '<div class="arena-modes">'+
       '<div class="arena-mode-card glass-card" data-navigate="duel"><div class="mode-icon">⚔️</div><h3>Battle de Prompts</h3><p>Vrai duel 1v1 : matchmaking, chacun son tour, 30s par prompt, auto-score &bull; 10 duels/jour</p></div>'+
+      '<div class="arena-mode-card glass-card" data-navigate="livebattle"><div class="mode-icon">🎤</div><h3>Live Battle Son &amp; Image</h3><p>Moment cle : associe une image de marque a un jingle, la classe assiste (avatars) et vote en direct</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-challenge"><div class="mode-icon">🏆</div><h3>Challenge Collectif</h3><p>Meme brief pour tous, soumettez votre solution et votez</p></div>'+
       '<div class="arena-mode-card glass-card" id="btn-start-quiz"><div class="mode-icon">🧠</div><h3>Quiz Interactif</h3><p>Quiz en temps reel — 15 secondes par question</p></div>'+
       '<div class="arena-mode-card glass-card rpg-card" id="btn-start-rpg"><div class="mode-icon">🐉</div><h3>RPG PvP</h3><p>Choisissez votre classe, affrontez la classe ou <strong>d&eacute;fiez le Prof</strong> !</p><div style="font-size:0.7rem;color:var(--accent)">5 combats / jour &bull; Boss solo &bull; Duel du Prof</div></div>'+

@@ -167,6 +167,14 @@
       ".read": "auth != null",
       ".write": "auth != null"
     },
+    "livebattle": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "livebattle_content": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
     "$other": {
       ".read": false,
       ".write": false

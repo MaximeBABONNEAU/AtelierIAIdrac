@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Medias de la Live Battle : lecture publique (lecture en classe), ecriture authentifiee + plafonnee.
+    match /livebattle/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.resource.size < 60 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+            || request.resource.contentType.matches('audio/.*')
+            || request.resource.contentType.matches('video/.*'));
+    }
+    // Tout le reste : ferme.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
