@@ -173,7 +173,10 @@
     },
     "livebattle_content": {
       ".read": "auth != null",
-      ".write": "auth != null"
+      "$key": {
+        ".write": "auth != null && root.child('accounts/' + $key).exists() && (!root.child('owners/' + $key).exists() || root.child('owners/' + $key).val() === auth.uid)",
+        ".validate": "$key.matches(/^[a-z0-9_]{3,80}$/) && (!newData.exists() || newData.hasChildren(['type', 'name']))"
+      }
     },
     "$other": {
       ".read": false,
