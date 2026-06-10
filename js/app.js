@@ -734,6 +734,23 @@
     updateNavActive(page); window.scrollTo(0,0); saveState();
   }
 
+  var _caseNavInit = false;
+  function initCaseNav(){
+    // Affiche le bouton « Cas Tomata » (logo) a cote du bouton Game des qu'un cas est publie.
+    if(_caseNavInit || !db) return; _caseNavInit = true;
+    db.ref('config/caseStudy').once('value', function(snap){
+      var c = snap.val();
+      if(!(c && c.url)) return;
+      ['nav-case-link','mobile-case-link'].forEach(function(id){
+        var el = document.getElementById(id);
+        if(!el) return;
+        el.href = c.url;
+        if(c.name){ el.title = 'Cas marketing complet : ' + c.name; }
+        el.style.display = '';
+      });
+    }, function(){ /* lecture refusee : on laisse le bouton masque */ });
+  }
+
   function updateNavActive(page){
     document.querySelectorAll('.nav-link,.mobile-link').forEach(function(el){
       var t=el.getAttribute('data-navigate');
@@ -745,6 +762,7 @@
       a.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Admin</span>';
       nl.appendChild(a);
     }
+    initCaseNav();
   }
 
   function getCurrentDay(){ var t=new Date().toISOString().split('T')[0]; var i=CONFIG.dates.indexOf(t); return i>=0?i+1:1; }
