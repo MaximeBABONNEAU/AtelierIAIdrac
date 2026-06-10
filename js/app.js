@@ -277,12 +277,15 @@
   var _saveDebounce = null;
   function _buildStudentSummary() {
     var pCount = 0; for (var p in state.progress) { if (state.progress[p]) pCount++; }
+    var pmSum = (window.AIA && window.AIA.PROMPTMON && window.AIA.PROMPTMON.pmSummary) ? window.AIA.PROMPTMON.pmSummary()
+      : (state.promptmon && state.promptmon.creatureId ? { id: state.promptmon.creatureId, evo: state.promptmon.evoStage || 0, lvl: state.promptmon.level || 1, eq: state.promptmon.equipped || [] } : null);
     return {
       name: state.user.name, xp: state.xp.total, level: getLevelInfo(state.xp.total).level,
       badges: state.badges.length, page: state.currentPage, avatar: state.avatar,
       lastSeen: Date.now(), online: true, progress: pCount,
       completedActivities: pCount, demosCompleted: state.demosCompleted ? state.demosCompleted.length : 0,
-      streak: state.streak ? state.streak.count : 0
+      streak: state.streak ? state.streak.count : 0,
+      pm: pmSum  // créature compacte {id,evo,lvl,eq} pour Salle/Live/Classement (null si non assignée)
     };
   }
 
@@ -1456,7 +1459,7 @@
       for(var k in data){
         var s=data[k];
         list.push({key:k,name:s.name||k,xp:s.xp||0,badges:typeof s.badges==='number'?s.badges:0,
-          online:!!s.online,streak:s.streak||0,progress:s.progress||0,
+          online:!!s.online,streak:s.streak||0,progress:s.progress||0,pm:s.pm||null,
           isMe:state.user&&state.user.accountKey===k});
       }
       _renderLeaderboardData(list);
@@ -1488,20 +1491,29 @@
       var lbl={1:'1re place — couronne d\'or',2:'2e place — couronne d\'argent',3:'3e place — couronne de bronze'};
       return '<span class="lb-crown" title="'+(lbl[rk]||'')+'" style="font-size:1.7rem;display:inline-block;line-height:1;'+(st[rk]||'')+'">👑</span>';
     }
+    // Vignette PromptMon (canvas) si la créature est connue, sinon emoji
+    function pmAvatar(s,idx,size){
+      if(s.pm&&s.pm.id) return '<canvas id="lb-pm-'+idx+'" width="'+size+'" height="'+size+'" style="image-rendering:pixelated;vertical-align:middle" title="PromptMon"></canvas>';
+      return s.isMe?'⭐':'👤';
+    }
     var order=[1,0,2],podH='';
     order.forEach(function(idx){var s=students[idx];if(!s)return;var rk=idx+1;/* rank = sorted position +1 */
       podH+='<div class="podium-item'+(s.isMe?' is-me':'')+'"><div class="rank">'+crownFor(rk)+'</div>'+
-        '<div class="avatar-small">'+(s.isMe?'⭐':'👤')+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div>'+
+        '<div class="avatar-small">'+pmAvatar(s,idx,44)+'</div><div class="name">'+s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div>'+
         '<div class="xp">'+s.xp+' XP</div>'+(s.streak>1?'<div style="font-size:0.7rem">🔥 '+s.streak+'j</div>':'')+
         '<div class="podium-bar"></div></div>';});
-    var tH=students.slice(3).map(function(s,i){var rk=i+4;
-      return '<tr class="'+(s.isMe?'is-me':'')+'"><td class="rank-cell">'+rk+'</td><td><div class="name-cell"><div class="avatar-tiny">'+(s.isMe?'⭐':'👤')+'</div>'+
+    var tH=students.slice(3).map(function(s,i){var rk=i+4;var idx=i+3;
+      return '<tr class="'+(s.isMe?'is-me':'')+'"><td class="rank-cell">'+rk+'</td><td><div class="name-cell"><div class="avatar-tiny">'+pmAvatar(s,idx,30)+'</div>'+
         s.name+(s.isMe?' (vous)':'')+itemBadges(rk)+'</div></td><td class="xp-cell">'+s.xp+' XP</td><td>'+s.badges+' 🏅</td>'+
         '<td><span class="dot '+(s.online?'online':'idle')+'"></span></td></tr>';}).join('');
     el.innerHTML='<p class="page-subtitle" style="margin-bottom:1rem">'+students.length+' etudiants inscrits</p>'+
       '<div class="podium">'+podH+'</div>'+
       '<div class="glass-card" style="overflow:hidden"><table class="ranking-table"><thead><tr><th>#</th><th>Etudiant</th><th>XP</th><th>Badges</th><th>Statut</th></tr></thead>'+
       '<tbody>'+tH+'</tbody></table></div>';
+    // Peinture des vignettes créature après insertion du DOM
+    if(window.AIA&&window.AIA.PROMPTMON&&window.AIA.PROMPTMON.drawPmThumb){
+      students.forEach(function(s,idx){ if(s.pm&&s.pm.id){ var c=document.getElementById('lb-pm-'+idx); if(c) window.AIA.PROMPTMON.drawPmThumb(c,s.pm); } });
+    }
   }
 
   function renderTools(){

@@ -480,9 +480,9 @@
       '</div>' +
       '<div id="ab-config"></div>' +
       '<div style="display:flex;gap:0.5rem;align-items:center;margin-top:1rem">' +
-      '<label style="font-size:0.82rem;color:var(--text-secondary)">Visiteurs :</label>' +
+      '<label style="font-size:0.82rem;color:var(--text-secondary)">Volume du test (min. 1 M) :</label>' +
       '<select id="ab-visitors" style="padding:0.3rem;background:var(--bg-secondary);border:1px solid var(--border-glass);border-radius:var(--radius-xs);color:var(--text-primary);font-size:0.82rem">' +
-      '<option value="500">500</option><option value="1000" selected>1 000</option><option value="5000">5 000</option><option value="10000">10 000</option></select>' +
+      '<option value="1000000" selected>1 000 000</option><option value="2000000">2 000 000</option><option value="5000000">5 000 000</option><option value="10000000">10 000 000</option></select>' +
       '</div>' +
       '<button class="btn-primary" id="btn-ab-run" style="margin-top:1rem">&#9889; Lancer la simulation</button>' +
       '<div id="ab-results" class="demo-results"></div>' +
@@ -490,7 +490,7 @@
       '<h4 style="color:var(--cyan);margin-bottom:0.5rem">&#128218; Regles du A/B Testing</h4>' +
       '<ul style="font-size:0.8rem;color:var(--text-secondary);line-height:1.8;list-style:none;padding:0">' +
       '<li>&#9989; Tester UNE seule variable a la fois</li>' +
-      '<li>&#9989; Minimum 1000 visiteurs par variante pour la significativite</li>' +
+      '<li>&#9989; Volume de test minimum : 1 000 000 (echelle reelle de campagne)</li>' +
       '<li>&#9989; Duree minimum : 1 semaine (cycles hebdomadaires)</li>' +
       '<li>&#9989; Confiance >95% avant de declarer un gagnant</li>' +
       '<li>&#10060; Ne PAS arreter le test des les premiers resultats</li>' +

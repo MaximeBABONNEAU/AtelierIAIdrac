@@ -41,7 +41,7 @@
   function leaderboardRows() {
     return Object.keys(_students).map(function (k) {
       var s = _students[k] || {};
-      return { key: k, name: s.name || k, xp: s.xp || 0, progress: s.progress || 0, online: !!s.online };
+      return { key: k, name: s.name || k, xp: s.xp || 0, progress: s.progress || 0, online: !!s.online, pm: s.pm || null };
     }).filter(function (r) { return !/^admin/.test(r.key); }) // masquer comptes admin du classement
       .sort(function (a, b) { return b.xp - a.xp || a.name.localeCompare(b.name); });
   }
@@ -92,19 +92,24 @@
     if (!rows.length) { el.innerHTML = '<div class="live-empty">En attente des premiers etudiants…</div>'; return; }
     var medals = ['🥇', '🥈', '🥉'];
     var top3 = rows.slice(0, 3), rest = rows.slice(3, 10);
+    function pmCanvas(r, idx, size) { return (r.pm && r.pm.id) ? '<canvas id="live-pm-' + idx + '" width="' + size + '" height="' + size + '" style="image-rendering:pixelated;vertical-align:middle"></canvas> ' : ''; }
     var html = '<div class="live-podium">' + top3.map(function (r, i) {
       return '<div class="live-pod live-pod-' + (i + 1) + '"><div class="live-pod-medal">' + medals[i] + '</div>' +
-        '<div class="live-pod-name">' + escLive(r.name) + '</div>' +
+        '<div class="live-pod-name">' + pmCanvas(r, i, 40) + escLive(r.name) + '</div>' +
         '<div class="live-pod-xp">' + r.xp.toLocaleString() + ' <span>XP</span></div></div>';
     }).join('') + '</div>';
     if (rest.length) {
       html += '<div class="live-lb-list">' + rest.map(function (r, i) {
         return '<div class="live-lb-row"><span class="live-lb-rk">#' + (i + 4) + '</span>' +
-          '<span class="live-lb-name">' + (r.online ? '🟢 ' : '') + escLive(r.name) + '</span>' +
+          '<span class="live-lb-name">' + pmCanvas(r, i + 3, 26) + (r.online ? '🟢 ' : '') + escLive(r.name) + '</span>' +
           '<span class="live-lb-xp">' + r.xp.toLocaleString() + '</span></div>';
       }).join('') + '</div>';
     }
     el.innerHTML = html;
+    // Peinture des vignettes créature (podium 0-2, liste 3-9)
+    if (window.AIA.PROMPTMON && window.AIA.PROMPTMON.drawPmThumb) {
+      rows.slice(0, 10).forEach(function (r, idx) { if (r.pm && r.pm.id) { var c = document.getElementById('live-pm-' + idx); if (c) window.AIA.PROMPTMON.drawPmThumb(c, r.pm); } });
+    }
   }
 
   function renderFeedPanel() {

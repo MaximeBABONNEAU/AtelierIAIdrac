@@ -1131,10 +1131,10 @@
               var val = data[f.name] || '';
               if (f.rows) {
                 return '<div class="form-group"><label>' + f.label + '</label>' +
-                  '<textarea data-step="' + step.id + '" data-field="' + f.name + '" rows="' + f.rows + '" placeholder="' + (f.placeholder || '') + '">' + escapeHtml(val) + '</textarea></div>';
+                  '<textarea data-step="' + step.id + '" data-field="' + f.name + '" rows="' + f.rows + '" maxlength="4000" placeholder="' + (f.placeholder || '') + '">' + escapeHtml(val) + '</textarea></div>';
               } else {
                 return '<div class="form-group"><label>' + f.label + '</label>' +
-                  '<input type="text" data-step="' + step.id + '" data-field="' + f.name + '" placeholder="' + (f.placeholder || '') + '" value="' + escapeHtml(val) + '"></div>';
+                  '<input type="text" data-step="' + step.id + '" data-field="' + f.name + '" maxlength="500" placeholder="' + (f.placeholder || '') + '" value="' + escapeHtml(val) + '"></div>';
               }
             }).join('') +
             '</div>' +
@@ -1302,7 +1302,7 @@
           if (Array.isArray(arr)) totalAssets += arr.length;
         });
         if (totalAssets >= 10 && AIA.awardBadge) AIA.awardBadge('asset-collector');
-        if (AIA.saveState) AIA.saveState();
+        if (AIA.saveStateNow) AIA.saveStateNow(); else if (AIA.saveState) AIA.saveState(); // anti-rollback : finalisation persistée tout de suite
         // Auto-check + suggestion de l'etape suivante (fil conducteur sans rupture)
         if (!wasDone) {
           var nextStep = orderedSteps(true).find(function (s) { return !st.gameDeliverables[s.id]; });
@@ -1359,7 +1359,8 @@
         highlightStepCard(main, nextId, true);
         if (banner.parentNode) banner.parentNode.removeChild(banner);
       });
-      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Ne PAS remonter en haut de la liste : on défile DOUCEMENT vers l'étape suivante (progression naturelle)
+      setTimeout(function () { try { highlightStepCard(main, nextId, true); } catch (e) {} }, 80);
     } else if (_justCompletedTitle) {
       _justCompletedTitle = '';
       var bannerDone = document.createElement('div');
@@ -1384,7 +1385,7 @@
       if (main.firstChild) main.insertBefore(bannerDone, main.firstChild); else main.appendChild(bannerDone);
       var wb = bannerDone.querySelector('#gnb-workbook');
       if (wb) wb.addEventListener('click', function () { if (AIA.navigateTo) AIA.navigateTo('workbook'); });
-      bannerDone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Pas de scroll automatique vers le haut : on laisse l'étudiant où il est (la bannière reste accessible en haut).
     } else if (_guideFirstStep) {
       // Cas C : juste apres le choix du projet -> guider vers la 1ere etape disponible
       _guideFirstStep = false;
@@ -1394,13 +1395,17 @@
   }
 
   /* ============ ASSETS BLOCK (per step) ============ */
-  // Étapes où l'upload AUDIO (mp3/wav/ogg) est ouvert — Phase 3 étape 5 « Jingle »
-  var AUDIO_STEPS = ['jingle'];
-  var AUDIO_MAX_BYTES = 10 * 1024 * 1024; // 10 Mo
+  // Étapes où l'upload de média lourd vers le serveur (Firebase Storage) est ouvert,
+  // en plus des formats de base (image/url) :
+  //  - AUDIO (mp3/wav/ogg) sur les étapes son ; VIDEO (mp4/webm/mov) sur les étapes vidéo.
+  var AUDIO_STEPS = ['jingle', 'voiceover'];
+  var VIDEO_STEPS = ['manifesto-video', 'social-video'];
+  var AUDIO_MAX_BYTES = 10 * 1024 * 1024;  // 10 Mo
+  var VIDEO_MAX_BYTES = 55 * 1024 * 1024;  // 55 Mo (sous la limite Storage 60 Mo)
 
-  function isAudioAsset(a) {
-    return a && (a.type === 'audio' || (a.url && /\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(a.url)));
-  }
+  function isAudioAsset(a) { return a && (a.type === 'audio' || (a.url && /\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(a.url))); }
+  function isVideoAsset(a) { return a && (a.type === 'video' || (a.url && /\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(a.url))); }
+  function stepMediaKind(stepId) { return VIDEO_STEPS.indexOf(stepId) !== -1 ? 'video' : (AUDIO_STEPS.indexOf(stepId) !== -1 ? 'audio' : null); }
 
   function renderAssetsBlock(stepId, assets) {
     assets = Array.isArray(assets) ? assets : [];
@@ -1411,6 +1416,12 @@
         return '<div class="asset-chip audio-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '" style="display:flex;flex-direction:column;gap:.25rem;padding:.5rem;min-width:230px">' +
           '<div class="asset-chip-label">🎵 ' + label + '</div>' +
           '<audio controls preload="none" src="' + url + '" style="width:100%;height:32px"></audio>' +
+          '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
+          '</div>';
+      } else if (isVideoAsset(a)) {
+        return '<div class="asset-chip video-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '" style="display:flex;flex-direction:column;gap:.25rem;padding:.5rem;min-width:230px">' +
+          '<div class="asset-chip-label">🎬 ' + label + '</div>' +
+          '<video controls preload="metadata" src="' + url + '" style="width:100%;max-height:160px;border-radius:8px;background:#000"></video>' +
           '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
           '</div>';
       } else if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(a.url))) {
@@ -1435,19 +1446,24 @@
           '</div>';
       }
     }).join('');
-    var audioStep = AUDIO_STEPS.indexOf(stepId) !== -1;
+    var mediaKind = stepMediaKind(stepId);
+    var hint = mediaKind === 'video' ? '🎬 Joignez votre vidéo en MP4 (bouton Fichier, max 55 Mo) ou collez le lien'
+      : (mediaKind === 'audio' ? '🎵 Joignez votre audio en MP3 (bouton Fichier, max 10 Mo) ou collez le lien'
+        : 'Joignez ici vos images, audio, urls Gamma/Figma generes via les demos IA');
+    var accept = mediaKind === 'video' ? 'image/*,video/*,.mp4' : (mediaKind === 'audio' ? 'image/*,audio/*,.mp3' : 'image/*');
+    var fileLabel = mediaKind === 'video' ? ' (image ou MP4)' : (mediaKind === 'audio' ? ' (image ou MP3)' : '');
     return '<div class="assets-block" data-step-id="' + stepId + '">' +
       '<div class="assets-block-header">' +
       '<strong>📎 Assets generes par l\'IA (' + assets.length + ')</strong>' +
-      '<span class="assets-block-hint">' + (audioStep ? '🎵 Joignez votre jingle en MP3 (bouton Fichier, max 10 Mo) ou collez le lien Suno' : 'Joignez ici vos images, audio, urls Gamma/Figma generes via les demos IA') + '</span>' +
+      '<span class="assets-block-hint">' + hint + '</span>' +
       '</div>' +
       '<div class="assets-list">' + (assets.length === 0 ? '<div class="assets-empty">Aucun asset attache pour le moment</div>' : thumbsHtml) + '</div>' +
       '<div class="asset-add-controls">' +
-      '<input type="text" class="asset-url-input" placeholder="URL image / Gamma / Figma..." data-asset-url="' + stepId + '" />' +
-      '<input type="text" class="asset-label-input" placeholder="Nom (ex: Logo v2)" data-asset-label="' + stepId + '" />' +
+      '<input type="text" class="asset-url-input" placeholder="URL image / Gamma / Figma..." data-asset-url="' + stepId + '" maxlength="600" />' +
+      '<input type="text" class="asset-label-input" placeholder="Nom (ex: Logo v2)" data-asset-label="' + stepId + '" maxlength="80" />' +
       '<button class="btn-outline btn-sm btn-add-asset-url" data-step-id="' + stepId + '">+ Ajouter</button>' +
-      '<label class="btn-ghost btn-sm asset-file-label">📁 Fichier' + (audioStep ? ' (image ou MP3)' : '') +
-      '<input type="file" accept="' + (audioStep ? 'image/*,audio/*,.mp3' : 'image/*') + '" data-asset-file="' + stepId + '" style="display:none" />' +
+      '<label class="btn-ghost btn-sm asset-file-label">📁 Fichier' + fileLabel +
+      '<input type="file" accept="' + accept + '" data-asset-file="' + stepId + '" style="display:none" />' +
       '</label>' +
       '<span class="asset-upload-progress" data-asset-prog="' + stepId + '" style="font-size:.72rem;color:var(--text-muted)"></span>' +
       '</div>' +
@@ -1465,8 +1481,11 @@
         var url = (urlInput.value || '').trim();
         var label = (labelInput.value || '').trim() || 'Asset';
         if (!url) { window.AIA.showToast('URL requise', 'warning'); return; }
-        var type = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ? 'image' : (/\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(url) ? 'audio' : 'link');
-        addAsset(stepId, { type: type, url: url, label: label, addedAt: new Date().toISOString() });
+        if (!/^https?:\/\//i.test(url)) { window.AIA.showToast('URL invalide (http(s):// requis)', 'warning'); return; } // anti-XSS (pas de javascript:)
+        var type = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ? 'image'
+          : (/\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(url) ? 'audio'
+            : (/\.(mp4|webm|mov|m4v)(\?.*)?$/i.test(url) ? 'video' : 'link'));
+        addAsset(stepId, { type: type, url: url, label: label.slice(0, 80), addedAt: new Date().toISOString() });
         urlInput.value = ''; labelInput.value = '';
         window.AIA.renderBusinessGameNew(main);
       });
@@ -1478,26 +1497,33 @@
         var file = this.files[0];
         if (!file) return;
         var isAudio = /^audio\//.test(file.type) || /\.(mp3|wav|ogg|m4a)$/i.test(file.name || '');
-        if (isAudio) {
-          // AUDIO (jingle MP3...) : upload Firebase Storage (les dataURL seraient trop lourds pour la base)
-          if (file.size > 800000 * 12.5) { window.AIA.showToast('Audio trop gros (max 10 Mo).', 'warning'); return; }
+        var isVideo = /^video\//.test(file.type) || /\.(mp4|webm|mov|m4v)$/i.test(file.name || '');
+        if (isAudio || isVideo) {
+          // MÉDIA lourd (jingle MP3 / vidéo MP4...) : upload sur le serveur Storage (dataURL trop lourd pour la base)
+          var kind = isVideo ? 'video' : 'audio';
+          var maxB = isVideo ? VIDEO_MAX_BYTES : AUDIO_MAX_BYTES;
+          var maxLbl = isVideo ? '55 Mo' : '10 Mo';
+          if (file.size > maxB) { window.AIA.showToast((isVideo ? 'Vidéo' : 'Audio') + ' trop gros (max ' + maxLbl + ').', 'warning'); return; }
           var st2 = window.AIA.getState();
           var key = st2.user && st2.user.accountKey;
           var storage = window.AIA.storage;
-          if (!key || !storage) { window.AIA.showToast('Upload audio indisponible (connexion requise).', 'error'); return; }
+          if (!key || !storage) { window.AIA.showToast('Upload média indisponible (connexion requise).', 'error'); return; }
           var prog = main.querySelector('[data-asset-prog="' + stepId + '"]');
-          var ext = (file.name && file.name.indexOf('.') > -1) ? file.name.split('.').pop().toLowerCase() : 'mp3';
-          var ref = storage.ref('livebattle/' + key + '/gameaudio_' + Date.now() + '.' + ext);
-          var task = ref.put(file, { contentType: file.type || 'audio/mpeg' });
+          var ALLOWED_EXT = isVideo ? ['mp4', 'webm', 'mov', 'm4v'] : ['mp3', 'wav', 'ogg', 'm4a'];
+          var rawExt = (file.name && file.name.indexOf('.') > -1) ? file.name.split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+          var ext = ALLOWED_EXT.indexOf(rawExt) !== -1 ? rawExt : (isVideo ? 'mp4' : 'mp3'); // whitelist : pas de chemin/extension exotique
+          var emoji = isVideo ? '🎬' : '🎵';
+          var ref = storage.ref('livebattle/' + key + '/game' + kind + '_' + Date.now() + '.' + ext);
+          var task = ref.put(file, { contentType: file.type || (isVideo ? 'video/mp4' : 'audio/mpeg') });
           task.on('state_changed',
-            function (s) { if (prog) prog.textContent = '🎵 Upload ' + Math.round(s.bytesTransferred * 100 / s.totalBytes) + '%'; },
-            function (err) { if (prog) prog.textContent = ''; window.AIA.showToast('Échec upload audio : ' + String(err && err.code || err), 'error'); },
+            function (s) { if (prog) prog.textContent = emoji + ' Upload ' + Math.round(s.bytesTransferred * 100 / s.totalBytes) + '%'; },
+            function (err) { if (prog) prog.textContent = ''; window.AIA.showToast('Échec upload : ' + String(err && err.code || err), 'error'); },
             function () {
               ref.getDownloadURL().then(function (url) {
                 if (prog) prog.textContent = '';
-                addAsset(stepId, { type: 'audio', url: url, label: file.name || 'jingle.mp3', addedAt: new Date().toISOString() });
+                addAsset(stepId, { type: kind, url: url, label: (file.name || (isVideo ? 'video.mp4' : 'audio.mp3')).slice(0, 80), addedAt: new Date().toISOString() });
                 window.AIA.renderBusinessGameNew(main);
-              }).catch(function () { if (prog) prog.textContent = ''; window.AIA.showToast('Échec de récupération du lien audio.', 'error'); });
+              }).catch(function () { if (prog) prog.textContent = ''; window.AIA.showToast('Échec de récupération du lien média.', 'error'); });
             });
           return;
         }
@@ -1513,22 +1539,24 @@
 
     main.querySelectorAll('[data-remove-asset]').forEach(function (btn) {
       btn.addEventListener('click', function () {
+        var st = window.AIA.getState(); // état frais (évite d'écraser un état plus récent post-upload async)
         var stepId = this.getAttribute('data-step');
         var idx = parseInt(this.getAttribute('data-remove-asset'));
-        if (!st.campaignData || !st.campaignData[stepId] || !st.campaignData[stepId].assets) return;
+        if (!st.campaignData || !st.campaignData[stepId] || !Array.isArray(st.campaignData[stepId].assets)) return;
         if (!confirm('Supprimer cet asset ?')) return;
-        st.campaignData[stepId].assets.splice(idx, 1);
-        if (window.AIA.saveState) window.AIA.saveState();
+        st.campaignData[stepId].assets = st.campaignData[stepId].assets.filter(function (_, i) { return i !== idx; });
+        if (window.AIA.saveStateNow) window.AIA.saveStateNow(); else if (window.AIA.saveState) window.AIA.saveState();
         window.AIA.renderBusinessGameNew(main);
       });
     });
 
     function addAsset(stepId, asset) {
+      var st = window.AIA.getState(); // état frais : l'upload peut être asynchrone -> ne pas écraser un état plus récent
       st.campaignData = st.campaignData || {};
       st.campaignData[stepId] = st.campaignData[stepId] || {};
       st.campaignData[stepId].assets = st.campaignData[stepId].assets || [];
       st.campaignData[stepId].assets.push(asset);
-      if (window.AIA.saveState) window.AIA.saveState();
+      if (window.AIA.saveStateNow) window.AIA.saveStateNow(); else if (window.AIA.saveState) window.AIA.saveState();
       window.AIA.showToast('Asset ajoute !', 'success');
       // XP bonus first asset of the step
       if (st.campaignData[stepId].assets.length === 1 && window.AIA.addXP) window.AIA.addXP(5, 'Premier asset ajoute');
@@ -1544,12 +1572,15 @@
     var filled = 0;
     inputs.forEach(function (el) {
       var f = el.getAttribute('data-field');
-      var v = el.value.trim();
+      if (!f) return;
+      var v = (el.value || '').trim();
+      if (v.length > 4000) { v = v.slice(0, 4000); el.value = v; } // sécurisation : cap des saisies étudiants
       st.campaignData[stepId][f] = v;
       if (v.length > 0) filled++;
     });
     if (requireOne && filled === 0) return false;
-    if (AIA.saveState) AIA.saveState();
+    // Sauvegarde IMMÉDIATE (anti-rollback : la donnée d'étape ne dépend pas du debounce)
+    if (AIA.saveStateNow) AIA.saveStateNow(); else if (AIA.saveState) AIA.saveState();
     return true;
   }
 
@@ -1826,6 +1857,8 @@
           assets.forEach(function (a) {
             if (isAudioAsset(a)) {
               html += '<div class="showcase-asset-audio" style="display:flex;flex-direction:column;gap:.2rem;min-width:230px"><span style="font-size:.75rem">🎵 ' + escapeHtml(a.label || 'audio') + '</span><audio controls preload="none" src="' + escapeHtml(a.url) + '" style="width:100%;height:32px"></audio></div>';
+            } else if (isVideoAsset(a)) {
+              html += '<div class="showcase-asset-video" style="display:flex;flex-direction:column;gap:.2rem;min-width:230px"><span style="font-size:.75rem">🎬 ' + escapeHtml(a.label || 'video') + '</span><video controls preload="metadata" src="' + escapeHtml(a.url) + '" style="width:100%;max-height:160px;border-radius:8px;background:#000"></video></div>';
             } else if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)/i.test(a.url))) {
               html += '<a href="' + escapeHtml(a.url) + '" target="_blank" class="showcase-asset-thumb"><img src="' + escapeHtml(a.url) + '" alt="' + escapeHtml(a.label || '') + '" /></a>';
             } else {

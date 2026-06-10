@@ -129,8 +129,17 @@
       }
     }
 
+    // Compagnon PromptMon (à droite de l'avatar, animation idle propre)
+    if (student.pm && student.pm.id && AIA.PROMPTMON && AIA.PROMPTMON.drawCreature && AIA.PROMPTMON.getCreature) {
+      var cr = AIA.PROMPTMON.getCreature(student.pm.id);
+      if (cr) {
+        var petBob = Math.sin(tick * 0.06 + pos.x + 3) * 1.5;
+        AIA.PROMPTMON.drawCreature(ctx, cr, student.pm.evo || 0, student.pm.eq || [], 2, pos.x + spriteSize * SPRITE_SCALE + 4, pos.y + bounce + 4 + petBob);
+      }
+    }
+
     var status = getStudentStatus(student);
-    var dotX = pos.x + spriteSize * SPRITE_SCALE + 2;
+    var dotX = pos.x - 3; // décalé en haut-gauche pour laisser la place au compagnon à droite
     var dotY = pos.y + bounce;
     ctx.fillStyle = STATUS_COLORS[status];
     ctx.beginPath();

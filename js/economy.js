@@ -186,6 +186,27 @@
         '</div></div>';
     });
 
+    // === Section PromptMon : potions d'XP créature (paiement via xpSpent -> classement intact) ===
+    var PM = window.AIA.PROMPTMON;
+    if (PM && PM.POTIONS && PM.POTIONS.length && st.promptmon && st.promptmon.creatureId) {
+      var pcr = PM.getCreature(st.promptmon.creatureId);
+      var formeName = pcr ? PM.creatureName(pcr, st.promptmon.evoStage || 0) : 'ta créature';
+      html += '<div class="shop-section"><h2>🐾 PromptMon — potions d\'XP créature</h2>' +
+        '<p class="shop-desc" style="margin:-.4rem 0 .6rem;color:var(--text-muted)">Fais grandir <strong>' + escapeHtml(formeName) + '</strong> (niveau ' + (st.promptmon.level || 1) + '). 💡 Dépenser ton XP ne baisse <strong>pas</strong> ton classement — seul ton XP <em>disponible</em> diminue.</p>' +
+        '<div class="shop-grid">' +
+        PM.POTIONS.map(function (it) {
+          var canAfford = available >= it.cost;
+          return '<div class="shop-card glass-card rarity-' + (it.rarity || 'common') + '" data-potion-id="' + it.id + '">' +
+            '<div class="shop-rarity">' + (it.rarity || '') + '</div>' +
+            '<div class="shop-icon">' + it.icon + '</div>' +
+            '<h3>' + escapeHtml(it.name) + '</h3>' +
+            '<p class="shop-desc">' + escapeHtml(it.desc) + '</p>' +
+            '<div class="shop-footer"><div class="shop-cost">' + it.cost + ' XP</div>' +
+            '<button class="btn-primary btn-sm shop-potion ' + (canAfford ? '' : 'disabled') + '" data-potion-id="' + it.id + '"' + (canAfford ? '' : ' disabled') + '>' + (canAfford ? 'Acheter' : '🔒 ' + (it.cost - available)) + '</button>' +
+            '</div></div>';
+        }).join('') + '</div></div>';
+    }
+
     main.innerHTML = html;
 
     // Wire purchase
@@ -199,6 +220,22 @@
         purchase(item, function (res) {
           if (res.error) { window.AIA.showToast(res.error, 'error'); return; }
           window.AIA.showToast('Achete : ' + item.name + ' ✓', 'success');
+          renderShop(main);
+        });
+      });
+    });
+
+    // Wire potions PromptMon (dépense via xpSpent -> classement intact)
+    main.querySelectorAll('.shop-potion').forEach(function (btn) {
+      if (btn.classList.contains('disabled')) return;
+      btn.addEventListener('click', function () {
+        if (btn.disabled) return; btn.disabled = true;
+        var id = this.getAttribute('data-potion-id');
+        var PMm = window.AIA.PROMPTMON;
+        if (!PMm || !PMm.buyPotion) { btn.disabled = false; return; }
+        PMm.buyPotion(id, function (res) {
+          if (res.error) { window.AIA.showToast(res.error, 'error'); btn.disabled = false; return; }
+          window.AIA.showToast('🧪 +' + res.potion.cxp + ' XP créature' + (res.leveled ? ' — Niveau +' + res.leveled + ' !' : '') + (res.canEvolve ? ' ✨ évolution dispo' : ''), 'success');
           renderShop(main);
         });
       });
