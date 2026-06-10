@@ -229,6 +229,76 @@
     if (voted) ref.remove(); else ref.set(true);
   }
 
+  /* ===================== FAB TICKETS (dépôt depuis TOUTE la plateforme) =====================
+     Bouton flottant 🎫 (bas-droite) visible pour tout étudiant connecté : ouvre une modale
+     de dépôt de ticket (mêmes catégories + même nœud /feedback que le panneau du chat). */
+  var _fabWatch = null, _fabLastSend = 0;
+
+  function ensureFab() {
+    if (document.getElementById('tk-fab')) return;
+    var fab = document.createElement('button');
+    fab.id = 'tk-fab';
+    fab.title = 'Déposer un ticket (bug, navigation, idée)';
+    fab.innerHTML = '🎫';
+    fab.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:1200;width:52px;height:52px;border-radius:50%;border:1px solid rgba(245,183,49,.5);background:linear-gradient(135deg,#2a2140,#1a1430);color:#fff;font-size:1.4rem;cursor:pointer;display:none;box-shadow:0 6px 20px rgba(0,0,0,.45);transition:transform .2s ease';
+    fab.addEventListener('mouseenter', function () { fab.style.transform = 'scale(1.08)'; });
+    fab.addEventListener('mouseleave', function () { fab.style.transform = 'scale(1)'; });
+    fab.addEventListener('click', openTicketModal);
+    document.body.appendChild(fab);
+  }
+
+  function openTicketModal() {
+    if (document.getElementById('tk-fab-overlay')) return;
+    var st = window.AIA.getState(); var u = st.user || {};
+    if (!u.accountKey) return;
+    var cat = 'bug';
+    var ov = document.createElement('div');
+    ov.id = 'tk-fab-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(10,8,20,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem';
+    function paintModal() {
+      var c = catOf(cat);
+      ov.innerHTML = '<div class="glass-card" style="max-width:430px;width:100%;padding:1.1rem;background:#1c1532;border:1px solid var(--border-glass);border-radius:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem"><strong>🎫 Déposer un ticket</strong><span id="fabtk-close" style="cursor:pointer;font-size:1.2rem;padding:.1rem .4rem">✕</span></div>' +
+        '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.5rem">' +
+          CATS.map(function (x) { return '<span class="fabtk-cat btn-outline btn-xs' + (x.id === cat ? ' btn-primary' : '') + '" data-c="' + x.id + '" style="cursor:pointer">' + x.icon + ' ' + x.label + '</span>'; }).join('') +
+        '</div>' +
+        '<textarea id="fabtk-text" rows="4" class="demo-input" style="width:100%" maxlength="400" placeholder="' + esc(c.ph) + '"></textarea>' +
+        '<button class="btn-primary" id="fabtk-send" style="width:100%;margin-top:.6rem">Créer le ticket</button>' +
+        '<div id="fabtk-msg" style="font-size:.8rem;margin-top:.4rem;min-height:1em"></div>' +
+        '<div style="font-size:.68rem;color:var(--text-muted);margin-top:.3rem">Ton ticket sera répertorié dans 💬 Chat → 🎫 Tickets.</div>' +
+      '</div>';
+      ov.querySelector('#fabtk-close').addEventListener('click', function () { ov.remove(); });
+      ov.querySelectorAll('.fabtk-cat').forEach(function (el) {
+        el.addEventListener('click', function () { cat = this.getAttribute('data-c'); var txt = ov.querySelector('#fabtk-text').value; paintModal(); ov.querySelector('#fabtk-text').value = txt; });
+      });
+      ov.querySelector('#fabtk-send').addEventListener('click', function () {
+        var btn = this; var txt = (ov.querySelector('#fabtk-text').value || '').trim();
+        var msg = ov.querySelector('#fabtk-msg');
+        if (!txt) { msg.innerHTML = '<span style="color:var(--red)">Décris ton ticket.</span>'; return; }
+        var now = Date.now();
+        if (now - _fabLastSend < 1500) { msg.textContent = 'Patiente un instant…'; return; }
+        _fabLastSend = now; btn.disabled = true;
+        window.AIA.db.ref('feedback').push({ key: u.accountKey, name: u.name || u.accountKey, category: cat, rating: 0, text: txt.slice(0, 400), ts: now, status: 'open' }, function (err) {
+          if (err) { msg.innerHTML = '<span style="color:var(--red)">Échec d\'envoi.</span>'; btn.disabled = false; return; }
+          if (window.AIA.showToast) window.AIA.showToast('🎫 Ticket déposé ! Merci 🙏', 'success');
+          ov.remove();
+        });
+      });
+    }
+    paintModal();
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
+  function fabWatcher() {
+    var A = window.AIA; if (!A || !A.getState) return;
+    ensureFab();
+    var fab = document.getElementById('tk-fab'); if (!fab) return;
+    var st = A.getState(); var u = st && st.user;
+    fab.style.display = (u && u.accountKey && A.db) ? 'block' : 'none';
+  }
+  if (!_fabWatch) { try { fabWatcher(); _fabWatch = setInterval(fabWatcher, 2000); } catch (e) {} }
+
   window.AIA = window.AIA || {};
   window.AIA.renderClassChat = renderClassChat;
   window.AIA.stopChat = stopChat;

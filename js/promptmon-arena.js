@@ -17,7 +17,16 @@
 
   var IMG_MAX_PX = 1400, IMG_QUALITY = 0.85;
   var WIN_XP = 20, LOSE_XP = 8, WIN_PTS = 30, LOSE_PTS = 8;
+  var BOSS_WIN_XP = 40, BOSS_LOSE_XP = 10, BOSS_BAR = 88; // Défi du Prof : extrêmement dur
   var GKEY_LS = 'promptmon_gemini_key';
+
+  // Bonus d'appréciation du juge selon le NIVEAU + ÉVOLUTION du PromptMon (xp créature).
+  // Max ≈ +20 (niv 10 evo 2) : significatif sans écraser la qualité de l'image.
+  function lvlBonus(side) {
+    if (!side) return 0;
+    var l = Math.max(1, Math.min(10, side.lvl || 1)), e = Math.max(0, Math.min(2, side.evo || 0));
+    return Math.round((l - 1) * 1.5 + e * 3);
+  }
 
   /* ---------- BRIEFS (rotation quotidienne) ---------- */
   var BRIEFS = [
@@ -115,8 +124,8 @@
           var opp = subs[oppKey];
           matchRef.set({
             briefId: briefObj.id, briefTitle: briefObj.title || '', briefDesc: briefObj.desc || '',
-            a: { key: oppKey, name: opp.name || oppKey, img: opp.imageUrl, creatureId: opp.creatureId || 0 },
-            b: { key: meKey, name: mine.name || meKey, img: mine.imageUrl, creatureId: mine.creatureId || 0 },
+            a: { key: oppKey, name: opp.name || oppKey, img: opp.imageUrl, creatureId: opp.creatureId || 0, lvl: opp.lvl || 1, evo: opp.evo || 0 },
+            b: { key: meKey, name: mine.name || meKey, img: mine.imageUrl, creatureId: mine.creatureId || 0, lvl: mine.lvl || 1, evo: mine.evo || 0 },
             status: 'pending', winner: '', createdAt: Date.now()
           }, function (err3) {
             if (err3) { // échec d'écriture : libère les 2 pointeurs pour éviter des soumissions orphelines
@@ -173,6 +182,33 @@
       });
     });
   }
+  // Juge BOSS (Défi du Prof) : une seule image, notation extrêmement sévère.
+  function judgeBossWithGemini(match, key, cb) {
+    fetchAsBase64(match.b.img, function (e1, b64, mt) {
+      if (e1) { cb('img: ' + e1); return; }
+      var prompt = 'Tu es Maxilangue, le juge BOSS d\'une école de commerce — directeur artistique senior, le plus exigeant qui soit. Brief : "' +
+        (match.briefTitle || '') + ' — ' + (match.briefDesc || '') + '". ' +
+        'Note cette image de 0 à 100 avec une sévérité EXTRÊME : 50 = correct, 70 = très bon, 85+ = réservé à l\'exceptionnel. ' +
+        'Critères : adéquation au brief, impact visuel, exécution, originalité. ' +
+        'Réponds UNIQUEMENT en JSON strict : {"score":0-100,"reason":"verdict cinglant mais constructif en français (2 phrases max)"}';
+      var body = {
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mt, data: b64 } }] }],
+        generationConfig: { temperature: 0.2, response_mime_type: 'application/json' }
+      };
+      fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+      }).then(function (r) { return r.json(); }).then(function (j) {
+        try {
+          var txt = j.candidates[0].content.parts[0].text;
+          var m2 = txt.match(/\{[\s\S]*\}/);
+          var verdict = JSON.parse(m2 ? m2[0] : txt);
+          if (typeof verdict.score !== 'number') throw new Error('score invalide');
+          cb(null, verdict);
+        } catch (e) { cb('parse: ' + (j.error && j.error.message ? j.error.message : e.message)); }
+      }).catch(function (e) { cb(String(e)); });
+    });
+  }
+
   // Boucle de jugement : claim transactionnel (pending->judging) puis Gemini puis done.
   function judgePending(statusEl, done) {
     var A = window.AIA, key = localStorage.getItem(GKEY_LS);
@@ -189,10 +225,28 @@
         }, function (err, committed) {
           if (err || !committed) { next(); return; }
           if (statusEl) statusEl.textContent = '🤖 Jugement IA du combat ' + (judged + 1) + '…';
-          if (!match.a || !match.a.img || !match.b || !match.b.img) { // images manquantes -> repli manuel
-            A.db.ref('promptmon/matches/' + id + '/status').set('pending'); next(); return;
-          }
           var rollback = function () { A.db.ref('promptmon/matches/' + id + '/status').set('pending'); };
+          // --- DÉFI DU PROF (boss) : 1 seule image, barre très haute, bonus niveau créature ---
+          if (match.boss) {
+            if (!match.b || !match.b.img) { rollback(); next(); return; }
+            try {
+              judgeBossWithGemini(match, key, function (jerr, v) {
+                if (jerr) { rollback(); if (statusEl) statusEl.textContent = '⚠️ Échec IA boss — laissé en manuel.'; next(); return; }
+                var bonus = lvlBonus(match.b);
+                var adj = Math.min(100, (v.score || 0) + bonus);
+                var win = adj >= BOSS_BAR;
+                A.db.ref('promptmon/matches/' + id).update({
+                  status: 'done', winner: win ? 'b' : 'a', scoreA: BOSS_BAR, scoreB: adj,
+                  reason: String(v.reason || '').slice(0, 230) + ' (note IA ' + (v.score || 0) + ' + bonus niveau +' + bonus + ', barre du Prof : ' + BOSS_BAR + ')',
+                  judgedBy: 'ai', judgedAt: Date.now()
+                }, function () { judged++; next(); });
+              });
+            } catch (e2) { rollback(); next(); }
+            return;
+          }
+          if (!match.a || !match.a.img || !match.b || !match.b.img) { // images manquantes -> repli manuel
+            rollback(); next(); return;
+          }
           try {
             judgeWithGemini(match, key, function (jerr, v) {
               if (jerr) {
@@ -200,9 +254,14 @@
                 if (statusEl) statusEl.textContent = '⚠️ Échec IA (' + String(jerr).slice(0, 120) + ') — combat laissé en manuel.';
                 next(); return;
               }
+              // L'appréciation du juge tient compte du NIVEAU/évolution des créatures
+              var bA = lvlBonus(match.a), bB = lvlBonus(match.b);
+              var sA = Math.min(100, (v.scoreA || 0) + bA), sB = Math.min(100, (v.scoreB || 0) + bB);
+              var w = sA === sB ? v.winner : (sA > sB ? 'a' : 'b');
               A.db.ref('promptmon/matches/' + id).update({
-                status: 'done', winner: v.winner, scoreA: v.scoreA || 0, scoreB: v.scoreB || 0,
-                reason: String(v.reason || '').slice(0, 300), judgedBy: 'ai', judgedAt: Date.now()
+                status: 'done', winner: w, scoreA: sA, scoreB: sB,
+                reason: String(v.reason || '').slice(0, 240) + ((bA || bB) ? ' (bonus niveau : A +' + bA + ' / B +' + bB + ')' : ''),
+                judgedBy: 'ai', judgedAt: Date.now()
               }, function () { judged++; next(); });
             });
           } catch (syncErr) { rollback(); next(); } // jamais bloqué en 'judging' sur exception synchrone
@@ -220,14 +279,17 @@
       if (err || !committed) { if (cb) cb(false); return; }
       var iAmA = match.a.key === meKey;
       var won = (match.winner === 'a' && iAmA) || (match.winner === 'b' && !iAmA);
-      if (A.addXP) A.addXP(won ? WIN_XP : LOSE_XP, won ? 'Victoire PromptMon Arena 🏆' : 'Combat PromptMon');
+      var xpAmt = won ? (match.boss ? BOSS_WIN_XP : WIN_XP) : (match.boss ? BOSS_LOSE_XP : LOSE_XP);
+      if (A.addXP) A.addXP(xpAmt, won ? (match.boss ? 'EXPLOIT : Maxilangue vaincu ! 👑' : 'Victoire PromptMon Arena 🏆') : (match.boss ? 'Défi du Prof tenté' : 'Combat PromptMon'));
       var st = A.getState();
       if (st.promptmon) {
         st.promptmon.battles = (st.promptmon.battles || 0) + 1;
         if (won) st.promptmon.wins = (st.promptmon.wins || 0) + 1;
+        // La créature gagne aussi de l'XP créature (cxp) en combattant (boss = gros gains)
+        if (A.PROMPTMON && A.PROMPTMON.addCreatureXp) A.PROMPTMON.addCreatureXp(match.boss ? (won ? 120 : 30) : (won ? 60 : 20));
         if (A.saveState) A.saveState();
       }
-      if (won && A.awardBadge) A.awardBadge('promptmon-arena-win');
+      if (won && A.awardBadge) A.awardBadge(match.boss ? 'promptmon-boss-win' : 'promptmon-arena-win');
       A.db.ref('pvp/' + meKey).transaction(function (p) {
         p = p || {};
         p.points = (p.points || 0) + (won ? WIN_PTS : LOSE_PTS);
@@ -275,8 +337,49 @@
             '<div id="pma-up-msg" style="font-size:.78rem;color:var(--text-muted);margin-top:.4rem"></div></div>') +
         '<div id="pma-up-msg2" style="font-size:.78rem;margin-top:.3rem"></div>' +
       '</div>' +
+      // --- DÉFI DU PROF (boss Maxilangue) ---
+      '<div class="glass-card pm-card" style="padding:1rem;margin-bottom:.8rem;border-color:rgba(240,98,146,.45);background:linear-gradient(135deg,rgba(240,98,146,.08),rgba(255,213,79,.05))">' +
+        '<div style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">' +
+          '<canvas id="pma-boss-prev" width="84" height="84" style="image-rendering:pixelated"></canvas>' +
+          '<div style="flex:1;min-width:200px">' +
+            '<div style="font-weight:800">👑 Défi du Prof — <span style="color:#f06292">Maxilangue</span> <span class="pm-chip" style="background:rgba(245,183,49,.2)">Niv. 99</span></div>' +
+            '<div style="font-size:.76rem;color:var(--text-muted);margin:.2rem 0 .45rem">Soumets ton image puis défie le boss : le juge IA est <strong>extrêmement sévère</strong> (barre à ' + BOSS_BAR + '). Le niveau de ta créature compte — entraîne-la avant ! Récompense : +' + BOSS_WIN_XP + ' XP + badge.</div>' +
+            '<button class="btn-primary btn-sm" id="pma-boss-btn" style="cursor:pointer"' + ((mySub && mySub.imageUrl) ? '' : ' disabled') + '>' + ((mySub && mySub.imageUrl) ? '⚔️ Défier Maxilangue' : '🔒 Soumets d\'abord ton image') + '</button>' +
+            '<span id="pma-boss-msg" style="font-size:.74rem;color:var(--text-muted);margin-left:.5rem"></span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
       '<div style="font-weight:700;font-size:.9rem;margin:.6rem 0">⚔️ Mes combats</div>' +
       '<div id="pma-matches"><div class="loading-pulse" style="text-align:center;padding:.8rem">Chargement…</div></div>';
+
+    // aperçu du boss + bouton défi
+    (function () {
+      var P = A.PROMPTMON, bc = document.getElementById('pma-boss-prev');
+      if (P && bc) { var bcr = P.getCreature(26); if (bcr) P.paintToCanvas(bc, bcr, 2, ['crown'], { stage: true }); }
+      var bb = document.getElementById('pma-boss-btn');
+      if (bb && mySub && mySub.imageUrl) bb.addEventListener('click', function () {
+        var btn = this; btn.disabled = true;
+        var bmsg = document.getElementById('pma-boss-msg');
+        // 1 défi par brief : vérifie l'existant
+        A.db.ref('promptmon/matches').limitToLast(150).once('value', function (snap) {
+          var all = snap.val() || {};
+          var already = Object.keys(all).some(function (k) { var m = all[k]; return m && m.boss && m.briefId === brief.id && m.b && m.b.key === u.accountKey; });
+          if (already) { if (bmsg) bmsg.textContent = 'Tu as déjà défié le Prof sur ce brief.'; btn.disabled = false; return; }
+          var st2 = A.getState();
+          A.db.ref('promptmon/matches').push({
+            boss: true, briefId: brief.id, briefTitle: brief.title || '', briefDesc: brief.desc || '',
+            a: { key: '__formateur', name: 'Le Prof', img: '', creatureId: 26, lvl: 99, evo: 2 },
+            b: { key: u.accountKey, name: u.name || u.accountKey, img: mySub.imageUrl, creatureId: creatureId,
+                 lvl: (st2.promptmon && st2.promptmon.level) || 1, evo: (st2.promptmon && st2.promptmon.evoStage) || 0 },
+            status: 'pending', winner: '', createdAt: Date.now()
+          }, function (err) {
+            if (err) { if (bmsg) bmsg.textContent = 'Échec — réessaie.'; btn.disabled = false; return; }
+            if (A.showToast) A.showToast('👑 Défi lancé ! Maxilangue t\'attend au jugement…', 'success');
+            renderMyMatches(document.getElementById('pma-matches'), u.accountKey);
+          });
+        });
+      });
+    })();
 
     var fi = document.getElementById('pma-file');
     if (fi) fi.addEventListener('change', function () {
@@ -287,7 +390,9 @@
         uploadFile(cf, u.accountKey, function (pct) { if (msg) msg.textContent = 'Upload ' + pct + '%'; }, function (err, url) {
           if (err) { if (msg) msg.innerHTML = '<span style="color:var(--red)">Échec : ' + esc(err) + '</span>'; return; }
           A.db.ref('promptmon/submissions/' + brief.id + '/' + u.accountKey).update({
-            imageUrl: url, name: u.name || u.accountKey, creatureId: creatureId, ts: Date.now()
+            imageUrl: url, name: u.name || u.accountKey, creatureId: creatureId,
+            lvl: (st.promptmon && st.promptmon.level) || 1, evo: (st.promptmon && st.promptmon.evoStage) || 0,
+            ts: Date.now()
           }, function () {
             if (msg) msg.textContent = 'Recherche d\'un adversaire…';
             tryMatchmake(brief, u.accountKey, function () { renderArena(body.parentNode ? body : document.getElementById('pm-tabbody')); });
@@ -309,6 +414,12 @@
       }).sort(function (x, y) { return (all[y].createdAt || 0) - (all[x].createdAt || 0); });
       if (!mine.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:.84rem;text-align:center">Aucun combat pour l\'instant. Soumets ton image ! 🎨</p>'; return; }
       el.innerHTML = mine.map(function (id) { return matchCard(id, all[id], meKey); }).join('');
+      // Peint les créatures (côtés sans image, ex. boss Maxilangue)
+      var P = A.PROMPTMON;
+      if (P && P.paintToCanvas) el.querySelectorAll('canvas.pma-cr').forEach(function (c) {
+        var cr = P.getCreature(parseInt(c.getAttribute('data-cid'), 10));
+        if (cr) try { P.paintToCanvas(c, cr, parseInt(c.getAttribute('data-evo'), 10) || 0, [], { stage: true }); } catch (e) {}
+      });
       wireClaims(el, all, meKey);
     }, function () { el.innerHTML = '<p style="color:var(--text-muted);font-size:.84rem;text-align:center">Combats indisponibles pour le moment.</p>'; });
   }
@@ -317,11 +428,22 @@
         b.addEventListener('click', function () {
           var id = this.getAttribute('data-id'); var btn = this; btn.disabled = true;
           claimReward(id, all[id], meKey, function (ok, won) {
-            if (ok && window.AIA.showToast) window.AIA.showToast(won ? '🏆 +' + WIN_XP + ' XP !' : '+' + LOSE_XP + ' XP (combat)', won ? 'success' : 'info');
+            var mm = all[id] || {};
+            var amt = won ? (mm.boss ? BOSS_WIN_XP : WIN_XP) : (mm.boss ? BOSS_LOSE_XP : LOSE_XP);
+            if (ok && window.AIA.showToast) window.AIA.showToast(won ? '🏆 +' + amt + ' XP !' : '+' + amt + ' XP (combat)', won ? 'success' : 'info');
             renderMyMatches(el, meKey);
           });
         });
       });
+  }
+
+  // Vignette d'un côté de combat : image soumise, sinon créature (boss Maxilangue)
+  function sideThumb(side, borderColor, label) {
+    var b = 'width:96px;height:96px;border-radius:10px;border:2px solid ' + borderColor;
+    var inner = side.img
+      ? '<img src="' + esc(side.img) + '" alt="' + esc(label) + '" style="' + b + ';object-fit:cover">'
+      : '<canvas class="pma-cr" data-cid="' + (side.creatureId || 0) + '" data-evo="' + (side.evo || 0) + '" width="96" height="96" style="' + b + ';image-rendering:pixelated"></canvas>';
+    return '<div style="text-align:center">' + inner + '<div style="font-size:.68rem;margin-top:.15rem">' + esc(label) + (side.lvl ? ' <span style="color:var(--text-muted)">niv.' + side.lvl + '</span>' : '') + '</div></div>';
   }
 
   function matchCard(id, m, meKey) {
@@ -329,23 +451,24 @@
     var mySide = iAmA ? m.a : m.b, oppSide = iAmA ? m.b : m.a;
     var won = m.status === 'done' && ((m.winner === 'a' && iAmA) || (m.winner === 'b' && !iAmA));
     var claimed = m.claimed && m.claimed[meKey];
+    var winXp = m.boss ? BOSS_WIN_XP : WIN_XP, loseXp = m.boss ? BOSS_LOSE_XP : LOSE_XP;
     var statusHtml = m.status === 'done'
-      ? '<span class="pm-chip" style="background:' + (won ? 'rgba(46,204,113,.2)' : 'rgba(231,76,60,.18)') + '">' + (won ? '🏆 Victoire' : '💪 Défaite') + '</span>'
+      ? '<span class="pm-chip" style="background:' + (won ? 'rgba(46,204,113,.2)' : 'rgba(231,76,60,.18)') + '">' + (won ? (m.boss ? '🏆 EXPLOIT — Prof vaincu !' : '🏆 Victoire') : (m.boss ? '👑 Le Prof l\'emporte' : '💪 Défaite')) + '</span>'
       : '<span class="pm-chip" style="background:rgba(245,183,49,.15)">🕐 En attente du juge' + (m.status === 'judging' ? ' (IA en cours…)' : '') + '</span>';
-    return '<div class="glass-card pm-card" style="padding:.7rem;margin-bottom:.6rem">' +
+    return '<div class="glass-card pm-card" style="padding:.7rem;margin-bottom:.6rem' + (m.boss ? ';border-color:rgba(240,98,146,.45)' : '') + '">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem">' +
-        '<div style="font-size:.78rem;font-weight:700">' + esc(m.briefTitle || 'Brief') + '</div>' + statusHtml + '</div>' +
+        '<div style="font-size:.78rem;font-weight:700">' + (m.boss ? '👑 ' : '') + esc(m.briefTitle || 'Brief') + '</div>' + statusHtml + '</div>' +
       '<div style="display:flex;gap:.6rem;align-items:center;justify-content:center;flex-wrap:wrap">' +
-        '<div style="text-align:center"><img src="' + esc(mySide.img) + '" alt="moi" style="width:96px;height:96px;object-fit:cover;border-radius:10px;border:2px solid ' + (m.status === 'done' ? (won ? '#2ecc71' : 'rgba(231,76,60,.6)') : 'var(--border-glass)') + '"><div style="font-size:.68rem;margin-top:.15rem">Toi</div></div>' +
+        sideThumb(mySide, (m.status === 'done' ? (won ? '#2ecc71' : 'rgba(231,76,60,.6)') : 'var(--border-glass)'), 'Toi') +
         '<div style="font-weight:900;color:var(--text-muted)">VS</div>' +
-        '<div style="text-align:center"><img src="' + esc(oppSide.img) + '" alt="adversaire" style="width:96px;height:96px;object-fit:cover;border-radius:10px;border:2px solid ' + (m.status === 'done' ? (!won ? '#2ecc71' : 'rgba(231,76,60,.6)') : 'var(--border-glass)') + '"><div style="font-size:.68rem;margin-top:.15rem">' + esc(oppSide.name) + '</div></div>' +
+        sideThumb(oppSide, (m.status === 'done' ? (!won ? '#2ecc71' : 'rgba(231,76,60,.6)') : 'var(--border-glass)'), oppSide.name || '?') +
       '</div>' +
       (m.status === 'done'
         ? '<div style="font-size:.76rem;color:var(--text-muted);margin-top:.4rem;text-align:center">' +
           (m.scoreA || m.scoreB ? '<strong>' + (iAmA ? m.scoreA : m.scoreB) + '</strong> – ' + (iAmA ? m.scoreB : m.scoreA) + ' &bull; ' : '') +
           (m.judgedBy === 'ai' ? '🤖 Jugé par IA' : '👨‍🏫 Jugé par le formateur') +
           (m.reason ? '<br>« ' + esc(m.reason) + ' »' : '') + '</div>' +
-          (!claimed ? '<div style="text-align:center;margin-top:.5rem"><button class="btn-primary btn-sm pma-claim" data-id="' + id + '" style="cursor:pointer">🎁 Récupérer ' + (won ? WIN_XP : LOSE_XP) + ' XP</button></div>'
+          (!claimed ? '<div style="text-align:center;margin-top:.5rem"><button class="btn-primary btn-sm pma-claim" data-id="' + id + '" style="cursor:pointer">🎁 Récupérer ' + (won ? winXp : loseXp) + ' XP</button></div>'
                     : '<div style="text-align:center;font-size:.72rem;color:var(--green);margin-top:.3rem">✓ Récompense récupérée</div>')
         : '') +
     '</div>';
@@ -411,17 +534,22 @@
           var all = snap.val() || {};
           var ids = Object.keys(all).sort(function (x, y) { return (all[y].createdAt || 0) - (all[x].createdAt || 0); });
           if (!ids.length) { el.innerHTML = '<p style="color:var(--text-muted);font-size:.84rem">Aucun combat. Les matches se créent automatiquement quand 2 étudiants soumettent.</p>'; return; }
+          function admThumb(side, winner, sideKey) {
+            var border = 'width:110px;height:110px;border-radius:10px;border:2px solid ' + (winner === sideKey ? '#2ecc71' : 'var(--border-glass)');
+            if (side.img) return '<img src="' + esc(side.img) + '" style="' + border + ';object-fit:cover" alt="' + sideKey + '">';
+            return '<div style="' + border + ';display:flex;align-items:center;justify-content:center;font-size:2.6rem;background:rgba(240,98,146,.14)">👅</div>';
+          }
           el.innerHTML = ids.map(function (id) {
             var m = all[id]; var pending = m.status !== 'done';
-            return '<div class="glass-card pm-card" style="padding:.7rem;margin-bottom:.6rem">' +
-              '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.3rem;font-size:.78rem;margin-bottom:.4rem"><strong>' + esc(m.briefTitle || '') + '</strong>' +
+            return '<div class="glass-card pm-card" style="padding:.7rem;margin-bottom:.6rem' + (m.boss ? ';border-color:rgba(240,98,146,.45)' : '') + '">' +
+              '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:.3rem;font-size:.78rem;margin-bottom:.4rem"><strong>' + (m.boss ? '👑 DÉFI DU PROF — ' : '') + esc(m.briefTitle || '') + '</strong>' +
                 '<span>' + (pending ? '🕐 ' + esc(m.status) : '✅ done — ' + (m.judgedBy === 'ai' ? '🤖 IA' : '👨‍🏫 manuel')) + '</span></div>' +
               '<div style="display:flex;gap:.6rem;align-items:center;justify-content:center;flex-wrap:wrap">' +
-                '<div style="text-align:center"><img src="' + esc(m.a.img) + '" style="width:110px;height:110px;object-fit:cover;border-radius:10px;border:2px solid ' + (m.winner === 'a' ? '#2ecc71' : 'var(--border-glass)') + '" alt="A"><div style="font-size:.7rem">A — ' + esc(m.a.name) + '</div>' +
-                (pending ? '<button class="btn-outline btn-sm pma-win" data-id="' + id + '" data-w="a" style="cursor:pointer;margin-top:.25rem">A gagne</button>' : '') + '</div>' +
+                '<div style="text-align:center">' + admThumb(m.a, m.winner, 'a') + '<div style="font-size:.7rem">A — ' + esc(m.a.name) + (m.a.lvl ? ' (niv.' + m.a.lvl + ')' : '') + '</div>' +
+                (pending ? '<button class="btn-outline btn-sm pma-win" data-id="' + id + '" data-w="a" style="cursor:pointer;margin-top:.25rem">' + (m.boss ? '👑 Le Prof gagne' : 'A gagne') + '</button>' : '') + '</div>' +
                 '<div style="font-weight:900;color:var(--text-muted)">VS</div>' +
-                '<div style="text-align:center"><img src="' + esc(m.b.img) + '" style="width:110px;height:110px;object-fit:cover;border-radius:10px;border:2px solid ' + (m.winner === 'b' ? '#2ecc71' : 'var(--border-glass)') + '" alt="B"><div style="font-size:.7rem">B — ' + esc(m.b.name) + '</div>' +
-                (pending ? '<button class="btn-outline btn-sm pma-win" data-id="' + id + '" data-w="b" style="cursor:pointer;margin-top:.25rem">B gagne</button>' : '') + '</div>' +
+                '<div style="text-align:center">' + admThumb(m.b, m.winner, 'b') + '<div style="font-size:.7rem">B — ' + esc(m.b.name) + (m.b.lvl ? ' (niv.' + m.b.lvl + ')' : '') + '</div>' +
+                (pending ? '<button class="btn-outline btn-sm pma-win" data-id="' + id + '" data-w="b" style="cursor:pointer;margin-top:.25rem">' + (m.boss ? '✅ Exploit réussi' : 'B gagne') + '</button>' : '') + '</div>' +
               '</div>' +
               (m.reason ? '<div style="font-size:.74rem;color:var(--text-muted);text-align:center;margin-top:.35rem">« ' + esc(m.reason) + ' »</div>' : '') +
             '</div>';

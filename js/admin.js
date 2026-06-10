@@ -34,6 +34,7 @@
       '<button class="admin-tab" data-tab="accounts">Comptes</button>' +
       '<button class="admin-tab" data-tab="campaigns">🎯 Campagnes</button>' +
       '<button class="admin-tab" data-tab="students">Etudiants</button>' +
+      '<button class="admin-tab" data-tab="promptmon">🐾 PromptMon</button>' +
       '<button class="admin-tab" data-tab="course">Cours</button>' +
       '<button class="admin-tab" data-tab="submissions">Activites</button>' +
       '<button class="admin-tab" data-tab="analytics">Analytics</button>' +
@@ -99,6 +100,7 @@
       else if (tab === 'accounts') renderAccounts(content);
       else if (tab === 'campaigns') renderCampaigns(content);
       else if (tab === 'students') renderStudents(content);
+      else if (tab === 'promptmon') renderPromptmonOverview(content);
       else if (tab === 'course') renderCourse(content);
       else if (tab === 'submissions') renderSubmissions(content);
       else if (tab === 'analytics') renderAnalytics(content);
@@ -107,6 +109,56 @@
 
     var _campaignsListener = null;
     var _cockpitListener = null;
+
+    /* ======== PROMPTMON TAB — vue d'ensemble des créatures de la classe ======== */
+    function renderPromptmonOverview(el) {
+      var PM = AIA.PROMPTMON;
+      if (!PM || !PM.getCreature || !PM.paintToCanvas) { el.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Module PromptMon indisponible.</div>'; return; }
+      el.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center"><div class="loading-pulse">Chargement des créatures…</div></div>';
+      function hexA(hex, a) { var h = (hex || '#888').replace('#', ''); if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2]; return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
+      function chip(txt, bg) { return '<span style="display:inline-flex;align-items:center;gap:.2rem;font-size:.68rem;font-weight:700;padding:.1rem .45rem;border-radius:999px;border:1px solid var(--border-glass);background:' + (bg || 'rgba(255,255,255,.08)') + '">' + txt + '</span>'; }
+      function build(states) {
+        var rows = [], counts = { pyro: 0, aqua: 0, flora: 0, volt: 0, lumen: 0 };
+        Object.keys(students).forEach(function (k) {
+          if (/^admin/.test(k)) return;
+          var stu = students[k] || {};
+          var pmSt = (states[k] && states[k].promptmon) || (stu.pm ? { creatureId: stu.pm.id, evoStage: stu.pm.evo, level: stu.pm.lvl, equipped: stu.pm.eq } : null);
+          if (!pmSt || !pmSt.creatureId) return;
+          var creature = PM.getCreature(pmSt.creatureId); if (!creature) return;
+          if (counts[creature.type] != null) counts[creature.type]++;
+          rows.push({ key: k, name: stu.name || k, online: !!stu.online, creature: creature, type: PM.getType(creature.type),
+            level: pmSt.level || 1, evoStage: pmSt.evoStage || 0, wins: pmSt.wins || 0, equipped: pmSt.equipped || [],
+            formName: PM.creatureName(creature, pmSt.evoStage || 0) });
+        });
+        rows.sort(function (a, b) { return (b.level - a.level) || a.name.localeCompare(b.name); });
+        if (!rows.length) { el.innerHTML = '<div class="glass-card" style="padding:2rem;text-align:center">Aucune créature assignée pour l\'instant. Les élèves reçoivent leur PromptMon dès leur connexion.</div>'; return; }
+        var maxLvl = PM.MAX_LEVEL || 10;
+        var typesLine = Object.keys(counts).map(function (t) { var T = PM.getType(t); return T ? T.emoji + ' ' + counts[t] : ''; }).join('   ');
+        var html = '<div class="glass-card" style="padding:.7rem 1rem;margin-bottom:.8rem;display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center"><strong>🐾 ' + rows.length + ' créatures assignées</strong><span style="color:var(--text-muted)">' + typesLine + '</span></div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:.7rem">' +
+          rows.map(function (r, i) {
+            var t = r.type || { color: '#888', emoji: '', tag: '' };
+            return '<div class="glass-card" style="padding:.7rem;text-align:center">' +
+              '<canvas id="adm-pm-' + i + '" width="72" height="72" style="image-rendering:pixelated"></canvas>' +
+              '<div style="font-weight:800;font-size:.92rem">' + escapeHtml(r.formName) + '</div>' +
+              '<div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.3rem">' + (r.online ? '🟢 ' : '⚪ ') + escapeHtml(r.name) + '</div>' +
+              '<div style="display:flex;justify-content:center;gap:.25rem;flex-wrap:wrap">' +
+                chip(t.emoji + ' ' + escapeHtml(t.tag), hexA(t.color, .18)) +
+                chip('⭐ Niv ' + r.level + '/' + maxLvl, 'rgba(245,183,49,.16)') +
+                (r.evoStage > 0 ? chip('évo ' + r.evoStage, 'rgba(46,204,113,.16)') : '') +
+                (r.wins > 0 ? chip('🏆 ' + r.wins) : '') +
+              '</div></div>';
+          }).join('') + '</div>';
+        el.innerHTML = html;
+        rows.forEach(function (r, i) { var c = document.getElementById('adm-pm-' + i); if (c) PM.paintToCanvas(c, r.creature, r.evoStage, r.equipped, { stage: false }); });
+      }
+      if (!AIA.db) { build({}); return; }
+      // Lecture fraîche de /students (évite l'état vide si le listener n'a pas encore tiré) puis /states
+      AIA.db.ref('students').once('value', function (sSnap) {
+        var fresh = sSnap.val(); if (fresh) students = fresh;
+        AIA.db.ref('states').once('value', function (snap) { build(snap.val() || {}); }, function () { build({}); });
+      }, function () { AIA.db.ref('states').once('value', function (snap) { build(snap.val() || {}); }, function () { build({}); }); });
+    }
 
     /* ======== COCKPIT TAB — pilotage live (monitoring + communication) ======== */
     function fmtAgo(ts) {

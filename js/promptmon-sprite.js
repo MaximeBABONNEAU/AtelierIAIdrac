@@ -497,6 +497,25 @@
       '.............O..',
       '................'
     ],
+    // 👅 bête-à-langue (boss du formateur, façon Excelangue) — rose, grande langue
+    tonguebeast: [
+      '................',
+      '...OBBBBBBBO....',
+      '..OBBBBBBBBBO...',
+      '..OBEPBBBEPBO...',
+      '..OBBBBBBBBBO...',
+      '..OBBMMMMMBBO...',
+      '...OBMSSSMBO....',
+      '..OBBOSSSOBBO...',
+      '.OBOBBSSSBBOBO..',
+      '.OBOBBSSSBBOBO..',
+      '..OBBBSSSBBBO...',
+      '...OBBBSBBBO....',
+      '....OO.SS.OO....',
+      '.......SSS......',
+      '........SS......',
+      '................'
+    ],
     // 🌟 esprit-constellation — corps étoilé
     starspirit: [
       '................',
@@ -518,11 +537,95 @@
     ]
   };
 
-  /* ---- Évolutions (overlays additifs) ---- */
-  var EVO1 = ['................', '...A.........A..', '...A.........A..', '..A...........A.', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................'];
-  var EVO2_HORNS = ['..A...........A.', '..A...........A.', '.A.............A', '.A.............A', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................'];
-  var EVO2_WINGS = ['................', '................', '................', '................', 'W..............W', 'WW............WW', '.WW..........WW.', '..W..........W..', '................', '................', '................', '................', '................', '................', '................', '................'];
-  var EVO2_GEM = ['................', '................', '................', '.......A........', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................', '................'];
+  /* ---- Évolutions (overlays additifs, design travaillé par palier) ----
+     ÉVO 1 : cornes + épaulières + étincelles latérales.
+     ÉVO 2 : grandes cornes + ailes + gemme frontale + double gemmes d'épaule +
+             couronne d'étincelles + aura scintillante (EVO2_AURA, dessinée derrière). */
+  var EVO1 = [
+    '................',
+    '...A.........A..',
+    '..AA.........AA.',
+    '..A...........A.',
+    '................',
+    '................',
+    '.G............G.',
+    '.GG..........GG.',
+    '..G..........G..',
+    '................',
+    '................',
+    '.A............A.',
+    '................',
+    '................',
+    '................',
+    '................'];
+  var EVO2_HORNS = [
+    '.A.A........A.A.',
+    '..AA.........AA.',
+    '.AA...........AA',
+    '.A.............A',
+    'A...............',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '...............A'];
+  var EVO2_WINGS = [
+    '................',
+    '................',
+    '................',
+    'W..............W',
+    'WW............WW',
+    'WWW..........WWW',
+    '.WWW........WWW.',
+    '..WW........WW..',
+    '..W..........W..',
+    '.W............W.',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................'];
+  var EVO2_GEM = [
+    '................',
+    '................',
+    '................',
+    '.......G........',
+    '......GAG.......',
+    '.......G........',
+    '................',
+    '.Y............Y.',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................'];
+  var EVO2_AURA = [
+    '....A......A....',
+    'A..............A',
+    '................',
+    '................',
+    '................',
+    'A..............A',
+    '................',
+    '................',
+    '................',
+    '................',
+    'A..............A',
+    '................',
+    '................',
+    '..A..........A..',
+    '................',
+    '................'];
 
   /* ---- Cosmétiques (overlays, achetables) ---- */
   var COSMETICS = {
@@ -569,7 +672,7 @@
       W: 'rgba(255,255,255,0.45)',
       H: darken(P.a, 0.85), C: P.a, G: '#f5b731', Y: '#e74c3c', K: '#171430', R: '#e74c3c'
     };
-    if (evoStage >= 2) drawGrid(ctx, EVO2_WINGS, colors, scale, ox, oy);
+    if (evoStage >= 2) { drawGrid(ctx, EVO2_AURA, colors, scale, ox, oy); drawGrid(ctx, EVO2_WINGS, colors, scale, ox, oy); }
     drawGrid(ctx, grid, colors, scale, ox, oy);
     if (evoStage >= 1) drawGrid(ctx, EVO1, colors, scale, ox, oy);
     if (evoStage >= 2) { drawGrid(ctx, EVO2_HORNS, colors, scale, ox, oy); drawGrid(ctx, EVO2_GEM, colors, scale, ox, oy); }
@@ -582,14 +685,23 @@
     var ctx = canvas.getContext('2d');
     var scale = Math.floor(canvas.width / SIZE);
     var ox = Math.floor((canvas.width - scale * SIZE) / 2);
-    var oy = Math.floor((canvas.height - scale * SIZE) / 2);
+    var oy = Math.floor((canvas.height - scale * SIZE) / 2) + (opts.oyOffset || 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
     if (opts.stage && creature) {
+      // Halo de scène : s'intensifie avec l'évolution (évo 2 = double anneau accent)
+      var ev = evoStage || 0;
       var g = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, scale, canvas.width / 2, canvas.height / 2, canvas.width / 1.4);
-      g.addColorStop(0, hexA(creature.palette.a, 0.20));
+      g.addColorStop(0, hexA(creature.palette.a, 0.18 + ev * 0.12));
       g.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (ev >= 2) {
+        var g2 = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width / 3.2, canvas.width / 2, canvas.height / 2, canvas.width / 2.1);
+        g2.addColorStop(0, 'rgba(0,0,0,0)');
+        g2.addColorStop(0.85, hexA(creature.palette.a, 0.22));
+        g2.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g2; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
     }
     drawCreature(ctx, creature, evoStage, equipped, scale, ox, oy, opts);
   }

@@ -34,7 +34,11 @@
       '.pm-dex{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:.6rem}',
       '.pm-dex .pm-card{cursor:default;text-align:center;padding:.5rem .3rem}',
       '.pm-tab{cursor:pointer;padding:.4rem .9rem;border-radius:10px;font-weight:700;font-size:.85rem;border:1px solid var(--border-glass);color:var(--text-muted)}',
-      '.pm-tab.active{background:rgba(245,183,49,.16);color:#fff;border-color:rgba(245,183,49,.5)}'
+      '.pm-tab.active{background:rgba(245,183,49,.16);color:#fff;border-color:rgba(245,183,49,.5)}',
+      '.pm-jump{animation:pmJump .55s cubic-bezier(.3,1.6,.4,1)}',
+      '@keyframes pmJump{0%{transform:translateY(0)}35%{transform:translateY(-16px) scale(1.04)}70%{transform:translateY(2px)}100%{transform:translateY(0)}}',
+      '.pm-heart{position:absolute;font-size:1.05rem;pointer-events:none;z-index:3;animation:pmHeart 1s ease-out forwards}',
+      '@keyframes pmHeart{0%{opacity:0;transform:translateY(6px) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translateY(-36px) scale(1.25)}}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -49,10 +53,60 @@
     if (!Array.isArray(p.equipped)) p.equipped = [];
     if (typeof p.level !== 'number' || p.level < 1) p.level = 1;
     if (typeof p.evoStage !== 'number') p.evoStage = 0;
+    if (typeof p.cxp !== 'number' || p.cxp < 0) p.cxp = 0; // XP créature
+    if (typeof p.wins !== 'number') p.wins = p.wins || 0;
     // garde-fou : evoStage ne peut pas dépasser le palier autorisé par le niveau
     var pm = window.AIA.PROMPTMON;
     if (pm && pm.evoStageForLevel) { var maxEvo = pm.evoStageForLevel(p.level); if (p.evoStage > maxEvo) p.evoStage = maxEvo; }
     return p;
+  }
+
+  // Moteur central d'XP créature : ajoute du cxp, fait monter les niveaux (cap MAX_LEVEL).
+  // Ne touche JAMAIS xp.total (classement) — la dépense se fait en amont via xpSpent.
+  function addCreatureXp(amount) {
+    var p = getPM(), pm = PM();
+    amount = Number(amount) || 0;
+    if (!p.creatureId || amount <= 0) return { leveled: 0, canEvolve: false };
+    p.cxp = (p.cxp || 0) + amount;
+    var leveled = 0;
+    while (p.level < pm.MAX_LEVEL) {
+      var need = pm.cxpForLevel(p.level);
+      if (need == null || p.cxp < need) break;
+      p.cxp -= need; p.level += 1; leveled++;
+    }
+    if (p.level >= pm.MAX_LEVEL) p.cxp = 0; // au max : plus de barre
+    return { leveled: leveled, canEvolve: pm.evoStageForLevel(p.level) > p.evoStage };
+  }
+
+  // Achat d'une potion d'XP créature (payée en XP dispo via xpSpent -> classement intact).
+  function buyPotion(id, cb) {
+    var A = window.AIA, st = A.getState(), p = getPM(), pm = PM();
+    var it = pm.getPotion ? pm.getPotion(id) : null;
+    if (!it) { if (cb) cb({ error: 'Potion inconnue' }); return; }
+    if (!p.creatureId) { if (cb) cb({ error: 'Aucune créature' }); return; }
+    var avail = A.getAvailableXP ? A.getAvailableXP() : 0;
+    if (avail < it.cost) { if (cb) cb({ error: 'XP insuffisant' }); return; }
+    st.xpSpent = (st.xpSpent || 0) + it.cost; // dépense : xp.total reste intact
+    var res = addCreatureXp(it.cxp);
+    save();
+    if (cb) cb({ success: true, leveled: res.leveled, canEvolve: res.canEvolve, potion: it });
+  }
+
+  // Résumé compact exposé dans /students (pour Salle / Live / Classement).
+  function pmSummary() {
+    var st = window.AIA.getState(); var p = st && st.promptmon;
+    if (!p || !p.creatureId) return null;
+    return { id: p.creatureId, evo: p.evoStage || 0, lvl: p.level || 1, eq: Array.isArray(p.equipped) ? p.equipped.slice(0, 8) : [] };
+  }
+
+  // Dessine la créature d'un résumé pm dans un canvas (Salle/Live/Classement). pm = {id,evo,eq}.
+  function drawPmThumb(canvasEl, pm) {
+    if (!canvasEl || !pm || !pm.id) return false;
+    var P = window.AIA.PROMPTMON; if (!P || !P.getCreature || !P.paintToCanvas) return false;
+    var cr = P.getCreature(pm.id); if (!cr) return false;
+    try { P.paintToCanvas(canvasEl, cr, pm.evo || 0, Array.isArray(pm.eq) ? pm.eq : [], { stage: false }); }
+    catch (e) { return false; } // isole les échecs de dessin par élève (jamais bloquant)
+    return true;
   }
   function save() { var A = window.AIA; if (A.saveState) A.saveState(); }
 
@@ -90,8 +144,17 @@
     main = main || document.getElementById('main-content');
     var A = window.AIA, st = A.getState();
     if (st.user && st.user.isAdmin && !st.user.accountKey) {
-      // Formateur : accès direct au panneau juge de l'Arena
-      main.innerHTML = headerHtml() + '<div id="pm-tabbody"></div>';
+      // Formateur : Maxilangue (boss) + accès direct au panneau juge de l'Arena
+      main.innerHTML = headerHtml() +
+        '<div class="glass-card pm-card" style="display:flex;gap:1rem;align-items:center;padding:.8rem 1rem;margin-bottom:.8rem;flex-wrap:wrap">' +
+          '<div class="pm-stage" style="width:110px;height:110px"><canvas id="pm-boss-mini" width="110" height="110"></canvas></div>' +
+          '<div style="flex:1;min-width:220px"><div style="font-size:1.15rem;font-weight:800">Maxilangue <span class="pm-chip" style="background:rgba(245,183,49,.2)">⭐ Niv. 99 — BOSS</span></div>' +
+          '<div style="font-size:.8rem;color:var(--text-muted);margin-top:.25rem">Ton PromptMon légendaire. Les étudiants peuvent te défier dans l\'Arène (👑 Défi du Prof) — l\'IA juge avec une barre très haute, et tient compte du niveau de leur créature.</div></div>' +
+        '</div>' +
+        '<div id="pm-tabbody"></div>';
+      var bossCr = PM().getCreature(26);
+      var bcv = document.getElementById('pm-boss-mini');
+      if (bossCr && bcv) PM().paintToCanvas(bcv, bossCr, 2, ['crown'], { stage: true });
       if (A.PROMPTMON_ARENA) A.PROMPTMON_ARENA.renderArena(document.getElementById('pm-tabbody'));
       return;
     }
@@ -137,6 +200,9 @@
     var nextEvoLevel = p.evoStage === 0 ? pm.EVO_LEVELS[0] : (p.evoStage === 1 ? pm.EVO_LEVELS[1] : null);
     var nextEvoName = p.evoStage < 2 ? creature.names[p.evoStage + 1] : null;
     var levelPct = Math.round((p.level / pm.MAX_LEVEL) * 100);
+    var cxpNeed = pm.cxpForLevel(p.level); // null au max
+    var cxpPct = cxpNeed ? Math.min(100, Math.round((p.cxp || 0) / cxpNeed * 100)) : 100;
+    var trainGain = cxpNeed || 0;
 
     main.innerHTML = headerHtml() + walletHtml() +
       '<div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:stretch">' +
@@ -152,14 +218,17 @@
         '</div>' +
         // --- actions ---
         '<div class="glass-card pm-card" style="flex:1 1 320px;min-width:280px;padding:1rem;display:flex;flex-direction:column;gap:.8rem">' +
-          '<div><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.25rem"><span>Niveau ' + p.level + '</span><span style="color:var(--text-muted)">' + (atMax ? 'MAX' : 'palier évo : niv. ' + nextEvoLevel) + '</span></div>' +
-            '<div class="pm-bar"><i style="width:' + levelPct + '%"></i></div></div>' +
+          '<div><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.25rem"><span>Niveau ' + p.level + '/' + pm.MAX_LEVEL + '</span><span style="color:var(--text-muted)">' + (atMax ? 'MAX' : 'palier évo : niv. ' + nextEvoLevel) + '</span></div>' +
+            '<div class="pm-bar"><i style="width:' + levelPct + '%"></i></div>' +
+            // barre d'XP créature (cxp) vers le niveau suivant
+            '<div style="display:flex;justify-content:space-between;font-size:.7rem;color:var(--text-muted);margin:.35rem 0 .15rem"><span>🧪 XP créature</span><span>' + (atMax ? '— MAX —' : (p.cxp || 0) + ' / ' + cxpNeed) + '</span></div>' +
+            '<div class="pm-bar" style="height:9px"><i style="width:' + cxpPct + '%;background:linear-gradient(90deg,#3aa0e8,#9be3ff)"></i></div></div>' +
 
           (canEvolve
             ? '<button class="btn-primary" id="pm-evolve" style="width:100%;font-size:1rem">✨ Faire évoluer en ' + esc(nextEvoName) + ' !</button>'
             : (atMax
                 ? '<div class="pm-chip" style="justify-content:center;padding:.5rem;background:rgba(46,204,113,.18)">🏆 Niveau maximum atteint</div>'
-                : '<button class="btn-primary" id="pm-train" style="width:100%' + (avail < cost ? ';opacity:.55' : '') + '"' + (avail < cost ? ' disabled' : '') + '>💪 Entraîner — ' + cost + ' XP ' + (avail < cost ? '(il manque ' + (cost - avail) + ')' : '') + '</button>')) +
+                : '<button class="btn-primary" id="pm-train" style="width:100%' + (avail < cost ? ';opacity:.55' : '') + '"' + (avail < cost ? ' disabled' : '') + '>💪 Entraîner — ' + cost + ' XP → +' + trainGain + ' XP créature ' + (avail < cost ? '(il manque ' + (cost - avail) + ')' : '') + '</button>')) +
 
           '<div style="font-size:.78rem;color:var(--text-muted)">' +
             (nextEvoName && p.evoStage < 2 ? '🔒 Prochaine évolution : <strong>' + esc(nextEvoName) + '</strong> au niveau ' + nextEvoLevel + '.' : '🌟 Forme finale atteinte.') +
@@ -171,11 +240,18 @@
       '</div>' +
 
       // --- tabs : combats / cosmetics / class ---
-      '<div style="display:flex;gap:.5rem;margin:1.2rem 0 .8rem;flex-wrap:wrap"><span class="pm-tab active" data-tab="arena">⚔️ Combats</span><span class="pm-tab" data-tab="cos">🎨 Cosmétiques</span><span class="pm-tab" data-tab="dex">👥 Classe</span></div>' +
+      '<div style="display:flex;gap:.5rem;margin:1.2rem 0 .8rem;flex-wrap:wrap"><span class="pm-tab active" data-tab="arena">⚔️ Combats</span><span class="pm-tab" data-tab="cos">🛍️ Boutique</span><span class="pm-tab" data-tab="dex">👥 Classe</span></div>' +
       '<div id="pm-tabbody"></div>';
 
-    // paint sprite
+    // paint sprite + animation idle du profil + réaction au clic (caresse)
     paint(justAssigned ? 'pm-reveal' : '');
+    startProfAnim();
+    var pcv = document.getElementById('pm-canvas');
+    if (pcv) pcv.addEventListener('click', function () {
+      this.classList.remove('pm-jump'); void this.offsetWidth; this.classList.add('pm-jump');
+      spawnHearts(this.parentNode);
+    });
+    if (pcv) pcv.style.cursor = 'pointer';
 
     // wire train / evolve
     var trainBtn = document.getElementById('pm-train');
@@ -188,7 +264,7 @@
     function openTab(name) {
       if (name === 'arena' && A.PROMPTMON_ARENA) A.PROMPTMON_ARENA.renderArena(tabbody);
       else if (name === 'dex') renderClass(tabbody);
-      else renderCosmetics(tabbody);
+      else renderShopTab(tabbody, main);
     }
     openTab(A.PROMPTMON_ARENA ? 'arena' : 'cos');
     main.querySelectorAll('.pm-tab').forEach(function (t) {
@@ -207,21 +283,58 @@
     if (animClass) { canvas.classList.remove('pm-reveal', 'pm-evolve'); void canvas.offsetWidth; canvas.classList.add(animClass); }
   }
 
+  /* --- Animation idle du PROFIL (respiration + clignement, phase horloge) --- */
+  var _profAnim = null;
+  function startProfAnim() {
+    if (_profAnim) return;
+    _profAnim = setInterval(function () {
+      var c = document.getElementById('pm-canvas');
+      if (!c) { stopProfAnim(); return; } // écran quitté
+      var p = getPM(), pm = PM(); var cr = pm.getCreature(p.creatureId); if (!cr) return;
+      var t = Date.now();
+      var bob = Math.floor(t / 720) % 2;
+      var blink = (t % 4700) >= 4340;
+      pm.paintToCanvas(c, cr, p.evoStage, p.equipped, { stage: true, blink: blink, oyOffset: bob * 3 });
+    }, 180);
+  }
+  function stopProfAnim() { if (_profAnim) { clearInterval(_profAnim); _profAnim = null; } }
+
+  /* --- Petits cœurs/étincelles quand on caresse la créature --- */
+  function spawnHearts(stageEl) {
+    if (!stageEl) return;
+    var icons = ['💛', '✨', '💖', '⭐', '💫'];
+    for (var i = 0; i < 5; i++) {
+      (function (i) {
+        setTimeout(function () {
+          var h = document.createElement('span');
+          h.className = 'pm-heart';
+          h.textContent = icons[i % icons.length];
+          h.style.left = (18 + Math.random() * 64) + '%';
+          h.style.top = (40 + Math.random() * 30) + '%';
+          stageEl.appendChild(h);
+          setTimeout(function () { try { h.remove(); } catch (e) {} }, 1050);
+        }, i * 90);
+      })(i);
+    }
+  }
+
   function doTrain(main) {
     var tb = document.getElementById('pm-train'); if (tb) { if (tb.disabled) return; tb.disabled = true; } // anti double-clic
-    var A = window.AIA, st = A.getState(), p = getPM(), pm = PM();
+    var A = window.AIA, p = getPM(), pm = PM();
+    var st = A.getState();
     var cost = pm.levelUpCost(p.level);
-    if (cost == null) return;
+    if (cost == null) return; // niveau max
     var avail = A.getAvailableXP ? A.getAvailableXP() : 0;
     var msg = document.getElementById('pm-msg');
     if (avail < cost) { if (msg) msg.innerHTML = '<span style="color:var(--red)">XP insuffisant.</span>'; return; }
-    st.xpSpent = (st.xpSpent || 0) + cost; // dépense (l'XP total reste intact)
-    p.level += 1;
+    var gain = pm.cxpForLevel(p.level) || 0; // entraînement : convertit XP -> XP créature (≈ 1 niveau)
+    st.xpSpent = (st.xpSpent || 0) + cost; // dépense (l'XP total reste intact -> classement intact)
+    var res = addCreatureXp(gain);
     save();
     renderProfile(main, false);
     var m2 = document.getElementById('pm-msg');
-    if (m2) m2.innerHTML = '<span style="color:var(--green)">💪 Niveau ' + p.level + ' ! ' + cost + ' XP dépensés.</span>';
-    if (pm.evoStageForLevel(p.level) > p.evoStage && A.showToast) A.showToast('Ta créature peut évoluer ! ✨', 'success');
+    if (m2) m2.innerHTML = '<span style="color:var(--green)">💪 +' + gain + ' XP créature' + (res.leveled ? ' — Niveau ' + p.level + ' !' : '') + ' (' + cost + ' XP dépensés)</span>';
+    if (res.canEvolve && A.showToast) A.showToast('Ta créature peut évoluer ! ✨', 'success');
   }
 
   function doEvolve(main) {
@@ -238,44 +351,80 @@
     if (m) m.innerHTML = '<span style="color:var(--green)">✨ Évolution réussie : ' + esc(pm.creatureName(creature, p.evoStage)) + ' !</span>';
   }
 
-  /* ----- Cosmétiques ----- */
-  function renderCosmetics(body) {
+  /* ----- BOUTIQUE PromptMon : potions d'XP créature + cosmétiques ----- */
+  // Réouvre le profil sur l'onglet Boutique (après un achat qui change niveau/cxp).
+  function reopenShop(main) {
+    renderProfile(main, false);
+    var t = main.querySelector('.pm-tab[data-tab="cos"]'); if (t) t.click();
+  }
+
+  function renderShopTab(body, main) {
     if (!body) return;
     var A = window.AIA, p = getPM(), pm = PM();
-    var shop = pm.COSMETIC_SHOP || [];
     var avail = A.getAvailableXP ? A.getAvailableXP() : 0;
-    body.innerHTML = '<div class="glass-card" style="padding:1rem">' +
-      '<div style="font-weight:700;margin-bottom:.6rem">🎨 Cosmétiques pour ' + esc(pm.creatureName(pm.getCreature(p.creatureId), p.evoStage)) + '</div>' +
-      '<div class="shop-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem">' +
-      shop.map(function (it) {
-        var owned = p.cosmetics.indexOf(it.id) !== -1;
-        var equipped = p.equipped.indexOf(it.id) !== -1;
-        var can = avail >= it.cost;
-        return '<div class="glass-card pm-card" style="padding:.6rem;text-align:center">' +
-          '<div style="font-size:1.6rem">' + it.icon + '</div>' +
-          '<div style="font-weight:700;font-size:.85rem">' + esc(it.name) + '</div>' +
-          '<div style="font-size:.78rem;color:var(--text-muted);margin:.2rem 0">' + it.cost + ' XP</div>' +
-          (owned
-            ? (equipped
-                ? '<button class="btn-outline btn-sm pm-unequip" data-id="' + it.id + '" style="cursor:pointer">✓ Équipé</button>'
-                : '<button class="btn-primary btn-sm pm-equip" data-id="' + it.id + '" style="cursor:pointer">Équiper</button>')
-            : '<button class="btn-primary btn-sm pm-buy" data-id="' + it.id + '" style="cursor:pointer' + (can ? '' : ';opacity:.5') + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Acheter' : '🔒 ' + (it.cost - avail)) + '</button>') +
-          '</div>';
-      }).join('') +
-      '</div></div>';
+    var potions = pm.POTIONS || [];
+    var cosmetics = pm.COSMETIC_SHOP || [];
 
+    var potionCards = potions.map(function (it) {
+      var can = avail >= it.cost;
+      return '<div class="glass-card pm-card" style="padding:.6rem;text-align:center">' +
+        '<div style="font-size:1.7rem">' + it.icon + '</div>' +
+        '<div style="font-weight:700;font-size:.85rem">' + esc(it.name) + '</div>' +
+        '<div style="font-size:.72rem;color:var(--text-muted);margin:.15rem 0">+' + it.cxp + ' XP créature</div>' +
+        '<div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.2rem">' + it.cost + ' XP</div>' +
+        '<button class="btn-primary btn-sm pm-potion" data-id="' + it.id + '" style="cursor:pointer' + (can ? '' : ';opacity:.5') + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Acheter' : '🔒 ' + (it.cost - avail)) + '</button>' +
+        '</div>';
+    }).join('');
+
+    var cosmeticCards = cosmetics.map(function (it) {
+      var owned = p.cosmetics.indexOf(it.id) !== -1;
+      var equipped = p.equipped.indexOf(it.id) !== -1;
+      var can = avail >= it.cost;
+      return '<div class="glass-card pm-card" style="padding:.6rem;text-align:center">' +
+        '<div style="font-size:1.6rem">' + it.icon + '</div>' +
+        '<div style="font-weight:700;font-size:.85rem">' + esc(it.name) + '</div>' +
+        '<div style="font-size:.78rem;color:var(--text-muted);margin:.2rem 0">' + it.cost + ' XP</div>' +
+        (owned
+          ? (equipped
+              ? '<button class="btn-outline btn-sm pm-unequip" data-id="' + it.id + '" style="cursor:pointer">✓ Équipé</button>'
+              : '<button class="btn-primary btn-sm pm-equip" data-id="' + it.id + '" style="cursor:pointer">Équiper</button>')
+          : '<button class="btn-primary btn-sm pm-buy" data-id="' + it.id + '" style="cursor:pointer' + (can ? '' : ';opacity:.5') + '"' + (can ? '' : ' disabled') + '>' + (can ? 'Acheter' : '🔒 ' + (it.cost - avail)) + '</button>') +
+        '</div>';
+    }).join('');
+
+    body.innerHTML =
+      '<div class="glass-card" style="padding:.7rem .9rem;margin-bottom:.7rem;background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.3);font-size:.8rem">💡 Dépenser ton XP n\'enlève <strong>rien</strong> à ton classement : ton XP total gagné reste intact. Tu dépenses juste ton XP <em>disponible</em>.</div>' +
+      '<div class="glass-card" style="padding:1rem;margin-bottom:.7rem">' +
+        '<div style="font-weight:700;margin-bottom:.6rem">🧪 Potions d\'XP créature</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.7rem">' + potionCards + '</div></div>' +
+      '<div class="glass-card" style="padding:1rem">' +
+        '<div style="font-weight:700;margin-bottom:.6rem">🎨 Cosmétiques pour ' + esc(pm.creatureName(pm.getCreature(p.creatureId), p.evoStage)) + '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.7rem">' + cosmeticCards + '</div></div>';
+
+    // potions
+    body.querySelectorAll('.pm-potion').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.disabled) return; b.disabled = true;
+        buyPotion(this.getAttribute('data-id'), function (res) {
+          if (res.error) { if (A.showToast) A.showToast(res.error, 'error'); b.disabled = false; return; }
+          if (A.showToast) A.showToast('🧪 +' + res.potion.cxp + ' XP créature' + (res.leveled ? ' — Niveau +' + res.leveled + ' !' : '') + (res.canEvolve ? ' ✨ évolution dispo !' : ''), 'success');
+          reopenShop(main);
+        });
+      });
+    });
+    // cosmétiques
     body.querySelectorAll('.pm-buy').forEach(function (b) {
-      b.addEventListener('click', function () { buyCosmetic(this.getAttribute('data-id'), body); });
+      b.addEventListener('click', function () { buyCosmetic(this.getAttribute('data-id'), body, main); });
     });
     body.querySelectorAll('.pm-equip').forEach(function (b) {
-      b.addEventListener('click', function () { var id = this.getAttribute('data-id'); var p2 = getPM(); if (p2.equipped.indexOf(id) === -1) p2.equipped.push(id); save(); paint(''); renderCosmetics(body); });
+      b.addEventListener('click', function () { var id = this.getAttribute('data-id'); var p2 = getPM(); if (p2.equipped.indexOf(id) === -1) p2.equipped.push(id); save(); paint(''); renderShopTab(body, main); });
     });
     body.querySelectorAll('.pm-unequip').forEach(function (b) {
-      b.addEventListener('click', function () { var id = this.getAttribute('data-id'); var p2 = getPM(); p2.equipped = p2.equipped.filter(function (x) { return x !== id; }); save(); paint(''); renderCosmetics(body); });
+      b.addEventListener('click', function () { var id = this.getAttribute('data-id'); var p2 = getPM(); p2.equipped = p2.equipped.filter(function (x) { return x !== id; }); save(); paint(''); renderShopTab(body, main); });
     });
   }
 
-  function buyCosmetic(id, body) {
+  function buyCosmetic(id, body, main) {
     var A = window.AIA, st = A.getState(), p = getPM(), pm = PM();
     var it = (pm.COSMETIC_SHOP || []).find(function (x) { return x.id === id; });
     if (!it) return;
@@ -287,7 +436,7 @@
     p.equipped.push(id); // équipe direct
     save(); paint('');
     if (A.showToast) A.showToast('Acheté : ' + it.name + ' ✓', 'success');
-    renderCosmetics(body);
+    renderShopTab(body, main);
   }
 
   /* ----- Vue classe / Pokédex ----- */
@@ -330,6 +479,7 @@
     var A = window.AIA;
     if (_classListener && A && A.db) { try { A.db.ref('promptmon/roster').off('value', _classListener); } catch (e) {} }
     _classListener = null;
+    stopProfAnim();
   }
 
   /* ===================== COMPAGNON NAV (haut gauche, animation idle) =====================
@@ -358,7 +508,16 @@
   function petWatcher() {
     var A = window.AIA, c = document.getElementById('nav-pet');
     var st = A.getState && A.getState(); var u = st && st.user;
-    if (!u || !u.accountKey) { // déconnecté ou formateur sans compte
+    if (!u) { if (c) c.style.display = 'none'; stopIdle(); return; }
+    if (u.isAdmin && !u.accountKey) {
+      // Formateur : Maxilangue (boss niv. 99) en compagnon de nav
+      if (!st.promptmon || st.promptmon.creatureId !== 26) {
+        st.promptmon = { creatureId: 26, level: 99, cxp: 0, evoStage: 2, cosmetics: [], equipped: ['crown'], assignedAt: 1, wins: 0 };
+      }
+      if (c && c.style.display !== 'block') c.style.display = 'block';
+      startIdle(); return;
+    }
+    if (!u.accountKey) { // visiteur sans compte
       if (c) c.style.display = 'none';
       stopIdle(); return;
     }
@@ -390,4 +549,11 @@
   window.AIA.renderPromptmon = renderPromptmon;
   window.AIA.stopPromptmon = stopPromptmon;
   window.AIA.paintNavPet = paintNavPet;
+  window.AIA.__petTick = petWatcher; // tick manuel (debug/tests — les onglets cachés throttlent les timers)
+  // Augmente l'API PROMPTMON (définie par le dex) avec le moteur cxp + helpers d'affichage.
+  var P = window.AIA.PROMPTMON || (window.AIA.PROMPTMON = {});
+  P.addCreatureXp = addCreatureXp;
+  P.buyPotion = buyPotion;
+  P.pmSummary = pmSummary;
+  P.drawPmThumb = drawPmThumb;
 })();

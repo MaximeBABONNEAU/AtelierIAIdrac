@@ -111,7 +111,12 @@
       lore: 'Renard néon : sa queue laisse une traînée d’hologrammes.', signature: 'Affinité : esthétiques néon & futuristes.' },
     { id: 25, type: 'lumen', species: 'dragon', names: ['Étoilin', 'Constella', 'Galaxianthe'],
       palette: pal('#ffcf4d', '#fff1bf', '#b39cff'), recipe: { body: 4, ears: 4, eyes: 1, belly: 2, tail: 1 },
-      lore: 'Dragon céleste né d’une constellation : il porte un ciel entier en lui.', signature: 'Affinité : compositions cosmiques.' }
+      lore: 'Dragon céleste né d’une constellation : il porte un ciel entier en lui.', signature: 'Affinité : compositions cosmiques.' },
+
+    // ---------- BOSS (réservé au formateur — jamais attribué aux étudiants) ----------
+    { id: 26, boss: true, type: 'lumen', species: 'tonguebeast', names: ['Maxilangue', 'Maxilangue', 'Maxilangue Suprême'],
+      palette: pal('#f06292', '#f8bbd0', '#ffd54f'), recipe: { body: 0, ears: 0, eyes: 0, belly: 0, tail: 0 },
+      lore: 'Le PromptMon légendaire du formateur. Sa langue géante goûte la qualité des prompts — et recale les images fades.', signature: 'Boss niveau 99. Le vaincre est un exploit rarissime.' }
   ];
 
   function getCreature(id) {
@@ -119,7 +124,8 @@
     return DEX.find(function (c) { return c.id === id; }) || null;
   }
   function getType(typeId) { return TYPES[typeId] || null; }
-  function totalCreatures() { return DEX.length; }
+  // Nombre de créatures ATTRIBUABLES aux étudiants (exclut les boss — roster Firebase borné 1..25)
+  function totalCreatures() { return DEX.filter(function (c) { return !c.boss; }).length; }
   // Nom de la forme courante (evoStage 0/1/2)
   function creatureName(creature, evoStage) {
     if (!creature) return '???';
@@ -133,17 +139,32 @@
     if (level >= EVO_LEVELS[0]) return 1;
     return 0;
   }
-  // Coût XP pour passer de `level` à `level+1`
+  // Coût XP (porte-monnaie) pour convertir en XP créature via "Entraîner" (1 clic = 1 palier de cxp)
   function levelUpCost(level) {
     level = level || 1;
     if (level >= MAX_LEVEL) return null; // niveau max
     return 20 + (level - 1) * 10; // 20,30,40,... ,110 (niv9->10)
   }
+  // XP CRÉATURE (cxp) requis pour passer de `level` à `level+1`. null au niveau max.
+  function cxpForLevel(level) {
+    level = level || 1;
+    if (level >= MAX_LEVEL) return null;
+    return 40 + (level - 1) * 20; // 40,60,80,...,220 (niv9->10)
+  }
+
+  // POTIONS d'XP créature (payées en XP dispo via xpSpent -> N'AFFECTENT PAS le classement)
+  var POTIONS = [
+    { id: 'potion-xp-s', name: 'Petite potion XP', icon: '🧪', cost: 60, cxp: 50, rarity: 'common', desc: '+50 XP créature pour ta créature.' },
+    { id: 'potion-xp-m', name: 'Moyenne potion XP', icon: '⚗️', cost: 140, cxp: 140, rarity: 'rare', desc: '+140 XP créature — un bon coup de pousse.' },
+    { id: 'potion-xp-l', name: 'Grande potion XP', icon: '🍯', cost: 320, cxp: 360, rarity: 'epic', desc: '+360 XP créature — un grand bond vers l\'évolution.' }
+  ];
+  function getPotion(id) { return POTIONS.find(function (x) { return x.id === id; }) || null; }
 
   window.AIA = window.AIA || {};
   window.AIA.PROMPTMON = {
-    DEX: DEX, TYPES: TYPES, EVO_LEVELS: EVO_LEVELS, MAX_LEVEL: MAX_LEVEL,
+    DEX: DEX, TYPES: TYPES, EVO_LEVELS: EVO_LEVELS, MAX_LEVEL: MAX_LEVEL, POTIONS: POTIONS,
     getCreature: getCreature, getType: getType, totalCreatures: totalCreatures,
-    creatureName: creatureName, evoStageForLevel: evoStageForLevel, levelUpCost: levelUpCost
+    creatureName: creatureName, evoStageForLevel: evoStageForLevel, levelUpCost: levelUpCost,
+    cxpForLevel: cxpForLevel, getPotion: getPotion
   };
 })();
