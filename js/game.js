@@ -1394,12 +1394,26 @@
   }
 
   /* ============ ASSETS BLOCK (per step) ============ */
+  // Étapes où l'upload AUDIO (mp3/wav/ogg) est ouvert — Phase 3 étape 5 « Jingle »
+  var AUDIO_STEPS = ['jingle'];
+  var AUDIO_MAX_BYTES = 10 * 1024 * 1024; // 10 Mo
+
+  function isAudioAsset(a) {
+    return a && (a.type === 'audio' || (a.url && /\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(a.url)));
+  }
+
   function renderAssetsBlock(stepId, assets) {
     assets = Array.isArray(assets) ? assets : [];
     var thumbsHtml = assets.map(function (a, i) {
       var label = escapeHtml(a.label || '');
       var url = escapeHtml(a.url || '');
-      if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(a.url))) {
+      if (isAudioAsset(a)) {
+        return '<div class="asset-chip audio-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '" style="display:flex;flex-direction:column;gap:.25rem;padding:.5rem;min-width:230px">' +
+          '<div class="asset-chip-label">🎵 ' + label + '</div>' +
+          '<audio controls preload="none" src="' + url + '" style="width:100%;height:32px"></audio>' +
+          '<button class="asset-chip-remove" title="Supprimer" data-remove-asset="' + i + '" data-step="' + stepId + '">✕</button>' +
+          '</div>';
+      } else if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(a.url))) {
         return '<div class="asset-chip image-chip" data-step-id="' + stepId + '" data-asset-idx="' + i + '">' +
           '<img src="' + url + '" alt="' + label + '" loading="lazy" />' +
           '<div class="asset-chip-label">' + label + '</div>' +
@@ -1421,19 +1435,21 @@
           '</div>';
       }
     }).join('');
+    var audioStep = AUDIO_STEPS.indexOf(stepId) !== -1;
     return '<div class="assets-block" data-step-id="' + stepId + '">' +
       '<div class="assets-block-header">' +
       '<strong>📎 Assets generes par l\'IA (' + assets.length + ')</strong>' +
-      '<span class="assets-block-hint">Joignez ici vos images, audio, urls Gamma/Figma generes via les demos IA</span>' +
+      '<span class="assets-block-hint">' + (audioStep ? '🎵 Joignez votre jingle en MP3 (bouton Fichier, max 10 Mo) ou collez le lien Suno' : 'Joignez ici vos images, audio, urls Gamma/Figma generes via les demos IA') + '</span>' +
       '</div>' +
       '<div class="assets-list">' + (assets.length === 0 ? '<div class="assets-empty">Aucun asset attache pour le moment</div>' : thumbsHtml) + '</div>' +
       '<div class="asset-add-controls">' +
       '<input type="text" class="asset-url-input" placeholder="URL image / Gamma / Figma..." data-asset-url="' + stepId + '" />' +
       '<input type="text" class="asset-label-input" placeholder="Nom (ex: Logo v2)" data-asset-label="' + stepId + '" />' +
       '<button class="btn-outline btn-sm btn-add-asset-url" data-step-id="' + stepId + '">+ Ajouter</button>' +
-      '<label class="btn-ghost btn-sm asset-file-label">📁 Fichier' +
-      '<input type="file" accept="image/*" data-asset-file="' + stepId + '" style="display:none" />' +
+      '<label class="btn-ghost btn-sm asset-file-label">📁 Fichier' + (audioStep ? ' (image ou MP3)' : '') +
+      '<input type="file" accept="' + (audioStep ? 'image/*,audio/*,.mp3' : 'image/*') + '" data-asset-file="' + stepId + '" style="display:none" />' +
       '</label>' +
+      '<span class="asset-upload-progress" data-asset-prog="' + stepId + '" style="font-size:.72rem;color:var(--text-muted)"></span>' +
       '</div>' +
       '</div>';
   }
@@ -1449,7 +1465,7 @@
         var url = (urlInput.value || '').trim();
         var label = (labelInput.value || '').trim() || 'Asset';
         if (!url) { window.AIA.showToast('URL requise', 'warning'); return; }
-        var type = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ? 'image' : 'link';
+        var type = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url) ? 'image' : (/\.(mp3|wav|ogg|m4a)(\?.*)?$/i.test(url) ? 'audio' : 'link');
         addAsset(stepId, { type: type, url: url, label: label, addedAt: new Date().toISOString() });
         urlInput.value = ''; labelInput.value = '';
         window.AIA.renderBusinessGameNew(main);
@@ -1461,6 +1477,30 @@
         var stepId = this.getAttribute('data-asset-file');
         var file = this.files[0];
         if (!file) return;
+        var isAudio = /^audio\//.test(file.type) || /\.(mp3|wav|ogg|m4a)$/i.test(file.name || '');
+        if (isAudio) {
+          // AUDIO (jingle MP3...) : upload Firebase Storage (les dataURL seraient trop lourds pour la base)
+          if (file.size > 800000 * 12.5) { window.AIA.showToast('Audio trop gros (max 10 Mo).', 'warning'); return; }
+          var st2 = window.AIA.getState();
+          var key = st2.user && st2.user.accountKey;
+          var storage = window.AIA.storage;
+          if (!key || !storage) { window.AIA.showToast('Upload audio indisponible (connexion requise).', 'error'); return; }
+          var prog = main.querySelector('[data-asset-prog="' + stepId + '"]');
+          var ext = (file.name && file.name.indexOf('.') > -1) ? file.name.split('.').pop().toLowerCase() : 'mp3';
+          var ref = storage.ref('livebattle/' + key + '/gameaudio_' + Date.now() + '.' + ext);
+          var task = ref.put(file, { contentType: file.type || 'audio/mpeg' });
+          task.on('state_changed',
+            function (s) { if (prog) prog.textContent = '🎵 Upload ' + Math.round(s.bytesTransferred * 100 / s.totalBytes) + '%'; },
+            function (err) { if (prog) prog.textContent = ''; window.AIA.showToast('Échec upload audio : ' + String(err && err.code || err), 'error'); },
+            function () {
+              ref.getDownloadURL().then(function (url) {
+                if (prog) prog.textContent = '';
+                addAsset(stepId, { type: 'audio', url: url, label: file.name || 'jingle.mp3', addedAt: new Date().toISOString() });
+                window.AIA.renderBusinessGameNew(main);
+              }).catch(function () { if (prog) prog.textContent = ''; window.AIA.showToast('Échec de récupération du lien audio.', 'error'); });
+            });
+          return;
+        }
         if (file.size > 800000) { window.AIA.showToast('Fichier trop gros (max 800 Ko). Compressez ou utilisez une URL.', 'warning'); return; }
         var reader = new FileReader();
         reader.onload = function (e) {
@@ -1784,7 +1824,9 @@
         if (assets.length > 0) {
           html += '<div class="showcase-assets-row">';
           assets.forEach(function (a) {
-            if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)/i.test(a.url))) {
+            if (isAudioAsset(a)) {
+              html += '<div class="showcase-asset-audio" style="display:flex;flex-direction:column;gap:.2rem;min-width:230px"><span style="font-size:.75rem">🎵 ' + escapeHtml(a.label || 'audio') + '</span><audio controls preload="none" src="' + escapeHtml(a.url) + '" style="width:100%;height:32px"></audio></div>';
+            } else if (a.type === 'image' || (a.url && /\.(png|jpe?g|gif|webp|svg)/i.test(a.url))) {
               html += '<a href="' + escapeHtml(a.url) + '" target="_blank" class="showcase-asset-thumb"><img src="' + escapeHtml(a.url) + '" alt="' + escapeHtml(a.label || '') + '" /></a>';
             } else {
               html += '<a href="' + escapeHtml(a.url) + '" target="_blank" class="showcase-asset-link">🔗 ' + escapeHtml(a.label || a.url) + '</a>';

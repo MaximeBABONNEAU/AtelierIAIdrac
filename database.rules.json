@@ -244,6 +244,11 @@
       "matches": {
         ".read": "auth != null",
         ".write": "auth != null"
+      },
+      "gemini_enc": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "!newData.exists() || (newData.hasChildren(['v', 'salt', 'iv', 'ct']) && newData.child('ct').isString() && newData.child('ct').val().length < 2000)"
       }
     },
     "$other": {

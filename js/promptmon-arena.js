@@ -182,6 +182,38 @@
       });
     });
   }
+  /* ---------- CLÉ GEMINI CHIFFRÉE (plateforme) ----------
+     La clé est stockée dans /promptmon/gemini_enc sous forme CHIFFRÉE (AES-256-GCM,
+     clé dérivée du MOT DE PASSE FORMATEUR via PBKDF2-SHA256 150 000 itérations).
+     Les étudiants peuvent lire le ciphertext mais ne peuvent PAS le déchiffrer :
+     le mot de passe n'est stocké nulle part. La clé déchiffrée ne vit que dans le
+     localStorage de l'appareil du formateur. */
+  function _b64(buf) { var b = '', u = new Uint8Array(buf); for (var i = 0; i < u.length; i++) b += String.fromCharCode(u[i]); return btoa(b); }
+  function _unb64(s) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+  function _derive(pass, salt) {
+    var enc = new TextEncoder();
+    return crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveKey'])
+      .then(function (km) { return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: salt, iterations: 150000, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']); });
+  }
+  function encryptApiKey(pass, plain, cb) {
+    try {
+      var salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+      _derive(pass, salt)
+        .then(function (k) { return crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, k, new TextEncoder().encode(plain)); })
+        .then(function (ct) { cb(null, { v: 1, salt: _b64(salt.buffer), iv: _b64(iv.buffer), ct: _b64(ct), ts: Date.now() }); })
+        .catch(function (e) { cb(String(e)); });
+    } catch (e) { cb(String(e)); }
+  }
+  function decryptApiKey(pass, blob, cb) {
+    try {
+      var salt = _unb64(blob.salt), iv = _unb64(blob.iv), ct = _unb64(blob.ct);
+      _derive(pass, salt)
+        .then(function (k) { return crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, k, ct); })
+        .then(function (pt) { cb(null, new TextDecoder().decode(pt)); })
+        .catch(function () { cb('bad-pass'); }); // mauvais mot de passe (ou blob corrompu)
+    } catch (e) { cb(String(e)); }
+  }
+
   // Juge BOSS (Défi du Prof) : une seule image, notation extrêmement sévère.
   function judgeBossWithGemini(match, key, cb) {
     fetchAsBase64(match.b.img, function (e1, b64, mt) {
@@ -491,13 +523,21 @@
           '</div>' +
         '</div>' +
         '<div class="glass-card" style="padding:1rem;margin-bottom:.8rem">' +
-          '<div style="font-weight:700;margin-bottom:.4rem">🤖 Juge IA (Gemini)</div>' +
-          '<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">' +
-            '<input id="pma-gkey" type="password" class="demo-input" style="flex:1;min-width:220px" placeholder="' + (hasKey ? 'Clé enregistrée ✓ (coller pour remplacer)' : 'Coller la clé API Gemini (reste sur CET appareil)') + '">' +
-            '<button class="btn-outline btn-sm" id="pma-gkey-save" style="cursor:pointer">Enregistrer</button>' +
+          '<div style="font-weight:700;margin-bottom:.4rem">🤖 Juge IA (Gemini) — 🔐 clé chiffrée de la plateforme</div>' +
+          '<div id="pma-key-status" style="font-size:.8rem;color:var(--text-muted);margin-bottom:.5rem">' + (hasKey ? '✅ Clé déverrouillée sur cet appareil.' : 'Vérification de la clé plateforme…') + '</div>' +
+          '<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.45rem">' +
+            '<input id="pma-unlock-pass" type="password" class="demo-input" style="flex:1;min-width:200px" placeholder="Mot de passe formateur" autocomplete="off">' +
+            '<button class="btn-primary btn-sm" id="pma-unlock" style="cursor:pointer">🔓 Déverrouiller la clé plateforme</button>' +
             '<button class="btn-primary btn-sm" id="pma-judge-now" style="cursor:pointer">⚖️ Juger les combats en attente</button>' +
           '</div>' +
-          '<div id="pma-judge-status" style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem">' + (hasKey ? 'Clé prête. Lance le jugement quand tu veux.' : 'Sans clé : jugement manuel ci-dessous (boutons A/B).') + '</div>' +
+          '<details style="font-size:.78rem"><summary style="cursor:pointer;color:var(--text-muted)">Remplacer la clé de la plateforme (rotation)</summary>' +
+            '<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:.4rem">' +
+              '<input id="pma-gkey" type="password" class="demo-input" style="flex:1;min-width:220px" placeholder="Nouvelle clé API Gemini" autocomplete="off">' +
+              '<button class="btn-outline btn-sm" id="pma-gkey-save" style="cursor:pointer">💾 Chiffrer &amp; publier</button>' +
+            '</div>' +
+            '<div style="color:var(--text-muted);margin-top:.25rem">Chiffrée avec ton mot de passe formateur (AES-256). Les étudiants ne voient que du chiffré.</div>' +
+          '</details>' +
+          '<div id="pma-judge-status" style="font-size:.8rem;color:var(--text-muted);margin-top:.4rem">' + (hasKey ? 'Clé prête. Lance le jugement quand tu veux.' : 'Sans clé déverrouillée : jugement manuel ci-dessous (boutons).') + '</div>' +
         '</div>' +
         '<div style="font-weight:700;font-size:.9rem;margin:.6rem 0">⚔️ Combats</div>' +
         '<div id="pma-admin-matches"><div class="loading-pulse" style="text-align:center;padding:.8rem">Chargement…</div></div>';
@@ -515,12 +555,53 @@
       if (br) br.addEventListener('click', function () {
         A.db.ref('promptmon/briefs/current').set(null, function () { if (A.showToast) A.showToast('Brief auto restauré', 'info'); renderJudgePanel(body); });
       });
+      // --- Clé chiffrée plateforme : statut + déverrouillage + rotation ---
+      var _encBlob = null;
+      var ks = document.getElementById('pma-key-status');
+      A.db.ref('promptmon/gemini_enc').once('value', function (s) {
+        _encBlob = s.val();
+        if (ks && !localStorage.getItem(GKEY_LS)) {
+          ks.innerHTML = _encBlob && _encBlob.ct
+            ? '🔐 Une clé chiffrée est disponible sur la plateforme. Saisis ton <strong>mot de passe formateur</strong> puis Déverrouiller.'
+            : '⚠️ Aucune clé sur la plateforme. Déplie « Remplacer la clé » pour en publier une (chiffrée).';
+        }
+      }, function () { if (ks) ks.textContent = 'Clé plateforme inaccessible (hors-ligne ?).'; });
+
+      var ub = document.getElementById('pma-unlock');
+      if (ub) ub.addEventListener('click', function () {
+        var pass = (document.getElementById('pma-unlock-pass').value || '');
+        if (!pass) { if (ks) ks.innerHTML = '<span style="color:var(--red)">Saisis ton mot de passe formateur.</span>'; return; }
+        if (!_encBlob || !_encBlob.ct) { if (ks) ks.textContent = 'Aucune clé chiffrée sur la plateforme.'; return; }
+        ub.disabled = true; if (ks) ks.textContent = 'Déchiffrement…';
+        decryptApiKey(pass, _encBlob, function (err, plain) {
+          ub.disabled = false;
+          if (err) { if (ks) ks.innerHTML = '<span style="color:var(--red)">❌ Mot de passe incorrect.</span>'; return; }
+          localStorage.setItem(GKEY_LS, plain);
+          document.getElementById('pma-unlock-pass').value = '';
+          if (ks) ks.innerHTML = '✅ Clé déverrouillée et stockée sur <strong>cet appareil uniquement</strong>. Le juge IA est prêt.';
+          if (A.showToast) A.showToast('🔓 Clé IA déverrouillée ✓', 'success');
+        });
+      });
+
       var gs = document.getElementById('pma-gkey-save');
       if (gs) gs.addEventListener('click', function () {
         var k = (document.getElementById('pma-gkey').value || '').trim();
-        if (!k) { localStorage.removeItem(GKEY_LS); if (A.showToast) A.showToast('Clé effacée', 'info'); }
-        else { localStorage.setItem(GKEY_LS, k); if (A.showToast) A.showToast('Clé enregistrée (cet appareil uniquement) ✓', 'success'); }
-        document.getElementById('pma-gkey').value = '';
+        var pass = (document.getElementById('pma-unlock-pass').value || '');
+        if (!k || k.length < 20) { if (A.showToast) A.showToast('Colle une clé API valide.', 'warning'); return; }
+        if (!pass) { if (A.showToast) A.showToast('Saisis aussi ton mot de passe formateur (champ du haut) : il sert au chiffrement.', 'warning'); return; }
+        gs.disabled = true;
+        encryptApiKey(pass, k, function (err, blob) {
+          if (err) { gs.disabled = false; if (A.showToast) A.showToast('Échec du chiffrement.', 'error'); return; }
+          A.db.ref('promptmon/gemini_enc').set(blob, function (werr) {
+            gs.disabled = false;
+            if (werr) { if (A.showToast) A.showToast('Échec de publication.', 'error'); return; }
+            _encBlob = blob;
+            localStorage.setItem(GKEY_LS, k);
+            document.getElementById('pma-gkey').value = ''; document.getElementById('pma-unlock-pass').value = '';
+            if (ks) ks.innerHTML = '✅ Nouvelle clé chiffrée publiée + déverrouillée sur cet appareil.';
+            if (A.showToast) A.showToast('💾 Clé chiffrée & publiée ✓', 'success');
+          });
+        });
       });
       var jn = document.getElementById('pma-judge-now');
       if (jn) jn.addEventListener('click', function () {
