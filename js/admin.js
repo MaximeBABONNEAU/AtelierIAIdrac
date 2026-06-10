@@ -1371,11 +1371,67 @@
         '</div></div>' +
 
         '<div class="admin-section glass-card">' +
+        '<h3>📚 Cas complet (exemple pour les etudiants)</h3>' +
+        '<p style="color:var(--text-muted);font-size:0.85rem">Importez un fichier HTML autonome (cas marketing complet). Il est stocke sur le serveur (Storage) et un bouton « 📚 Cas complet » apparait pour tous les etudiants dans le Business Game.</p>' +
+        '<div id="case-current" style="font-size:0.85rem;margin:0.5rem 0;color:var(--text-muted)">Chargement…</div>' +
+        '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">' +
+        '<label class="btn-primary" style="cursor:pointer;display:inline-block">📥 Importer un cas (.html)<input type="file" id="case-file" accept=".html,text/html" style="display:none"></label>' +
+        '<button class="btn-outline btn-sm" id="case-remove">Retirer le cas</button>' +
+        '<span id="case-prog" style="font-size:0.8rem;color:var(--text-muted)"></span>' +
+        '</div></div>' +
+
+        '<div class="admin-section glass-card">' +
         '<h3>Actions rapides</h3>' +
         '<div style="display:flex;gap:0.8rem;flex-wrap:wrap">' +
         '<button class="btn-outline" id="btn-reset-all">Reinitialiser tous les XP</button>' +
         '<button class="btn-outline" id="btn-export-full">Export complet JSON</button>' +
         '</div></div>';
+
+      // ===== Import du « cas complet » (HTML -> Storage -> /config/caseStudy) =====
+      function escAttr(s) { return escapeHtml(s == null ? '' : String(s)); }
+      function refreshCaseCurrent() {
+        var box = document.getElementById('case-current'); if (!box) return;
+        if (!AIA.db) { box.textContent = 'Firebase non connecte.'; return; }
+        AIA.db.ref('config/caseStudy').once('value', function (s) {
+          var c = s.val();
+          box.innerHTML = (c && c.url)
+            ? '✅ Cas actif : <strong>' + escAttr(c.name || 'cas.html') + '</strong> — <a href="' + escAttr(c.url) + '" target="_blank" rel="noopener">ouvrir ↗</a>'
+            : 'Aucun cas importe pour le moment.';
+        }, function () { box.textContent = 'Lecture impossible.'; });
+      }
+      refreshCaseCurrent();
+
+      var caseFile = document.getElementById('case-file');
+      if (caseFile) caseFile.addEventListener('change', function () {
+        var file = this.files && this.files[0]; if (!file) return;
+        var prog = document.getElementById('case-prog');
+        if (!AIA.storage || !AIA.db) { AIA.showToast('Storage indisponible (connexion requise).', 'error'); return; }
+        if (!/\.html?$/i.test(file.name) && !/text\/html/.test(file.type)) { AIA.showToast('Choisissez un fichier .html', 'warning'); return; }
+        if (file.size > 80 * 1024 * 1024) { AIA.showToast('Fichier trop gros (max 80 Mo).', 'warning'); return; }
+        var ref = AIA.storage.ref('cases/case_' + Date.now() + '.html');
+        var task = ref.put(file, { contentType: 'text/html' });
+        if (prog) prog.textContent = 'Upload 0%…';
+        task.on('state_changed',
+          function (s) { if (prog) prog.textContent = 'Upload ' + Math.round(s.bytesTransferred * 100 / s.totalBytes) + '% (' + Math.round(file.size / 1048576) + ' Mo)'; },
+          function (err) { if (prog) prog.textContent = ''; AIA.showToast('Echec upload : ' + String(err && err.code || err), 'error'); },
+          function () {
+            ref.getDownloadURL().then(function (url) {
+              AIA.db.ref('config/caseStudy').set({ url: url, name: file.name.slice(0, 120), ts: Date.now() }, function (werr) {
+                if (prog) prog.textContent = '';
+                if (werr) { AIA.showToast('Echec enregistrement.', 'error'); return; }
+                AIA.showToast('📚 Cas importe et publie pour les etudiants ✓', 'success');
+                refreshCaseCurrent();
+              });
+            }).catch(function () { if (prog) prog.textContent = ''; AIA.showToast('Echec recuperation du lien.', 'error'); });
+          });
+      });
+
+      var caseRemove = document.getElementById('case-remove');
+      if (caseRemove) caseRemove.addEventListener('click', function () {
+        if (!AIA.db) return;
+        if (!confirm('Retirer le cas complet visible par les etudiants ?')) return;
+        AIA.db.ref('config/caseStudy').set(null, function () { AIA.showToast('Cas retire.', 'info'); refreshCaseCurrent(); });
+      });
 
       document.getElementById('btn-send-notif').addEventListener('click', function () {
         var msg = document.getElementById('notif-message').value.trim();

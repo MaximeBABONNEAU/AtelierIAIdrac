@@ -1168,17 +1168,40 @@
     html += '<div class="game-final-cta glass-card">' +
       '<h3>🏆 Projet final</h3>' +
       '<p>Quand toutes les etapes sont validees, exportez votre campagne complete et presentez-la au Jour 4 !</p>' +
-      '<button class="btn-primary" id="btn-export-campaign">📤 Exporter ma campagne (JSON)</button>' +
+      '<div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin:.5rem 0">' +
+        '<span style="font-size:.85rem;color:var(--text-muted)">📤 Exporter ma campagne :</span>' +
+        '<button class="btn-primary btn-sm" id="btn-export-json">{ } JSON</button>' +
+        '<button class="btn-outline btn-sm" id="btn-export-pdf">📄 PDF</button>' +
+        '<button class="btn-outline btn-sm" id="btn-export-zip">🗜️ ZIP</button>' +
+      '</div>' +
       '<button class="btn-outline" id="btn-change-theme">🔄 Changer de projet</button>' +
+      '<div id="case-study-link" style="margin-top:.6rem"></div>' +
       '</div>';
 
     main.innerHTML = html;
+
+    // Bouton « Cas complet » (exemple importe par le formateur) — visible par tous si publie
+    if (AIA.db) AIA.db.ref('config/caseStudy').once('value', function (s) {
+      var c = s.val(); var el = document.getElementById('case-study-link');
+      if (c && c.url && el) {
+        el.innerHTML = '<a class="btn-outline btn-sm" href="' + escapeHtml(c.url) + '" target="_blank" rel="noopener">📚 Voir un cas complet (exemple)' + (c.name ? ' — ' + escapeHtml(c.name) : '') + '</a>';
+      }
+    });
 
     main.querySelectorAll('.game-step-toggle').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var card = this.closest('.game-step-card');
         var body = card.querySelector('.game-step-body');
-        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+        if (!body) return;
+        var willShow = body.style.display === 'none';
+        body.style.display = willShow ? 'block' : 'none';
+        // Étape validée : libellé dynamique + focus du 1er champ pour modifier tout de suite
+        if (card.classList.contains('done')) this.textContent = willShow ? 'Replier' : 'Modifier';
+        if (willShow) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          var first = body.querySelector('textarea, input[type="text"]');
+          if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 220);
+        }
       });
     });
 
@@ -1314,17 +1337,12 @@
       });
     });
 
-    var btnExport = document.getElementById('btn-export-campaign');
-    if (btnExport) btnExport.addEventListener('click', function () {
-      var data = { theme: theme, campaign: st.campaignData, completed: st.gameDeliverables, exportedAt: new Date().toISOString() };
-      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url; a.download = 'campagne-' + theme.id + '-' + Date.now() + '.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      AIA.showToast('Campagne exportee !', 'success');
-    });
+    var bJson = document.getElementById('btn-export-json');
+    if (bJson) bJson.addEventListener('click', exportCampaignJSON);
+    var bPdf = document.getElementById('btn-export-pdf');
+    if (bPdf) bPdf.addEventListener('click', exportCampaignPDF);
+    var bZip = document.getElementById('btn-export-zip');
+    if (bZip) bZip.addEventListener('click', exportCampaignZIP);
 
     function changeTheme() {
       // Changer de sujet a tout moment : le travail deja saisi reste sauvegarde (campaignData), seul le choix est reinitialise.
@@ -1561,6 +1579,141 @@
       // XP bonus first asset of the step
       if (st.campaignData[stepId].assets.length === 1 && window.AIA.addXP) window.AIA.addXP(5, 'Premier asset ajoute');
     }
+  }
+
+  /* ============ EXPORT CAMPAGNE : JSON corrigé + PDF (impression) + ZIP ============ */
+  function _downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+  }
+
+  // JSON structuré & propre : pas de dataURL géant (remplacé par un marqueur), scores + bilans inclus.
+  function buildCampaignExport() {
+    var st = window.AIA.getState();
+    var theme = st.productTheme || {};
+    var totalScore = 0, scored = 0;
+    var phases = Object.keys(PHASES_GUIDE).map(function (pk) {
+      var ph = PHASES_GUIDE[pk];
+      var steps = (ph.steps || []).map(function (step) {
+        var data = (st.campaignData && st.campaignData[step.id]) || {};
+        var fields = {};
+        (step.fields || []).forEach(function (f) { var v = data[f.name]; if (v && String(v).trim()) fields[f.label] = String(v); });
+        var assets = (Array.isArray(data.assets) ? data.assets : []).map(function (a) {
+          var u = a.url || '';
+          return { type: a.type || (isVideoAsset(a) ? 'video' : (isAudioAsset(a) ? 'audio' : 'link')),
+            label: a.label || '', url: (u.indexOf('data:') === 0) ? '[image intégrée — voir campagne.html / dossier assets du ZIP]' : u };
+        });
+        var val = (st.gameValidation && st.gameValidation[step.id]) || {};
+        var validated = !!(st.gameDeliverables && st.gameDeliverables[step.id]);
+        if (validated && typeof val.score === 'number') { totalScore += val.score; scored++; }
+        return { id: step.id, title: step.title, validated: validated,
+          score: (typeof val.score === 'number' ? val.score : null), fields: fields, assets: assets };
+      }).filter(function (s) { return s.validated || Object.keys(s.fields).length || s.assets.length; });
+      return { phase: ph.title, review: (st.phaseReviews && st.phaseReviews[pk]) || '', steps: steps };
+    }).filter(function (p) { return p.steps.length; });
+    return {
+      meta: {
+        student: (st.user && st.user.name) || '', theme: theme.name || '',
+        themeDesc: theme.description || theme.desc || '',
+        avgScore: scored ? Math.round(totalScore / scored) : null,
+        exportedAt: new Date().toISOString(), app: 'AtelierIAIdrac — Campagne marketing IA'
+      },
+      phases: phases
+    };
+  }
+
+  // Document HTML imprimable (PDF via "Enregistrer en PDF") + contenu du ZIP — images inline.
+  function buildCampaignHTML() {
+    var st = window.AIA.getState();
+    var theme = st.productTheme || {};
+    var avg = buildCampaignExport().meta.avgScore;
+    var phasesHtml = Object.keys(PHASES_GUIDE).map(function (pk) {
+      var ph = PHASES_GUIDE[pk];
+      var stepsHtml = (ph.steps || []).map(function (step) {
+        var data = (st.campaignData && st.campaignData[step.id]) || {};
+        var val = (st.gameValidation && st.gameValidation[step.id]) || {};
+        var validated = !!(st.gameDeliverables && st.gameDeliverables[step.id]);
+        var fieldsHtml = (step.fields || []).map(function (f) {
+          var v = data[f.name]; if (!v || !String(v).trim()) return '';
+          return '<div class="f"><div class="fl">' + escapeHtml(f.label) + '</div><div class="fv">' + escapeHtml(String(v)).replace(/\n/g, '<br>') + '</div></div>';
+        }).join('');
+        var assetsHtml = (Array.isArray(data.assets) ? data.assets : []).map(function (a) {
+          var u = escapeHtml(a.url || ''), lbl = escapeHtml(a.label || '');
+          if (isAudioAsset(a)) return '<div class="lk">🎵 <a href="' + u + '">' + (lbl || 'audio') + '</a></div>';
+          if (isVideoAsset(a)) return '<div class="lk">🎬 <a href="' + u + '">' + (lbl || 'vidéo') + '</a></div>';
+          if (a.type === 'image' || /\.(png|jpe?g|gif|webp|svg)/i.test(a.url || '') || (a.url || '').indexOf('data:image') === 0) return '<img src="' + u + '" alt="' + lbl + '">';
+          return '<div class="lk">🔗 <a href="' + u + '">' + (lbl || u) + '</a></div>';
+        }).join('');
+        if (!validated && !fieldsHtml && !assetsHtml) return '';
+        return '<div class="step"><h3>' + (validated ? '✅ ' : '⬜ ') + escapeHtml(step.title) +
+          (typeof val.score === 'number' ? ' <span class="sc">' + val.score + '/100</span>' : '') + '</h3>' +
+          fieldsHtml + (assetsHtml ? '<div class="assets">' + assetsHtml + '</div>' : '') + '</div>';
+      }).join('');
+      if (!stepsHtml.replace(/\s/g, '')) return '';
+      var review = (st.phaseReviews && st.phaseReviews[pk]) || '';
+      return '<section><h2>' + escapeHtml(ph.title) + '</h2>' + stepsHtml +
+        (review ? '<div class="review"><strong>🧐 Bilan :</strong> ' + escapeHtml(review).replace(/\n/g, '<br>') + '</div>' : '') + '</section>';
+    }).join('');
+    var css = 'body{font-family:Helvetica,Arial,sans-serif;color:#1d2433;max-width:820px;margin:0 auto;padding:24px;line-height:1.5}' +
+      'header{border-bottom:3px solid #A71F28;padding-bottom:12px;margin-bottom:20px}h1{font-size:1.6rem;margin:0}' +
+      'h2{color:#A71F28;border-left:4px solid #f5b731;padding-left:8px;margin-top:26px}h3{font-size:1rem;margin:14px 0 6px}' +
+      '.sc{background:#f5b731;color:#1d2433;border-radius:6px;padding:1px 6px;font-size:.75rem}.f{margin:6px 0}' +
+      '.fl{font-weight:700;font-size:.85rem;color:#555}.fv{font-size:.9rem;white-space:pre-wrap}' +
+      '.assets{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.assets img{max-width:230px;max-height:170px;border-radius:8px;border:1px solid #ddd}' +
+      '.lk{font-size:.85rem}.review{background:#fff7e6;border:1px solid #f0d9a8;border-radius:8px;padding:8px 10px;font-size:.85rem;margin-top:10px}' +
+      '.meta{color:#666;font-size:.8rem}@media print{a{color:#1d2433;text-decoration:none}}';
+    return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Campagne ' + escapeHtml(theme.name || 'projet') + '</title><style>' + css + '</style></head><body>' +
+      '<header><h1>📢 Campagne marketing — ' + escapeHtml(theme.name || 'Projet') + '</h1>' +
+      '<div class="meta">' + escapeHtml((st.user && st.user.name) || '') + (avg != null ? ' &bull; Score moyen : ' + avg + '/100' : '') + ' &bull; ' + new Date().toLocaleDateString('fr-FR') + ' &bull; AtelierIAIdrac</div></header>' +
+      (phasesHtml || '<p>Aucune étape complétée pour le moment.</p>') + '</body></html>';
+  }
+
+  function exportCampaignJSON() {
+    var theme = (window.AIA.getState().productTheme) || {};
+    _downloadBlob(new Blob([JSON.stringify(buildCampaignExport(), null, 2)], { type: 'application/json' }), 'campagne-' + (theme.id || 'projet') + '.json');
+    window.AIA.showToast('JSON exporté ✓', 'success');
+  }
+
+  function exportCampaignPDF() {
+    var w = window.open('', '_blank');
+    if (!w) { window.AIA.showToast('Autorise les pop-ups pour générer le PDF', 'warning'); return; }
+    w.document.open(); w.document.write(buildCampaignHTML()); w.document.close();
+    setTimeout(function () { try { w.focus(); w.print(); } catch (e) {} }, 500);
+    window.AIA.showToast('PDF : choisis « Enregistrer au format PDF » dans l\'impression', 'info');
+  }
+
+  function _loadJSZip(cb) {
+    if (window.JSZip) { cb(window.JSZip); return; }
+    var s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+    s.onload = function () { cb(window.JSZip || null); };
+    s.onerror = function () { cb(null); };
+    document.head.appendChild(s);
+  }
+
+  function exportCampaignZIP() {
+    window.AIA.showToast('Préparation du ZIP…', 'info');
+    _loadJSZip(function (JSZip) {
+      if (!JSZip) { window.AIA.showToast('ZIP indisponible (connexion requise pour charger JSZip)', 'error'); return; }
+      var st = window.AIA.getState(); var theme = st.productTheme || {};
+      var zip = new JSZip();
+      zip.file('campagne.json', JSON.stringify(buildCampaignExport(), null, 2));
+      zip.file('campagne.html', buildCampaignHTML());
+      var n = 0; // images dataURL -> fichiers réels dans /assets
+      Object.keys(st.campaignData || {}).forEach(function (sid) {
+        var arr = (st.campaignData[sid] && st.campaignData[sid].assets) || [];
+        arr.forEach(function (a) {
+          var m = (a.url || '').match(/^data:image\/(\w+);base64,(.+)$/);
+          if (m) { n++; zip.file('assets/' + sid + '_' + n + '.' + (m[1] === 'jpeg' ? 'jpg' : m[1]), m[2], { base64: true }); }
+        });
+      });
+      zip.generateAsync({ type: 'blob' }).then(function (blob) {
+        _downloadBlob(blob, 'campagne-' + (theme.id || 'projet') + '.zip');
+        window.AIA.showToast('ZIP exporté ✓', 'success');
+      }).catch(function () { window.AIA.showToast('Échec génération ZIP', 'error'); });
+    });
   }
 
   function saveStepData(stepId, main, requireOne) {
